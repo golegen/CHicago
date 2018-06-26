@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on June 21 of 2018, at 15:25 BRT
+// Last edited on June 24 of 2018, at 01:30 BRT
 
 .section .multiboot
 
@@ -35,6 +35,7 @@ KernelEntry:
 2:
 	movl $(KernelBootPageTable1 - 0xC0000000 + 0x03), KernelBootPageDirectory - 0xC0000000 + 0 * 4						// Let's put the tables in the page directory
 	movl $(KernelBootPageTable1 - 0xC0000000 + 0x03), KernelBootPageDirectory - 0xC0000000 + 768 * 4
+	movl $(KernelBootPageDirectory - 0xC0000000 + 0x03), KernelBootPageDirectory - 0xC0000000 + 1023 * 4
 	
 	movl $(KernelBootPageDirectory - 0xC0000000), %ecx																	// Let's load our page directory
 	movl %ecx, %cr3

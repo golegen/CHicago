@@ -1,219 +1,84 @@
 // File author is Ítalo Lima Marconato Matias
 //
-// Created on June 04 of 2018, at 15:57 BRT
-// Last edited on June 22 of 2018, at 19:15 BRT
+// Created on June 26 of 2018, at 19:13 BRT
+// Last edited on June 26 of 2018, at 19:13 BRT
 
-#define __CHICAGO_HEAP__
-
-#include <chicago/arch/heap-int.h>
 #include <chicago/arch/pmm.h>
 #include <chicago/arch/pmm-int.h>
 #include <chicago/arch/vmm.h>
 
-#include <chicago/alloc.h>
-#include <chicago/heap.h>
+UInt32 HeapStart = 0;
+UInt32 HeapCurrent = 0;
+UInt32 HeapCurrentAligned = 0;
 
-PHeap KernelHeap = Null;
-UInt32 HeapCount = 0;
-PChar HeapDefaultName = "Heap0";
-
-PHeap HeapCreate(PChar name, UInt32 start) {
-	PHeap ourheap = Null;
-	PHeapPrivateData ourpriv = Null;
-	PChar ourname = Null;
-	
-	if ((start % 4096) != 0) {																		// The start is page aligned?
-		return Null;																				// No...
-	}
-	
-	if (KernelRealEnd == 0) {																		// Use PMMDumbAlloc?
-		ourheap = (PHeap)PMMDumbAlloc(sizeof(Heap), False);											// Yes!
-		ourpriv = (PHeapPrivateData)PMMDumbAlloc(sizeof(HeapPrivateData), False);
-		
-		if (name == Null) {																			// Use our default name?
-			ourname = (PChar)PMMDumbAlloc(6 * sizeof(Char), False);									// Yes, so alloc space for the name
-			
-			for (Int i = 0; HeapDefaultName[i]; i++) {												// Copy it!
-				ourname[i] = HeapDefaultName[i];
-			}
-			
-			ourname[4] = (Char)(HeapCount + '0');
-			ourname[5] = 0;
-		} else {
-			UInt32 ournamesize = 0;																	// No, so let's get the chosen name size
-			
-			for (; name[ournamesize]; ournamesize++) ;
-			
-			ourname = (PChar)PMMDumbAlloc((ournamesize + 1) * sizeof(Char), False);					// Alloc space
-			
-			for (Int i = 0; name[i]; i++) {															// And copy it!
-				ourname[i] = name[i];
-			}
-			
-			ourname[ournamesize] = 0;
-		}
-		
-		ourheap->is_kernel = True;																	// Set the kernel bit!
-	} else {
-		ourheap = (PHeap)MemoryAlloc(sizeof(Heap));													// Let's try to alloc everything...
-		
-		if (ourheap == Null) {
-			return Null;
-		}
-		
-		ourpriv = (PHeapPrivateData)MemoryAlloc(sizeof(HeapPrivateData));
-		
-		if (ourpriv == Null) {
-			MemoryFree((UInt32)ourheap);
-			return Null;
-		}
-		
-		if (name == Null) {																			// Use our default name?
-			ourname = (PChar)MemoryAlloc(6 * sizeof(Char));											// Yes, so alloc space for the name (if we can...)
-			
-			if (ourname == Null) {
-				MemoryFree((UInt32)ourpriv);
-				MemoryFree((UInt32)ourheap);
-				
-				return Null;
-			}
-			
-			for (Int i = 0; HeapDefaultName[i]; i++) {												// Copy it!
-				ourname[i] = HeapDefaultName[i];
-			}
-			
-			ourname[4] = (Char)(HeapCount + '0');
-			ourname[5] = 0;
-		} else {
-			UInt32 ournamesize = 0;																	// No, so let's get the chosen name size
-			
-			for (; name[ournamesize]; ournamesize++) ;
-			
-			ourname = (PChar)MemoryAlloc((ournamesize + 1) * sizeof(Char));							// Alloc space
-			
-			if (ourname == Null) {
-				MemoryFree((UInt32)ourpriv);
-				MemoryFree((UInt32)ourheap);
-				
-				return Null;
-			}
-			
-			for (Int i = 0; name[i]; i++) {															// And copy it!
-				ourname[i] = name[i];
-			}
-			
-			ourname[ournamesize] = 0;
-		}
-	}
-	
-	ourheap->signature = 0x0CAFEEC1;
-	ourheap->name = ourname;
-	ourheap->start = start;
-	ourheap->current_position = start;
-	ourheap->private_data = ourpriv;
-	
-	ourpriv->current_position_aligned = start;
-	
-	if (HeapCount >= 9) {
-		HeapCount = 0;
-	} else {
-		HeapCount++;
-	}
-	
-	return ourheap;																					// Return!
+UInt32 HeapGetCurrent(Void) {
+	return HeapCurrent;
 }
 
-Void HeapDelete(PHeap heap) {
-	if (heap == Null) {																				// Heap is valid?
-		return;																						// Nope...
-	} else if (heap->signature != 0x0CAFEEC1) {														// Heap is valid? (again)
-		return;																						// Nope...
-	} else if (heap->is_kernel) {																	// Kernel heap?
-		return;																						// Yes... WTF???
-	} else {
-		PHeapPrivateData priv = (PHeapPrivateData)(heap->private_data);
+UInt32 HeapGetStart(Void) {
+	return HeapStart;
+}
+
+Boolean HeapIncrement(UInt32 amount) {
+	if (amount <= 0) {																									// The increment is 0 (or an negative number)?
+		return False;																									// Yes, so it's invalid
+	} else if ((HeapCurrent + amount) >= 0xFFC00000) {																	// No more virtual address space?
+		return False;																									// Yes...
+	}
+	
+	UInt32 new = HeapCurrent + amount;
+	UInt32 old = HeapCurrentAligned;
+	
+	for (; HeapCurrentAligned < new; HeapCurrentAligned += 0x1000) {													// Let's allocate the pages that we need
+		UInt32 frame = PMMAllocFrame(1);																				// Allocate one new page
 		
-		for (UInt32 i = heap->start; i < priv->current_position_aligned; i += 0x1000) {				// Let's free the memory we used
-			PMMFreeFrame(VMMGetPhys(i));
-			VMMUnmap(i);
-		}
-		
-		MemoryFree((UInt32)heap->name);
-		MemoryFree((UInt32)heap->private_data);
-		MemoryFree((UInt32)heap);
-	}
-}
-
-PChar HeapGetName(PHeap heap) {
-	if (!heap) {																					// Heap is valid?
-		return Null;																				// Nope..
-	} else if (heap->signature != 0x0CAFEEC1) {														// Heap is valid? (again)
-		return Null;																				// Nope...
-	} else {
-		return heap->name;
-	}
-}
-
-UInt32 HeapGetStart(PHeap heap) {
-	if (!heap) {																					// Heap is valid?
-		return 0;																					// Nope..
-	} else if (heap->signature != 0x0CAFEEC1) {														// Heap is valid? (again)
-		return 0;																					// Nope...
-	} else {
-		return heap->start;
-	}
-}
-
-UInt32 HeapGetCurrent(PHeap heap) {
-	if (!heap) {																					// Heap is valid?
-		return 0;																					// Nope..
-	} else if (heap->signature != 0x0CAFEEC1) {														// Heap is valid? (again)
-		return 0;																					// Nope...
-	} else {
-		return heap->current_position;
-	}
-}
-
-Boolean HeapIncrement(PHeap heap, UInt32 amount) {
-	if (!heap) {																					// Heap is valid?
-		return False;																				// Nope..
-	} else if (heap->signature != 0x0CAFEEC1) {														// Heap is valid? (again)
-		return False;																				// Nope...
-	} else if (amount <= 0) {																		// Greater than 0 amount?
-		return False;																				// Nope, so it's invalid for us
-	} else {
-		PHeapPrivateData priv = (PHeapPrivateData)heap->private_data;
-		UInt32 new = heap->current_position + amount;
-		UInt32 old = priv->current_position_aligned;
-		
-		for (; priv->current_position_aligned < new; priv->current_position_aligned += 0x1000) {	// So let's GO!
-			UInt32 phys = PMMAllocFrame();															// Alloc a new page
-			
-			if (phys == 0) {																		// Have space?
-				priv->current_position_aligned = old;												// Nope, return with False
-				return False;
+		if (frame == 0) {																								// Failed?
+			for (UInt32 i = old; i < HeapCurrentAligned; i += 0x1000) {													// Yes, so let's undo everything we did
+				PMMFreeFrame(VMMGetPhys(i), 1);
+				VMMUnmap(i);
 			}
 			
-			VMMMap(priv->current_position_aligned, phys, VMM_MAP_KDEFAULTS);						// Yes, map it
+			HeapCurrentAligned = old;
+			
+			return False;																								// And return False
 		}
 		
-		heap->current_position += amount;
+		if (!VMMMap(HeapCurrentAligned, frame, VMM_MAP_KDEF)) {															// Let's try to map it
+			for (UInt32 i = old; i < HeapCurrentAligned; i += 0x1000) {													// Failed? So undo everything
+				PMMFreeFrame(VMMGetPhys(i), 1);
+				VMMUnmap(i);
+			}
+			
+			HeapCurrentAligned = old;
+			
+			return False;																								// And return False
+		}
+	}
+	
+	HeapCurrent = new;
+	
+	return True;
+}
+
+Boolean HeapDecrement(UInt32 amount) {
+	if (amount <= 0) {																									// The decrement is 0 (or an negative number)?
+		return False;																									// Yes, so it's invalid
+	} else if ((HeapCurrent - amount) < HeapStart) {																	// Tried to decrement outside the start?
+		return False;																									// Yes...
+	} else {
+		HeapCurrent -= amount;																							// Decrement the unaligned pointer
+		
+		while ((HeapCurrentAligned - 0x1000) > HeapCurrent) {															// And the aligned one
+			HeapCurrentAligned -= 0x1000;
+			
+			PMMFreeFrame(VMMGetPhys(HeapCurrentAligned), 1);															// Free the physical frame for use
+			VMMUnmap(HeapCurrentAligned);																				// And unmap
+		}
 		
 		return True;
 	}
 }
 
-Boolean HeapDecrement(PHeap heap, UInt32 amount) {
-	if (!heap) {																					// Heap is valid?
-		return False;																				// Nope..
-	} else if (heap->signature != 0x0CAFEEC1) {														// Heap is valid? (again)
-		return False;																				// Nope...
-	} else if (amount <= 0) {																		// Greater than 0 amount?
-		return False;																				// Nope, so it's invalid for us
-	} else if ((heap->current_position - amount) < heap->start) {									// Tried to decrement outside it's limit?
-		return False;																				// Same as above
-	} else {
-		heap->current_position -= amount;
-		return True;
-	}
+Void HeapInit(Void) {
+	HeapStart = HeapCurrent = HeapCurrentAligned = KernelRealEnd;
 }

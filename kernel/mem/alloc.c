@@ -1,22 +1,22 @@
 // File author is Ítalo Lima Marconato Matias
 //
-// Created on June 17 of 2018, at 21:26 BRT
-// Last edited on June 18 of 2018, at 13:46 BRT
+// Created on June 26 of 2018, at 19:16 BRT
+// Last edited on June 26 of 2018, at 19:25 BRT
 
 #include <chicago/alloc-int.h>
 #include <chicago/heap.h>
 
-PVoid MemoryAllocBase = Null;
+PMemoryAllocBlock MemoryAllocBase = Null;
 
-static PMemoryAllocBlock MemoryAllocExtendHeap(PMemoryAllocBlock last, UInt32 size) {
-	if (!size) {																	// We need a size...
+PMemoryAllocBlock MemoryAllocExtendHeap(PMemoryAllocBlock last, UInt32 size) {
+	if (!size) {																										// We need a size...
 		return Null;
 	}
 	
-	PMemoryAllocBlock block = (PMemoryAllocBlock)HeapGetCurrent(KernelHeap);		// Let's try to expand the heap!
+	PMemoryAllocBlock block = (PMemoryAllocBlock)HeapGetCurrent();														// Let's try to expand the heap!
 	
-	if (!HeapIncrement(KernelHeap, size + 20)) {
-		return Null;																// Failed...
+	if (!HeapIncrement(size + 20)) {																					// Failed?
+		return Null;																									// Yes...
 	}
 	
 	block->size = size;
@@ -32,18 +32,18 @@ static PMemoryAllocBlock MemoryAllocExtendHeap(PMemoryAllocBlock last, UInt32 si
 	return block;
 }
 
-static PMemoryAllocBlock MemoryAllocFindBlock(PMemoryAllocBlock *last, UInt32 size) {
+PMemoryAllocBlock MemoryAllocFindBlock(PMemoryAllocBlock *last, UInt32 size) {
 	PMemoryAllocBlock block = MemoryAllocBase;
 	
-	while ((block != Null) && (!((block->free) && (block->size >= size)))) {		// Check if the block is free and if it's equal or greater than specified size
-		*last = block;																// YES!
+	while ((block != Null) && (!((block->free) && (block->size >= size)))) {											// Check if the block is free and have at least the required size
+		*last = block;																									// YES!
 		block = block->next;
 	}
 	
 	return block;
 }
 
-static Void MemoryAllocSplitBlock(PMemoryAllocBlock block, UInt32 size) {
+Void MemoryAllocSplitBlock(PMemoryAllocBlock block, UInt32 size) {
 	PMemoryAllocBlock new = (PMemoryAllocBlock)(block->data + size);
 	
 	new->size = block->size - size - 20;
@@ -60,7 +60,7 @@ static Void MemoryAllocSplitBlock(PMemoryAllocBlock block, UInt32 size) {
 	}
 }
 
-static PMemoryAllocBlock MemoryAllocFuseBlock(PMemoryAllocBlock block) {
+PMemoryAllocBlock MemoryAllocFuseBlock(PMemoryAllocBlock block) {
 	if ((block->next != Null) && (block->next->free)) {
 		block->size += 20 + block->next->size;
 		block->next = block->next->next;
@@ -73,7 +73,7 @@ static PMemoryAllocBlock MemoryAllocFuseBlock(PMemoryAllocBlock block) {
 	return block;
 }
 
-static Void MemoryAllocCopyBlock(PMemoryAllocBlock src, PMemoryAllocBlock dst) {
+Void MemoryAllocCopyBlock(PMemoryAllocBlock src, PMemoryAllocBlock dst) {
 	PUInt32 from = (PUInt32)src->addr;
 	PUInt32 to = (PUInt32)dst->addr;
 	
@@ -145,34 +145,34 @@ UInt32 MemoryAlignedAlloc(UInt32 size, UInt32 align) {
 }
 
 Void MemoryFree(UInt32 blockk) {
-	if (blockk == 0) {																// Some checks...
+	if (blockk == 0) {																									// Some checks...
 		return;
 	} else if (blockk < (UInt32)MemoryAllocBase) {
 		return;
-	} else if (blockk > HeapGetCurrent(KernelHeap)) {
+	} else if (blockk > HeapGetCurrent()) {
 		return;
 	}
 	
-	PMemoryAllocBlock block = (PMemoryAllocBlock)(blockk - 20);						// Let's get the block struct
+	PMemoryAllocBlock block = (PMemoryAllocBlock)(blockk - 20);															// Let's get the block struct
 	
 	block->free = True;
 	
-	if ((block->prev != Null) && (block->prev->free)) {								// Fuse with the prev?
-		block = MemoryAllocFuseBlock(block->prev);									// Yes!
+	if ((block->prev != Null) && (block->prev->free)) {																	// Fuse with the prev?
+		block = MemoryAllocFuseBlock(block->prev);																		// Yes!
 	}
 	
-	if (block->next != Null) {														// Fuse with the next?
-		MemoryAllocFuseBlock(block);												// Yes!
+	if (block->next != Null) {																							// Fuse with the next?
+		MemoryAllocFuseBlock(block);																					// Yes!
 	} else {
-		if (block->prev != Null) {													// Free the end of the heap
+		if (block->prev != Null) {																						// Free the end of the heap
 			block->prev->next = Null;
 		} else {
-			MemoryAllocBase = Null;													// No more blocks!
+			MemoryAllocBase = Null;																						// No more blocks!
 		}
 		
-		UInt32 decr = HeapGetCurrent(KernelHeap) - (UInt32)block;
+		UInt32 decr = HeapGetCurrent() - (UInt32)block;
 		
-		HeapDecrement(KernelHeap, decr);											// Now let's decrement the heap!
+		HeapDecrement(decr);																							// Now let's decrement the heap!
 	}
 }
 
@@ -195,21 +195,6 @@ UInt32 MemoryZAlloc(UInt32 size) {
 	return ret;
 }
 
-UInt32 MemoryAlignedZAlloc(UInt32 size, UInt32 align) {
-	UInt32 ret = MemoryAlignedAlloc(size, align);
-	
-	if (ret) {
-		UInt32 rsize = ((((size - 1) >> 2) << 2) + 4);
-		PUInt32 ptr = (PUInt32)ret;
-		
-		for (UInt32 i = 0; i < rsize / 4; i++) {
-			ptr[i] = 0;
-		}
-	}
-	
-	return ret;
-}
-
 UInt32 MemoryRealloc(UInt32 blockk, UInt32 size) {
 	if (size == 0) {
 		return 0;
@@ -217,7 +202,7 @@ UInt32 MemoryRealloc(UInt32 blockk, UInt32 size) {
 		return MemoryAlloc(size);
 	} else if (blockk < (UInt32)MemoryAllocBase) {
 		return 0;
-	} else if (blockk > HeapGetCurrent(KernelHeap)) {
+	} else if (blockk > HeapGetCurrent()) {
 		return 0;
 	} else {
 		UInt32 rsize = ((((size - 1) >> 2) << 2) + 4);
@@ -243,50 +228,6 @@ UInt32 MemoryRealloc(UInt32 blockk, UInt32 size) {
 				
 				MemoryAllocCopyBlock(block, (PMemoryAllocBlock)(new - 20));
 				MemoryFree(blockk);
-				
-				return new;
-			}
-		}
-		
-		return blockk;
-	}
-}
-
-UInt32 MemoryAlignedRealloc(UInt32 blockkk, UInt32 size, UInt32 align) {
-	UInt32 blockk = (UInt32)(((PUInt32)blockkk)[-1]);
-	
-	if (size == 0) {
-		return 0;
-	} else if (blockk == 0) {
-		return MemoryAlloc(size);
-	} else if (blockk < (UInt32)MemoryAllocBase) {
-		return 0;
-	} else if (blockk > HeapGetCurrent(KernelHeap)) {
-		return 0;
-	} else {
-		UInt32 rsize = ((((size - 1) >> 2) << 2) + 4);
-		PMemoryAllocBlock block = (PMemoryAllocBlock)(blockk - 20);
-		
-		if (block->size >= rsize) {
-			if ((block->size - rsize) >= 24) {
-				MemoryAllocSplitBlock(block, rsize);
-			}
-		} else {
-			if ((block->next != Null) && (block->next->free) && ((block->size - 20 + block->next->size) >= rsize)) {
-				MemoryAllocFuseBlock(block);
-				
-				if (block->size - rsize >= 24) {
-					MemoryAllocSplitBlock(block, rsize);
-				}
-			} else {
-				UInt32 new = MemoryAlignedAlloc(size, align);
-				
-				if (new == 0) {
-					return 0;
-				}
-				
-				MemoryAllocCopyBlock(block, (PMemoryAllocBlock)(new - 20));
-				MemoryAlignedFree(blockk);
 				
 				return new;
 			}

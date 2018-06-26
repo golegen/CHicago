@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on June 22 of 2018, at 19:14 BRT
+# Last edited on June 26 of 2018, at 19:29 BRT
 
 ARCH ?= x86
 PREFIX ?= i686-elf-
@@ -43,7 +43,8 @@ else
 endif
 
 OBJECTS := main.c.o
-OBJECTS += mem/alloc.c.o
+OBJECTS += mem/alloc.c.o mem/virt.c.o
+OBJECTS += list/list.c.o
 
 ARCH_OBJECTS := $(addprefix build/arch/$(ARCH)/,$(ARCH_OBJECTS))
 OBJECTS := $(addprefix build/,$(OBJECTS))
@@ -136,4 +137,4 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)echo Compiling $<
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -std=c11 -Iinclude -Iarch/$(ARCH)/include -ffreestanding -O3 -Wall -Wextra -Wno-implicit-fallthrough $(ARCH_CFLAGS) -c $< -o $@
+	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -std=c11 -Iinclude -Iarch/$(ARCH)/include -ffreestanding -O2 -Wall -Wextra -Wno-implicit-fallthrough $(ARCH_CFLAGS) -c $< -o $@

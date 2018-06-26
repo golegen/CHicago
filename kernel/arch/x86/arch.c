@@ -1,10 +1,9 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on June 23 of 2018, at 12:56 BRT
+// Last edited on June 26 of 2018, at 19:31 BRT
 
 #include <chicago/arch/gdt.h>
-#include <chicago/arch/heap-int.h>
 #include <chicago/arch/idt.h>
 #include <chicago/arch/multiboot.h>
 #include <chicago/arch/pmm.h>
@@ -16,33 +15,27 @@
 #include <chicago/heap.h>
 
 Void ArchInit(Void) {
-	SerialInit(COM1_PORT);																					// Init debugging (using COM1 port)
+	SerialInit(COM1_PORT);																								// Init debugging (using COM1 port)
 	DebugWriteFormated("COM1 initialized\r\n");
 	
 	if (MultibootHeaderMagic != 0x2BADB002) {
 		DebugWriteFormated("PANIC! We need GRUB (or any other multiboot-compilant bootloader)\r\n");
 		while (1) ;
 	} else {
-		VMMFixMultiboot(MultibootHeaderPointer);															// Fix the multiboot header
+		VMMFixMultiboot(MultibootHeaderPointer);																		// Fix the multiboot header
 	}
 	
-	GDTInit();																								// Init the GDT
+	GDTInit();																											// Init the GDT
 	DebugWriteFormated("GDT initialized\r\n");
 	
-	IDTInit();																								// Init the IDT
+	IDTInit();																											// Init the IDT
 	DebugWriteFormated("IDT initialized\r\n");
 	
-	KernelHeap = HeapCreate("KernelHeap", 0);																// Init the kernel heap (we're going to set the start of it later)
-	DebugWriteFormated("Heap initialized\r\n");
-	
-	VMMPreInit();																							// Alloc VMM structs
-	PMMInit();																								// Init the PMM
+	VMMPreInit();
+	PMMInit();																											// Init the PMM
 	DebugWriteFormated("PMM initialized\r\n");
 	
-	KernelHeap->start = KernelRealEnd;																		// Set the start of the kernel heap
-	KernelHeap->current_position = KernelRealEnd;															// Set current position to the start of the kernel heap
-	((PHeapPrivateData)(KernelHeap->private_data))->current_position_aligned = KernelRealEnd;				// And the start is by default aligned!
-	
-	VMMInit();																								// Init the VMM
-	DebugWriteFormated("VMM initialized\r\n");
+	VMMInit();																											// Init the VMM
+	HeapInit();																											// Init the kernel heap
+	DebugWriteFormated("VMM initialized\r\n\r\n");
 }
