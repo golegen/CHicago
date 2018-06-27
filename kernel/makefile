@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on June 26 of 2018, at 19:29 BRT
+# Last edited on June 26 of 2018, at 20:19 BRT
 
 ARCH ?= x86
 PREFIX ?= i686-elf-
@@ -13,7 +13,7 @@ ifeq ($(ARCH),x86)
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += debug/debug.c.o
 	ARCH_OBJECTS += system/gdt.c.o system/idt.c.o
-	ARCH_OBJECTS += mem/heap.c.o mem/pmm.c.o mem/vmm.c.o
+	ARCH_OBJECTS += mem/heap.c.o mem/pmm.c.o mem/virt.c.o mem/vmm.c.o
 	
 	LINKER_SCRIPT := link.ld
 else ifeq ($(ARCH),x86-64)
@@ -43,7 +43,7 @@ else
 endif
 
 OBJECTS := main.c.o
-OBJECTS += mem/alloc.c.o mem/virt.c.o
+OBJECTS += mem/alloc.c.o
 OBJECTS += list/list.c.o
 
 ARCH_OBJECTS := $(addprefix build/arch/$(ARCH)/,$(ARCH_OBJECTS))

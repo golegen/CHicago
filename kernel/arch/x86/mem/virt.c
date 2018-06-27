@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 26 of 2018, at 19:28 BRT
-// Last edited on June 26 of 2018, at 19:28 BRT
+// Last edited on June 26 of 2018, at 22:51 BRT
 
 #include <chicago/arch/pmm.h>
 #include <chicago/arch/pmm-int.h>
@@ -170,6 +170,23 @@ Void VirtRegionDel(PVirtRegion region) {
 	}
 }
 
+Boolean VirtAllocInt(UInt32 virt, UInt32 flags) {
+	if (virt == 0) {
+		return False;
+	}
+	
+	UInt32 phys = PMMAllocFrame(1);
+	
+	if (phys == 0) {
+		return False;
+	} else if (!VMMMap(virt, phys, flags)) {
+		PMMFreeFrame(phys, 1);
+		return False;
+	}
+	
+	return True;
+}
+
 PVirtRegion VirtQuery(UInt32 addr) {
 	ListForeach(VirtRegions, i) {
 		PVirtRegion region = (PVirtRegion)i->data;
@@ -202,30 +219,19 @@ UInt32 VirtAlloc(UInt32 addr, UInt32 size, UInt32 flags) {
 	}
 	
 	if ((addr == 0) && (((flags & VIRT_ALLOC_RESERVE) == VIRT_ALLOC_RESERVE) && ((flags & VIRT_ALLOC_USABLE) == VIRT_ALLOC_USABLE))) {					// Reserve the virt addr, the phys addr and map it?
-		UInt32 phys = PMMAllocFrame(size / 0x1000);																										// Yes, so get an free phys addr
+		UInt32 virt = VirtAllocFrame(size / 0x1000);																									// Yes, start with the virt addr
 		
-		if (phys == 0) {																																// Failed?
-			return 0;																																	// Yes, so we don't have memory avaliable...
+		if (virt == 0) {																																// ...
+			return 0;																																	// ... INTENSIFIES
 		}
 		
-		UInt32 virt = VirtAllocFrame(size / 0x1000);																									// Alloc the virt addr
-		
-		if (virt == 0) {																																// Failed?
-			PMMFreeFrame(phys, size / 0x1000);																											// Yes, so we don't have more virtual address space avaliable...
-			return 0;
-		}
-		
-		UInt32 flags2 = VirtConvertFlags(flags);																										// Convert the flags
-		
-		for (UInt32 i = 0; i < size; i += 0x1000) {																										// And try to map everything
-			if (!VMMMap(virt + i, phys + i, flags2)) {
-				if (i >= 0x1000) {																														// Failed, so undo everything														
-					for (UInt32 j = 0; j < i; j += 0x1000) {
-						VMMUnmap(virt + i);
-					}
+		for (UInt32 i = 0; i < size; i += 0x1000) {																										// Let's use the real alloc func
+			if (!VirtAllocInt(virt + i, VirtConvertFlags(flags))) {																						// Failed?
+				for (UInt32 j = 0; j < i; j += 0x1000) {																								// Yes, so undo everything
+					PMMFreeFrame(VMMGetPhys(virt + j), 1);
+					VMMUnmap(virt + j);
 				}
 				
-				PMMFreeFrame(phys, size / 0x1000);
 				VirtFreeFrame(virt, size / 0x1000);
 				
 				return 0;
@@ -234,10 +240,10 @@ UInt32 VirtAlloc(UInt32 addr, UInt32 size, UInt32 flags) {
 		
 		if (!VirtRegionAdd(virt, size, flags)) {																										// Try to add it to the list
 			for (UInt32 i = 0; i < size; i+= 0x1000) {																									// Failed, undo everything
+				PMMFreeFrame(VMMGetPhys(virt + i), 1);
 				VMMUnmap(virt + i);
 			}
 			
-			PMMFreeFrame(phys, size / 0x1000);
 			VirtFreeFrame(virt, size / 0x1000);
 				
 			return 0;
@@ -266,25 +272,15 @@ UInt32 VirtAlloc(UInt32 addr, UInt32 size, UInt32 flags) {
 			return 0;
 		}
 		
-		UInt32 phys = PMMAllocFrame(size / 0x1000);
-		
-		if (phys == 0) {
-			return 0;
-		}
-		
 		VirtReserveFrame(addr, size / 0x1000);
 		
-		UInt32 flags2 = VirtConvertFlags(flags);
-		
 		for (UInt32 i = 0; i < size; i += 0x1000) {
-			if (!VMMMap(addr + i, phys + i, flags2)) {
-				if (i >= 0x1000) {
-					for (UInt32 j = 0; j < i; j += 0x1000) {
-						VMMUnmap(addr + i);
-					}
+			if (!VirtAllocInt(addr + i, VirtConvertFlags(flags))) {
+				for (UInt32 j = 0; j < i; j += 0x1000) {
+					PMMFreeFrame(VMMGetPhys(addr + i), 1);
+					VMMUnmap(addr + i);
 				}
 				
-				PMMFreeFrame(phys, size / 0x1000);
 				VirtFreeFrame(addr, size / 0x1000);
 				
 				return 0;
@@ -293,10 +289,10 @@ UInt32 VirtAlloc(UInt32 addr, UInt32 size, UInt32 flags) {
 		
 		if (!VirtRegionAdd(addr, size, flags)) {
 			for (UInt32 i = 0; i < size; i+= 0x1000) {
+				PMMFreeFrame(VMMGetPhys(addr + i), 1);
 				VMMUnmap(addr + i);
 			}
 			
-			PMMFreeFrame(phys, size / 0x1000);
 			VirtFreeFrame(addr, size / 0x1000);
 				
 			return 0;
@@ -331,25 +327,16 @@ UInt32 VirtAlloc(UInt32 addr, UInt32 size, UInt32 flags) {
 			if (region == Null) {
 				return 0;
 			}
+		} else if ((region->flags & VIRT_ALLOC_USABLE) == VIRT_ALLOC_USABLE) {
+			return addr;
 		}
-		
-		UInt32 phys = PMMAllocFrame(size / 0x1000);
-		
-		if (phys == 0) {
-			return 0;
-		}
-		
-		UInt32 flags2 = VirtConvertFlags(flags);
 		
 		for (UInt32 i = 0; i < size; i += 0x1000) {
-			if (!VMMMap(addr + i, phys + i, flags2)) {
-				if (i >= 0x1000) {
-					for (UInt32 j = 0; j < i; j += 0x1000) {
-						VMMUnmap(addr + i);
-					}
+			if (!VirtAllocInt(region->start + i, VirtConvertFlags(flags))) {
+				for (UInt32 j = 0; j < i; j += 0x1000) {
+					PMMFreeFrame(VMMGetPhys(addr + i), 1);
+					VMMUnmap(addr + i);
 				}
-				
-				PMMFreeFrame(phys, size / 0x1000);
 				
 				return 0;
 			}
@@ -377,11 +364,12 @@ Boolean VirtProtect(UInt32 addr, UInt32 flags) {
 		return True;
 	}
 	
-	UInt32 phys = VMMGetPhys(region->start);																											// Get the phys addr
 	UInt32 flags2 = VirtConvertFlags(flags);																											// Convert the flags
 	
 	for (UInt32 i = 0; i < region->size; i += 0x1000) {																									// And try to remap everything with the new flags (return False if it fails)
-		if (!VMMMap(region->start + i, phys + i, flags2)) {
+		UInt32 phys = VMMGetPhys(region->start + i);
+	
+		if (!VMMMap(region->start + i, phys, flags2)) {
 			return False;
 		}
 	}
@@ -399,13 +387,11 @@ Void VirtFree(UInt32 addr) {
 	} else if ((region->flags & VIRT_ALLOC_USABLE) != VIRT_ALLOC_USABLE) {																				// Just reserved?
 		VirtFreeFrame(region->start, region->size / 0x1000);																							// Yes, so just free the virt region
 		VirtRegionDel(region);																															// And delete this from the list
-	
-	return;
+		return;
 	}
 	
-	PMMFreeFrame(VMMGetPhys(region->start), region->size / 0x1000);																						// Free the physical memory
-	
-	for (UInt32 i = 0; i < region->size; i += 0x1000) {																									// Unmap everything
+	for (UInt32 i = 0; i < region->size; i += 0x1000) {																									// Unmap (and free) everything
+		PMMFreeFrame(VMMGetPhys(region->start + i), 1);
 		VMMUnmap(region->start + i);
 	}
 	
