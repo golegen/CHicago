@@ -1,13 +1,14 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on June 28 of 2018, at 19:00 BRT
+// Last edited on June 28 of 2018, at 19:28 BRT
 
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/idt.h>
 #include <chicago/arch/multiboot.h>
-#include <chicago/arch/pmm-int.h>
+#include <chicago/arch/pmm.h>
 #include <chicago/arch/serial.h>
+#include <chicago/arch/vmm.h>
 
 #include <chicago/debug.h>
 #include <chicago/mm.h>
@@ -39,6 +40,10 @@ Void ArchInit(Void) {
 	IDTInit();																											// Init the IDT
 	DebugWriteFormated("IDT initialized\r\n");
 	
-	PMMInit();
-	DebugWriteFormated("PMM initialized\r\n\r\n");
+	VMMPreInit();																										// Alloc the VMM structs
+	PMMInit();																											// Init the PMM
+	DebugWriteFormated("PMM initialized\r\n");
+	
+	VMMInit();																											// Init thhe VMM
+	DebugWriteFormated("VMM initialized\r\n");
 }

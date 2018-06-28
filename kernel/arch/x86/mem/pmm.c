@@ -1,12 +1,12 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 31 of 2018, at 18:45 BRT
-// Last edited on June 28 of 2018, at 18:50 BRT
+// Last edited on June 28 of 2018, at 19:25 BRT
 
 #define __CHICAGO_PMM__
 
 #include <chicago/arch/multiboot.h>
-#include <chicago/arch/pmm-int.h>
+#include <chicago/arch/pmm.h>
 
 #include <chicago/mm.h>
 
