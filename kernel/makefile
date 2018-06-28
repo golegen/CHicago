@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on June 26 of 2018, at 20:19 BRT
+# Last edited on June 28 of 2018, at 19:00 BRT
 
 ARCH ?= x86
 PREFIX ?= i686-elf-
@@ -13,7 +13,7 @@ ifeq ($(ARCH),x86)
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += debug/debug.c.o
 	ARCH_OBJECTS += system/gdt.c.o system/idt.c.o
-	ARCH_OBJECTS += mem/heap.c.o mem/pmm.c.o mem/virt.c.o mem/vmm.c.o
+	ARCH_OBJECTS += mem/pmm.c.o
 	
 	LINKER_SCRIPT := link.ld
 else ifeq ($(ARCH),x86-64)
@@ -24,7 +24,7 @@ else ifeq ($(ARCH),x86-64)
 	
 	LINKER_SCRIPT := link.ld
 	
-	ARCH_CFLAGS := -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Wno-int-to-pointer-cast
+	ARCH_CFLAGS := -DARCH_64 -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Wno-int-to-pointer-cast
 	ARCH_LDFLAGS := -mcmodel=large -mno-red-zone -n
 else ifeq ($(ARCH),raspi)
 	ARCH_OBJECTS := start.s.o
@@ -43,8 +43,7 @@ else
 endif
 
 OBJECTS := main.c.o
-OBJECTS += mem/alloc.c.o
-OBJECTS += list/list.c.o
+OBJECTS += mem/pmm.c.o
 
 ARCH_OBJECTS := $(addprefix build/arch/$(ARCH)/,$(ARCH_OBJECTS))
 OBJECTS := $(addprefix build/,$(OBJECTS))

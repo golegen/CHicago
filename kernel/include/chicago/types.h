@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:15 BRT
-// Last edited on May 12 of 2018, at 09:03 BRT
+// Last edited on June 28 of 2018, at 18:36 BRT
 
 #ifndef __CHICAGO_TYPES_H__
 #define __CHICAGO_TYPES_H__
@@ -33,6 +33,16 @@ typedef signed Char Int8, *PInt8;
 typedef signed Short Int16, *PInt16;
 typedef signed Int Int32, *PInt32;
 typedef signed Long Long Int64, *PInt64;
+
+/* Define our IntPtr type */
+
+#ifdef ARCH_64
+typedef unsigned Long Long UIntPtr, *PUIntPtr;
+typedef signed Long Long IntPtr, *PIntPtr;
+#else
+typedef unsigned Int UIntPtr, *PUIntPtr;
+typedef signed Int IntPtr, *PIntPtr;
+#endif
 
 /* Inline assembly */
 

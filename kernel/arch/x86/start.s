@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on June 24 of 2018, at 01:30 BRT
+// Last edited on June 28 of 2018, at 17:51 BRT
 
 .section .multiboot
 
@@ -19,7 +19,6 @@ KernelEntry:
 	
 	movl $(KernelBootPageTable1 - 0xC0000000), %edi																		// Let's map the first 4MB
 	movl $0, %esi
-	movl $1024, %ecx
 1:
 	cmpl $0x400000, %esi																								// ... Just 4MB
 	jge 2f
@@ -33,8 +32,24 @@ KernelEntry:
 	
 	loop 1b																												// Keep on looping (if we need)
 2:
+	movl $(KernelBootPageTable2 - 0xC0000000), %edi
+	movl $0, %esi
+3:
+	cmpl $0x800000, %esi																								// ... Just more 4MB
+	jge 4f
+	
+	movl %esi, %edx																										// Set the present and rw bit
+	orl $0x03, %edx
+	movl %edx, (%edi)
+	
+	addl $4096, %esi																									// Size of page is 4096 bytes
+	addl $4, %edi																										// And the size of page table entries is 4 bytes
+	
+	loop 3b																												// Keep on looping (if we need)
+4:
 	movl $(KernelBootPageTable1 - 0xC0000000 + 0x03), KernelBootPageDirectory - 0xC0000000 + 0 * 4						// Let's put the tables in the page directory
 	movl $(KernelBootPageTable1 - 0xC0000000 + 0x03), KernelBootPageDirectory - 0xC0000000 + 768 * 4
+	movl $(KernelBootPageTable1 - 0xC0000000 + 0x03), KernelBootPageDirectory - 0xC0000000 + 769 * 4
 	movl $(KernelBootPageDirectory - 0xC0000000 + 0x03), KernelBootPageDirectory - 0xC0000000 + 1023 * 4
 	
 	movl $(KernelBootPageDirectory - 0xC0000000), %ecx																	// Let's load our page directory
@@ -44,9 +59,9 @@ KernelEntry:
 	orl $0x80010001, %ecx
 	movl %ecx, %cr0
 	
-	lea 3f, %ecx
+	lea 5f, %ecx
 	jmp *%ecx
-3:
+5:
 	movl $0, KernelBootPageDirectory + 0																				// And remove the initial pt
 	invlpg 0
 	
@@ -58,9 +73,9 @@ KernelEntry:
 	mov %ebx, (MultibootHeaderPointer)
 	
 	call KernelMain																										// Go to main kernel function
-4:
+6:
 	pause
-	jmp 4b
+	jmp 6b
 
 GDTPointerLimit:
 	.word 0																												// GDT limit storage
@@ -432,6 +447,8 @@ MultibootHeaderPointer:
 KernelBootPageDirectory:
 .skip 4096
 KernelBootPageTable1:
+.skip 4096
+KernelBootPageTable2:
 .skip 4096
 
 .align 16
