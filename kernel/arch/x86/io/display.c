@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 30 of 2018, at 10:36 BRT
-// Last edited on June 30 of 2018, at 10:40 BRT
+// Last edited on June 30 of 2018, at 11:35 BRT
 
 #include <chicago/arch/port.h>
 
@@ -100,7 +100,7 @@ UInt8 DispGetForeground(Void) {
 }
 
 Void DispSetBackground(UInt8 color) {
-	DispColor = ((color & 0xF0) << 4) | (DispGetForeground() & 0x0F);
+	DispColor = ((color & 0x0F) << 4) | (DispGetForeground() & 0x0F);
 }
 
 Void DispSetForeground(UInt8 color) {

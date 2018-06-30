@@ -1,13 +1,15 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 26 of 2018, at 22:00 BRT
-// Last edited on June 22 of 2018, at 15:39 BRT
+// Last edited on June 30 of 2018, at 11:49 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
 #include <chicago/arch/registers.h>
 
+#include <chicago/arch.h>
 #include <chicago/debug.h>
+#include <chicago/panic.h>
 
 UInt8 IDTEntries[256][8];
 
@@ -51,23 +53,23 @@ Void ISRDefaultHandler(PRegisters regs) {
 		if (regs->int_num >= 40) {
 			PortOutByte(0xA0, 0x20);
 		}
+		
 		PortOutByte(0x20, 0x20);						// OK, lets tell PIC that we "handled" this irq
-	}
-	else
-	{
+	} else {
 		if (regs->int_num < 32) {
 			if (regs->int_num == 14) {
-				UInt32 cr2;
-				Asm Volatile("mov %%cr2, %0" : "=r"(cr2));
-				DebugWriteFormated("Page Fault! Fault address is 0x%x\r\n", cr2);
-				while (1) ;
+				if ((regs->err_code & 0x01) != 0x01) {
+					ArchPanic(PANIC_MM_READWRITE_TO_NONPRESENT_AREA, regs);
+				} else if ((regs->err_code & 0x02) == 0x02) {
+					ArchPanic(PANIC_MM_WRITE_TO_READONLY_AREA, regs);
+				} else {
+					ArchPanic(PANIC_KERNEL_UNEXPECTED_ERROR, regs);
+				}
 			} else {
-				DebugWriteFormated("PANIC! %s exception\r\n", ExceptionStrings[regs->int_num]);
-				while (1) ;
+				ArchPanic(PANIC_KERNEL_UNEXPECTED_ERROR, regs);
 			}
 		} else {
-			DebugWriteFormated("PANIC! Unhandled interrupt 0x%x\r\n", regs->int_num);
-			while (1) ;
+			ArchPanic(PANIC_KERNEL_UNEXPECTED_ERROR, regs);
 		}
 	}
 }
