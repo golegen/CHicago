@@ -1,21 +1,30 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on June 29 of 2018, at 22:59 BRT
+// Last edited on June 30 of 2018, at 10:42 BRT
 
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/idt.h>
 #include <chicago/arch/multiboot.h>
 #include <chicago/arch/pmm.h>
+#include <chicago/arch/port.h>
 #include <chicago/arch/serial.h>
 #include <chicago/arch/vmm.h>
 
 #include <chicago/debug.h>
+#include <chicago/display.h>
 #include <chicago/heap.h>
 
 Void ArchInit(Void) {
 	SerialInit(COM1_PORT);																								// Init debugging (using COM1 port)
 	DebugWriteFormated("COM1 initialized\r\n");
+	
+	if (!DispPreInit()) {																								// Alloc the display buffer and map it to the temp page directory
+		DebugWriteFormated("PANIC! Couldn't init the display\r\n");														// Failed...
+		while (1) ;
+	} else {
+		DebugWriteFormated("Display initialized\r\n");
+	}
 	
 	if (MultibootHeaderMagic != 0x2BADB002) {
 		DebugWriteFormated("PANIC! We need GRUB (or any other multiboot-compilant bootloader)\r\n");
@@ -46,5 +55,11 @@ Void ArchInit(Void) {
 	
 	VMMInit();																											// Init the VMM
 	HeapInit(KernelRealEnd, 0xFFC00000);																				// Init the kernel heap (start after all the internal kernel structs and end at the start of the temp addresses)
-	DebugWriteFormated("VMM initialized\r\n");
+	
+	if (!DispInit()) {																									// Init the display buffer again, this time in the kernel page directory
+		DebugWriteFormated("PANIC! Couldn't init the display\r\n");														// Failed...
+		while (1) ;
+	} else {
+		DebugWriteFormated("VMM initialized\r\n");
+	}
 }

@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on June 29 of 2018, at 22:59 BRT
+# Last edited on June 30 of 2018, at 10:41 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -13,6 +13,7 @@ ifeq ($(ARCH),x86)
 	ARCH_OBJECTS := start.s.o
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += debug/debug.c.o
+	ARCH_OBJECTS += io/display.c.o
 	ARCH_OBJECTS += system/gdt.c.o system/idt.c.o
 	ARCH_OBJECTS += mem/pmm.c.o mem/vmm.c.o
 	
