@@ -1,11 +1,11 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 12 of 2018, at 21:15 BRT
-// Last edited on May 13 of 2018, at 11:24 BRT
+// Last edited on June 29 of 2018, at 18:01 BRT
 
 #include <chicago/arch/gdt.h>
 
-extern Void GDTLoad(UInt64 base, UInt16 limit);
+extern Void GDTLoad(UIntPtr base, UInt16 limit);
 
 UInt8 GDTEntries[5][8];
 
@@ -28,5 +28,5 @@ Void GDTInit(Void) {
 	GDTSetGate(2, 0, 0xFFFFFFFF, 0x92, 0x00);								// Kernel data
 	GDTSetGate(3, 0, 0xFFFFFFFF, 0xF8, 0x02);								// User code
 	GDTSetGate(4, 0, 0xFFFFFFFF, 0xF2, 0x00);								// User data
-	GDTLoad((UInt64)GDTEntries, 39);					// Load the new GDT
+	GDTLoad((UIntPtr)GDTEntries, 39);										// Load the new GDT
 }

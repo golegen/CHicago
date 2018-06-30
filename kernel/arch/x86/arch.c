@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on June 28 of 2018, at 19:28 BRT
+// Last edited on June 29 of 2018, at 22:59 BRT
 
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/idt.h>
@@ -11,7 +11,7 @@
 #include <chicago/arch/vmm.h>
 
 #include <chicago/debug.h>
-#include <chicago/mm.h>
+#include <chicago/heap.h>
 
 Void ArchInit(Void) {
 	SerialInit(COM1_PORT);																								// Init debugging (using COM1 port)
@@ -44,6 +44,7 @@ Void ArchInit(Void) {
 	PMMInit();																											// Init the PMM
 	DebugWriteFormated("PMM initialized\r\n");
 	
-	VMMInit();																											// Init thhe VMM
+	VMMInit();																											// Init the VMM
+	HeapInit(KernelRealEnd, 0xFFC00000);																				// Init the kernel heap (start after all the internal kernel structs and end at the start of the temp addresses)
 	DebugWriteFormated("VMM initialized\r\n");
 }

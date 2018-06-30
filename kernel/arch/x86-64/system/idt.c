@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 27 of 2018, at 10:51 BRT
-// Last edited on May 27 of 2018, at 14:10 BRT
+// Last edited on June 29 of 2018, at 18:10 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
@@ -89,7 +89,7 @@ Void IDTSetGate(UInt8 num, UInt64 base, UInt16 selector, UInt8 type) {
 }
 
 Void IDTInit(Void) {
-	for (Int i = 0; i < 256; i++) {					// Clear IDT Entries
+	for (Int i = 0; i < 256; i++) {						// Clear IDT Entries
 		for (Int j = 0; j < 16; j++) {
 			IDTEntries[i][j] = 0;
 		}

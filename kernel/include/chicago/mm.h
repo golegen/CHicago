@@ -1,14 +1,16 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 18:48 BRT
-// Last edited on June 28 of 2018, at 19:23 BRT
+// Last edited on June 29 of 2018, at 22:27 BRT
 
 #ifndef __CHICAGO_MM_H__
 #define __CHICAGO_MM_H__
 
 #include <chicago/types.h>
 
+#ifndef MM_PAGE_SIZE
 #define MM_PAGE_SIZE 0x1000
+#endif
 
 #define MM_MAP_USER 0x01
 #define MM_MAP_KERNEL 0x02
@@ -19,7 +21,7 @@
 #define MM_MAP_UDEF (MM_MAP_USER | MM_MAP_READ | MM_MAP_WRITE)
 
 #ifndef __CHICAGO_VMM__
-extern PUInt32 MmKernelDirectory;
+extern UIntPtr MmKernelDirectory;
 #endif
 
 UIntPtr MmBootAlloc(UIntPtr size, Boolean align);
@@ -30,15 +32,15 @@ UIntPtr MmGetSize(Void);
 UIntPtr MmGetUsage(Void);
 UIntPtr MmGetFree(Void);
 
-UInt32 MmGetPhysInt(PUInt32 dir, UInt32 virt);
-UInt32 MmQueryInt(PUInt32 dir, UInt32 virt);
-Boolean MmMapInt(PUInt32 dir, UInt32 virt, UInt32 phys, UInt32 flags);
-Boolean MmUnmapInt(PUInt32 dir, UInt32 virt);
-UInt32 MmGetPhys(UInt32 virt);
-UInt32 MmQuery(UInt32 virt);
-Boolean MmMap(UInt32 virt, UInt32 phys, UInt32 flags);
-Boolean MmUnmap(UInt32 virt);
-Void MmSwitchDirectory(PUInt32 dir);
+UIntPtr MmGetPhysInt(UIntPtr dir, UIntPtr virt);
+UInt32 MmQueryInt(UIntPtr dir, UIntPtr virt);
+Boolean MmMapInt(UIntPtr dir, UIntPtr virt, UIntPtr phys, UIntPtr flags);
+Boolean MmUnmapInt(UIntPtr dir, UIntPtr virt);
+UIntPtr MmGetPhys(UIntPtr virt);
+UInt32 MmQuery(UIntPtr virt);
+Boolean MmMap(UIntPtr virt, UIntPtr phys, UIntPtr flags);
+Boolean MmUnmap(UIntPtr virt);
+Void MmSwitchDirectory(UIntPtr dir);
 Void MmEnable(Void);
 Void MmDisable(Void);
 

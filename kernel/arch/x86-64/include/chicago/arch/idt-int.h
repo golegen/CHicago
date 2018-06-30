@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 27 of 2018, at 10:35 BRT
-// Last edited on May 27 of 2018, at 10:35 BRT
+// Last edited on June 29 of 2018, at 18:00 BRT
 
 #ifndef __CHICAGO_ARCH_IDT_INT_H__
 #define __CHICAGO_ARCH_IDT_INT_H__
@@ -265,6 +265,6 @@ extern Void ISRHandler253(Void);
 extern Void ISRHandler254(Void);
 extern Void ISRHandler255(Void);
 
-extern Void IDTLoad(UInt64 base, UInt16 limit);
+extern Void IDTLoad(UIntPtr base, UInt16 limit);
 
 #endif		// __CHICAGO_ARCH_IDT_INT_H__

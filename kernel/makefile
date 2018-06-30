@@ -1,14 +1,15 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on June 28 of 2018, at 19:25 BRT
+# Last edited on June 29 of 2018, at 22:59 BRT
 
 ARCH ?= x86
-PREFIX ?= i686-elf-
 VERBOSE ?= false
 DEBUG ?= false
 
 ifeq ($(ARCH),x86)
+	PREFIX ?= i686-elf-
+	
 	ARCH_OBJECTS := start.s.o
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += debug/debug.c.o
@@ -17,6 +18,8 @@ ifeq ($(ARCH),x86)
 	
 	LINKER_SCRIPT := link.ld
 else ifeq ($(ARCH),x86-64)
+	PREFIX ?= x86_64-elf-
+	
 	ARCH_OBJECTS := start32.s.o start64.s.o
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += debug/debug.c.o
@@ -27,12 +30,16 @@ else ifeq ($(ARCH),x86-64)
 	ARCH_CFLAGS := -DARCH_64 -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Wno-int-to-pointer-cast
 	ARCH_LDFLAGS := -mcmodel=large -mno-red-zone -n
 else ifeq ($(ARCH),raspi)
+	PREFIX ?= arm-none-eabi-
+	
 	ARCH_OBJECTS := start.s.o
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += debug/debug.c.o
 	
 	LINKER_SCRIPT := link.ld
 else ifeq ($(ARCH),raspi2)
+	PREFIX ?= arm-none-eabi-
+	
 	ARCH_OBJECTS := start.s.o
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += debug/debug.c.o
@@ -43,7 +50,7 @@ else
 endif
 
 OBJECTS := main.c.o
-OBJECTS += mem/pmm.c.o
+OBJECTS += mem/heap.c.o mem/pmm.c.o
 
 ARCH_OBJECTS := $(addprefix build/arch/$(ARCH)/,$(ARCH_OBJECTS))
 OBJECTS := $(addprefix build/,$(OBJECTS))

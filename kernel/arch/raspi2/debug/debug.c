@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 12 of 2018, at 00:11 BRT
-// Last edited on May 27 of 2018, at 13:55 BRT
+// Last edited on June 29 of 2018, at 17:56 BRT
 
 #include <chicago/arch/mmio.h>
 #include <chicago/arch/uart.h>
@@ -17,7 +17,7 @@ Void DebugWriteString(Const PChar data) {
 	}
 }
 
-Void DebugWriteInteger(UInt32 data, UInt8 base) {
+Void DebugWriteInteger(UIntPtr data, UInt8 base) {
 	if (data == 0) {
 		DebugWriteCharacter('0');
 		return;
@@ -51,11 +51,11 @@ Void DebugWriteFormated(Const PChar data, ...) {
 				break;
 			}
 			case 'd': {							// Decimal Number
-				DebugWriteInteger((UInt32)VariadicArg(va, UInt32), 10);
+				DebugWriteInteger((UIntPtr)VariadicArg(va, UIntPtr), 10);
 				break;
 			}
 			case 'x': {							// Hexadecimal Number
-				DebugWriteInteger((UInt32)VariadicArg(va, UInt32), 16);
+				DebugWriteInteger((UIntPtr)VariadicArg(va, UIntPtr), 16);
 				break;
 			}
 			default: {							// None of the others...

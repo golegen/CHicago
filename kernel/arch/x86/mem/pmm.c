@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 31 of 2018, at 18:45 BRT
-// Last edited on June 28 of 2018, at 19:25 BRT
+// Last edited on June 29 of 2018, at 17:58 BRT
 
 #define __CHICAGO_PMM__
 
@@ -11,7 +11,7 @@
 #include <chicago/mm.h>
 
 UIntPtr MmBootAllocPointer = (UIntPtr)&KernelEnd;
-UInt32 KernelRealEnd = 0;
+UIntPtr KernelRealEnd = 0;
 
 UIntPtr MmBootAlloc(UIntPtr size, Boolean align) {
 	if (MmBootAllocPointer == 0) {																						// Disabled?
@@ -25,12 +25,12 @@ UIntPtr MmBootAlloc(UIntPtr size, Boolean align) {
 	return MmBootAllocPointer - size;																					// Return the old one
 }
 
-UInt32 PMMCountMemory(Void) {
+UIntPtr PMMCountMemory(Void) {
 	PMultibootMemoryMap mmap = (PMultibootMemoryMap)MultibootHeaderPointer->mmap_address;								// Here we're going to use the memory map for getting the memory size because mem_lower and mem_upper are obsolete
 	UInt32 mmapi = 0;
 	UInt32 memsize = 0;
 	
-	while ((UInt32)mmap < MultibootHeaderPointer->mmap_address + MultibootHeaderPointer->mmap_length) {
+	while ((UIntPtr)mmap < MultibootHeaderPointer->mmap_address + MultibootHeaderPointer->mmap_length) {
 		if (mmap->type > 4) {																							// Valid?
 			mmap->type = 2;																								// Nope, so let's set as reserved
 		} else if ((mmapi > 0) && (mmap->base_low == 0)) {																// End (before expected)?
