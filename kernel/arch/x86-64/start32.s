@@ -1,14 +1,20 @@
 // File author is Ítalo Lima Marconato Matias
 //
-// Created on May 11 of 2018, at 13:20 BRT
-// Last edited on May 12 of 2018, at 09:03 BRT
+// Created on July 11 of 2018, at 01:40 BRT
+// Last edited on July 12 of 2018, at 12:47 BRT
 
 .section .multiboot
 
-.align 4										// Multiboot header
+.align 4
+KernelMultibootHeader:													// Multiboot header
 .long 0x1BADB002
-.long (1 << 0) | (1 << 1)
-.long -(0x1BADB002 + ((1 << 0) | (1 << 1)))
+.long (1 << 0) | (1 << 1) | (1 << 16)
+.long -(0x1BADB002 + ((1 << 0) | (1 << 1) | (1 << 16)))
+.long (KernelMultibootHeader - 0xFFFFFFFF80000000)
+.long (KernelStart - 0xFFFFFFFF80000000)
+.long (KernelBssStart - 0xFFFFFFFF80000000)
+.long (KernelEnd - 0xFFFFFFFF80000000)
+.long (KernelEntry32 - 0xFFFFFFFF80000000)
 
 .section .text
 
@@ -17,94 +23,37 @@
 .extern KernelEntry
 .global KernelEntry32
 KernelEntry32:
-	cli											// Clear interrupts
+	cli																	// Clear interrupts
 	
-	movl $kstack, %esp							// Setup kernel stack
-	
-	call KernelEntry32.CheckCPUID				// Check for CPUID support
-	call KernelEntry32.CheckLongMode			// Check for x86-64 long mode support
-	
-	call KernelEntry32.SetupPageTables			// Setup (REQUIRED) inital x86-64 paging
-	call KernelEntry32.EnablePaging
-	
-	lgdt (KernelEntry32.GDT.Pointer)			// Load x86-64 gdt
-	
-	ljmp $0x08, $KernelEntry
-KernelEntry32.Loop:
-	pause
-	jmp KernelEntry32.Loop
-KernelEntry32.Error:
-	movl $0x4F524F45, (0xB8000)
-    movl $0x4F3A4F52, (0xB8004)
-    movl $0x4F204F20, (0xB8008)
-    movb %al, (0xB800A)
-    jmp KernelEntry32.Loop
-KernelEntry32.CheckCPUID:
-	pushfl
+	pushfl																// Check for CPUID support
 	popl %eax
-	
 	movl %eax, %ecx
 	xorl $1 << 21, %eax
-	
 	pushl %eax
 	popfl
-	
 	pushfl
 	popl %eax
-	
 	pushl %eax
 	popfl
-	
 	cmpl %ecx, %eax
-	je KernelEntry32.CheckCPUID.NoCPUID
+	je 2f
 	
-	ret
-KernelEntry32.CheckCPUID.NoCPUID:
-	movb $48, %al
-	jmp KernelEntry32.Error
-KernelEntry32.CheckLongMode:
-	movl $0x80000000, %eax
+	movl $0x80000000, %eax												// Check for x86-64 long mode support
 	cpuid
 	cmpl $0x80000001, %eax
-	jb KernelEntry32.CheckLongMode.NoLongMode
+	jb 3f
 	
 	movl $0x80000001, %eax
 	cpuid
 	testl $1 << 29, %edx
-	jz KernelEntry32.CheckLongMode.NoLongMode
-	
-	ret
-KernelEntry32.CheckLongMode.NoLongMode:
-	movb $49, %al
-	jmp KernelEntry32.Error
-KernelEntry32.SetupPageTables:
-	movl $KernelEntry32.P3Table, %eax
-	orl $0b11, %eax
-	movl %eax, (KernelEntry32.P4Table)
-	
-	mov $KernelEntry32.P2Table, %eax
-	orl $0b11, %eax
-	movl %eax, (KernelEntry32.P3Table)
-	
-	movl $0, %ecx
-KernelEntry32.SetupPageTables.MapP2Table:
-	movl $0x200000, %eax
-	mull %ecx
-	orl $0b10000011, %eax
-	movl %eax, KernelEntry32.P2Table(,%ecx, 8)
-	
-	incl %ecx
-	cmpl $512, %ecx
-	jne KernelEntry32.SetupPageTables.MapP2Table
-	
-	ret
-KernelEntry32.EnablePaging:
-	movl $KernelEntry32.P4Table, %eax
-	movl %eax, %cr3
+	jz 3f
 	
 	movl %cr4, %eax
 	orl $1 << 5, %eax
 	movl %eax, %cr4
+	
+	movl $(KernelBootP4Table - 0xFFFFFFFF80000000), %eax				// Setup (REQUIRED) initial x86-64 paging and enable IA-32e mode
+	movl %eax, %cr3
 	
 	movl $0xC0000080, %ecx
 	rdmsr
@@ -115,31 +64,82 @@ KernelEntry32.EnablePaging:
 	orl $1 << 31, %eax
 	movl %eax, %cr0
 	
-	ret
+	lgdt (KernelBootGDTPointer - 0xFFFFFFFF80000000)					// Load x86-64 gdt
+	
+	ljmp $0x08, $(4f - 0xFFFFFFFF80000000)								// Long jump to get out of the compatibility mode
+0:
+	pause
+	jmp 0b
+1:
+	lodsb
+	testb %al, %al
+	jz 0b
+	stosw
+	jmp 1b
+2:
+	movb $0x07, %ah
+	movl $0xB8000, %edi
+	movl $(KernelBootNoCPUID - 0xFFFFFFFF80000000), %esi
+	jmp 1b
+3:
+	movb $0x07, %ah
+	movl $0xB8000, %edi
+	movl $(KernelBootNo64 - 0xFFFFFFFF80000000), %esi
+	jmp 1b
+.code64
+4:
+	movw $0, %ax														// Setup segments
+	movw %ax, %ss
+	movw %ax, %ds
+	movw %ax, %es
+	movw %ax, %fs
+	movw %ax, %gs
+	
+	movabsq $5f, %rax													// Force non-relative jump to enter in the higher half kernel!
+	jmp *%rax
+5:
+	movq $0, KernelBootP4Table + 0										// Unmap the lower half kernel
+	invlpg 0
+	
+	movq $KernelStack, %rsp												// Setup kernel stack
+	
+	jmp KernelEntry														// Now the KernelEntry (in start64.s) should handle everything!
+.code32
 
 .section .rodata
 
-KernelEntry32.GDT:
+KernelBootNoCPUID: .string "PANIC! This CPU doesn't support CPUID instruction"
+KernelBootNo64: .string "PANIC! This CPU doesn't support the 64-bit mode"
+
+KernelBootGDT:
 	.quad 0x0000000000000000
 	.quad 0x0020980000000000
 	.quad 0x0000900000000000
-KernelEntry32.GDT.Pointer:
-	.word KernelEntry32.GDT.Pointer - KernelEntry32.GDT - 1
-	.quad KernelEntry32.GDT
-	
-.section .bss
+KernelBootGDTPointer:
+	.word KernelBootGDTPointer - KernelBootGDT - 1
+	.quad KernelBootGDT - 0xFFFFFFFF80000000
 
 .align 4096
 
-KernelEntry32.P4Table:
-.skip 4096
-KernelEntry32.P3Table:
-.skip 4096
-KernelEntry32.P2Table:
-.skip 4096
+KernelBootP4Table:
+	.quad KernelBootP3Table - 0xFFFFFFFF80000000 + 3
+	.fill 509, 8, 0
+	.quad KernelBootP4Table - 0xFFFFFFFF80000000 + 3
+	.quad KernelBootP3Table - 0xFFFFFFFF80000000 + 3
+KernelBootP3Table:
+	.quad KernelBootP2Table - 0xFFFFFFFF80000000 + 3
+	.fill 509, 8, 0
+	.quad KernelBootP2Table - 0xFFFFFFFF80000000 + 3
+	.fill 1, 8, 0
+KernelBootP2Table:
+	.quad 0x0000000000000083
+	.quad 0x0000000000200083
+	.fill 510, 8, 0
+
+.section .bss
 
 .align 16
 
 .skip 8192										// 8 KiB for kernel stack
-.global kstack
-kstack:
+.global KernelStack
+KernelStack:

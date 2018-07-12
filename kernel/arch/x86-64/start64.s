@@ -1,22 +1,13 @@
 // File author is Ítalo Lima Marconato Matias
 //
-// Created on May 11 of 2018, at 13:20 BRT
-// Last edited on May 27 of 2018, at 11:48 BRT
+// Created on July 11 of 2018, at 01:41 BRT
+// Last edited on July 12 of 2018, at 12:23 BRT
 
 .section .text
 
 .extern KernelMain
 .global KernelEntry
 KernelEntry:
-	cli											// Clear interrupts
-	
-	movw $0, %ax								// Setup segments
-	movw %ax, %ss
-	movw %ax, %ds
-	movw %ax, %es
-	movw %ax, %fs
-	movw %ax, %gs
-	
 	call KernelMain								// Go to main kernel function
 .Loop:
 	pause

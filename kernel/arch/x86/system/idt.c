@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 26 of 2018, at 22:00 BRT
-// Last edited on June 30 of 2018, at 11:49 BRT
+// Last edited on July 10 of 2018, at 23:45 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
@@ -9,7 +9,6 @@
 
 #include <chicago/arch.h>
 #include <chicago/debug.h>
-#include <chicago/panic.h>
 
 UInt8 IDTEntries[256][8];
 
@@ -58,18 +57,17 @@ Void ISRDefaultHandler(PRegisters regs) {
 	} else {
 		if (regs->int_num < 32) {
 			if (regs->int_num == 14) {
-				if ((regs->err_code & 0x01) != 0x01) {
-					ArchPanic(PANIC_MM_READWRITE_TO_NONPRESENT_AREA, regs);
-				} else if ((regs->err_code & 0x02) == 0x02) {
-					ArchPanic(PANIC_MM_WRITE_TO_READONLY_AREA, regs);
-				} else {
-					ArchPanic(PANIC_KERNEL_UNEXPECTED_ERROR, regs);
-				}
+				UInt32 cr2;
+				Asm Volatile("mov %%cr2, %0" : "=r"(cr2));
+				DbgWriteFormated("PANIC! Page Fault at address 0x%x!\r\n", cr2);
+				while (1) ;
 			} else {
-				ArchPanic(PANIC_KERNEL_UNEXPECTED_ERROR, regs);
+				DbgWriteFormated("PANIC! %s exception\r\n", ExceptionStrings[regs->int_num]);
+				while (1) ;
 			}
 		} else {
-			ArchPanic(PANIC_KERNEL_UNEXPECTED_ERROR, regs);
+			DbgWriteFormated("PANIC! Unhandled interrupt 0x%x\r\n", regs->int_num);
+			while (1) ;
 		}
 	}
 }

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 27 of 2018, at 10:51 BRT
-// Last edited on June 29 of 2018, at 18:10 BRT
+// Last edited on June 29 of 2018, at 17:08 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
@@ -56,10 +56,10 @@ Void ISRDefaultHandler(PRegisters regs) {
 	else
 	{
 		if (regs->int_num < 32) {
-			DebugWriteFormated("PANIC! %s exception\n", ExceptionStrings[regs->int_num]);
+			DbgWriteFormated("PANIC! %s exception\n", ExceptionStrings[regs->int_num]);
 			while (1) ;
 		} else {
-			DebugWriteFormated("PANIC! Unhandled interrupt 0x%x\n", regs->int_num);
+			DbgWriteFormated("PANIC! Unhandled interrupt 0x%x\n", regs->int_num);
 			while (1) ;
 		}
 	}

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on June 30 of 2018, at 11:55 BRT
+// Last edited on July 10 of 2018, at 23:42 BRT
 
 .section .multiboot
 
@@ -429,52 +429,6 @@ ISRCommonStub:
 	
 	add $8, %esp
 	iret
-
-PanicESPSave:
-	.int 0
-PanicEIPSave:
-	.int 0
-PanicErrSave:
-	.int 0
-
-.extern ArchPanic
-.global Panic
-Panic:
-	cli
-	
-	mov %esp, (PanicESPSave)
-	pop (PanicEIPSave)
-	pop (PanicErrSave)
-	
-	push %ss
-	push (PanicESPSave)
-	pushf
-	push %cs
-	push (PanicEIPSave)
-	
-	push $0
-	push $0
-	
-	push %eax
-	push %ecx
-	push %edx
-	push %ebx
-	push %ebp
-	push %esi
-	push %edi
-	
-	push %ds
-	push %es
-	push %fs
-	push %gs
-	
-	push %esp
-	push (PanicErrSave)
-	
-	call ArchPanic
-1:
-	pause
-	jmp 1b
 
 .section .data
 

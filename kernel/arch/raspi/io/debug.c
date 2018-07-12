@@ -1,25 +1,25 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 12 of 2018, at 00:10 BRT
-// Last edited on June 29 of 2018, at 17:56 BRT
+// Last edited on June 30 of 2018, at 16:46 BRT
 
 #include <chicago/arch/mmio.h>
 #include <chicago/arch/uart.h>
 
-Void DebugWriteCharacter(Char c) {
+Void DbgWriteCharacter(Char c) {
 	while (MMIORead(0x20201018) & (1 << 5)) ;
 	MMIOWrite(0x20201000, c);
 }
 
-Void DebugWriteString(Const PChar data) {
+Void DbgWriteString(Const PChar data) {
 	for (UInt32 i = 0; data[i] != '\0'; i++) {
-		DebugWriteCharacter(data[i]);
+		DbgWriteCharacter(data[i]);
 	}
 }
 
-Void DebugWriteInteger(UIntPtr data, UInt8 base) {
+Void DbgWriteInteger(UIntPtr data, UInt8 base) {
 	if (data == 0) {
-		DebugWriteCharacter('0');
+		DbgWriteCharacter('0');
 		return;
 	}
 	
@@ -30,36 +30,36 @@ Void DebugWriteInteger(UIntPtr data, UInt8 base) {
 		buf[i] = "0123456789ABCDEF"[data % base];
 	}
 	
-	DebugWriteString(&buf[i + 1]);
+	DbgWriteString(&buf[i + 1]);
 }
 
-Void DebugWriteFormated(Const PChar data, ...) {
+Void DbgWriteFormated(Const PChar data, ...) {
 	VariadicList va;
-	VariadicStart(va, data);					// Let's start our va list with the arguments provided by the user (if any)
+	VariadicStart(va, data);									// Let's start our va list with the arguments provided by the user (if any)
 	
 	for (UInt32 i = 0; data[i] != '\0'; i++) {
-		if (data[i] != '%') {					// It's an % (integer, string, character or other)?
-			DebugWriteCharacter(data[i]);		// Nope
+		if (data[i] != '%') {									// It's an % (integer, string, character or other)?
+			DbgWriteCharacter(data[i]);							// Nope
 		} else {
-			switch (data[++i]) {				// Yes! So let's parse it!
-			case 's': {							// String
-				DebugWriteString((PChar)VariadicArg(va, PChar));
+			switch (data[++i]) {								// Yes! So let's parse it!
+			case 's': {											// String
+				DbgWriteString((PChar)VariadicArg(va, PChar));
 				break;
 			}
-			case 'c': {							// Character
-				DebugWriteCharacter((Char)VariadicArg(va, Int));
+			case 'c': {											// Character
+				DbgWriteCharacter((Char)VariadicArg(va, Int));
 				break;
 			}
-			case 'd': {							// Decimal Number
-				DebugWriteInteger((UIntPtr)VariadicArg(va, UIntPtr), 10);
+			case 'd': {											// Decimal Number
+				DbgWriteInteger((UIntPtr)VariadicArg(va, UIntPtr), 10);
 				break;
 			}
-			case 'x': {							// Hexadecimal Number
-				DebugWriteInteger((UIntPtr)VariadicArg(va, UIntPtr), 16);
+			case 'x': {											// Hexadecimal Number
+				DbgWriteInteger((UIntPtr)VariadicArg(va, UIntPtr), 16);
 				break;
 			}
-			default: {							// None of the others...
-				DebugWriteCharacter(data[i]);
+			default: {											// None of the others...
+				DbgWriteCharacter(data[i]);
 				break;
 			}
 			}

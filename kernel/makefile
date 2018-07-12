@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on June 30 of 2018, at 10:41 BRT
+# Last edited on July 11 of 2018, at 01:42 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -12,8 +12,7 @@ ifeq ($(ARCH),x86)
 	
 	ARCH_OBJECTS := start.s.o
 	ARCH_OBJECTS += arch.c.o
-	ARCH_OBJECTS += debug/debug.c.o
-	ARCH_OBJECTS += io/display.c.o
+	ARCH_OBJECTS += io/debug.c.o
 	ARCH_OBJECTS += system/gdt.c.o system/idt.c.o
 	ARCH_OBJECTS += mem/pmm.c.o mem/vmm.c.o
 	
@@ -23,7 +22,7 @@ else ifeq ($(ARCH),x86-64)
 	
 	ARCH_OBJECTS := start32.s.o start64.s.o
 	ARCH_OBJECTS += arch.c.o
-	ARCH_OBJECTS += debug/debug.c.o
+	ARCH_OBJECTS += io/debug.c.o
 	ARCH_OBJECTS += system/gdt.c.o system/idt.c.o
 	
 	LINKER_SCRIPT := link.ld
@@ -35,7 +34,7 @@ else ifeq ($(ARCH),raspi)
 	
 	ARCH_OBJECTS := start.s.o
 	ARCH_OBJECTS += arch.c.o
-	ARCH_OBJECTS += debug/debug.c.o
+	ARCH_OBJECTS += io/debug.c.o
 	
 	LINKER_SCRIPT := link.ld
 else ifeq ($(ARCH),raspi2)
@@ -43,7 +42,7 @@ else ifeq ($(ARCH),raspi2)
 	
 	ARCH_OBJECTS := start.s.o
 	ARCH_OBJECTS += arch.c.o
-	ARCH_OBJECTS += debug/debug.c.o
+	ARCH_OBJECTS += io/debug.c.o
 	
 	LINKER_SCRIPT := link.ld
 else
