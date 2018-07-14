@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on July 13 of 2018, at 00:20 BRT
+// Last edited on July 14 of 2018, at 00:20 BRT
 
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/idt.h>

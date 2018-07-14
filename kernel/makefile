@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on July 13 of 2018, at 01:26 BRT
+# Last edited on July 14 of 2018, at 00:28 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -28,7 +28,7 @@ else ifeq ($(ARCH),x86-64)
 	
 	LINKER_SCRIPT := link.ld
 	
-	ARCH_CFLAGS := -DARCH_64 -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Wno-int-to-pointer-cast
+	ARCH_CFLAGS := -DARCH_64 -DMM_PAGE_SIZE=0x200000 -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Wno-int-to-pointer-cast
 	ARCH_LDFLAGS := -mcmodel=large -mno-red-zone -n
 else ifeq ($(ARCH),raspi)
 	PREFIX ?= arm-none-eabi-
