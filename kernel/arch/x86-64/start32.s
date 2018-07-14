@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 11 of 2018, at 01:40 BRT
-// Last edited on July 12 of 2018, at 12:47 BRT
+// Last edited on July 12 of 2018, at 23:49 BRT
 
 .section .multiboot
 
@@ -24,6 +24,9 @@ KernelMultibootHeader:													// Multiboot header
 .global KernelEntry32
 KernelEntry32:
 	cli																	// Clear interrupts
+	
+	movl %eax, (MultibootHeaderMagic - 0xFFFFFFFF80000000)				// Save the multiboot magic and pointer
+	movl %ebx, (MultibootHeaderPointer32 - 0xFFFFFFFF80000000)
 	
 	pushfl																// Check for CPUID support
 	popl %eax
@@ -103,8 +106,22 @@ KernelEntry32:
 	
 	movq $KernelStack, %rsp												// Setup kernel stack
 	
+	addq $0xFFFFFFFF80000000, (MultibootHeaderPointer32)				// Fix the multiboot header pointer (only the main header address, we're going to fix the entries in the C code)
+	
 	jmp KernelEntry														// Now the KernelEntry (in start64.s) should handle everything!
 .code32
+
+.section .data
+
+.global MultibootHeaderMagic
+.global MultibootHeaderPointer
+.global MultibootHeaderPointer32
+MultibootHeaderMagic:
+	.quad 0x0000000000000000
+MultibootHeaderPointer:
+	.quad 0x0000000000000000
+MultibootHeaderPointer32:
+	.quad 0x0000000000000000
 
 .section .rodata
 
@@ -123,8 +140,10 @@ KernelBootGDTPointer:
 
 KernelBootP4Table:
 	.quad KernelBootP3Table - 0xFFFFFFFF80000000 + 3
-	.fill 509, 8, 0
+	.fill 507, 8, 0
 	.quad KernelBootP4Table - 0xFFFFFFFF80000000 + 3
+	.quad 0
+	.quad 0
 	.quad KernelBootP3Table - 0xFFFFFFFF80000000 + 3
 KernelBootP3Table:
 	.quad KernelBootP2Table - 0xFFFFFFFF80000000 + 3

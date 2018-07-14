@@ -1,12 +1,13 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on July 10 of 2018, at 23:43 BRT
+// Last edited on July 13 of 2018, at 00:20 BRT
 
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/idt.h>
 #include <chicago/arch/multiboot.h>
 #include <chicago/arch/pmm.h>
+#include <chicago/arch/registers.h>
 #include <chicago/arch/serial.h>
 #include <chicago/arch/vmm.h>
 
@@ -40,10 +41,9 @@ Void ArchInit(Void) {
 	IDTInit();																											// Init the IDT
 	DbgWriteFormated("IDT initialized\r\n");
 	
-	VMMPreInit();																										// Alloc the VMM structs
 	PMMInit();																											// Init the PMM
 	DbgWriteFormated("PMM initialized\r\n");
 	
-	VMMInit();																											// Init the VMM
 	HeapInit(KernelRealEnd, 0xFFC00000);																				// Init the kernel heap (start after all the internal kernel structs and end at the start of the temp addresses)
+	DbgWriteFormated("VMM initialized\r\n");
 }

@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on July 11 of 2018, at 01:42 BRT
+# Last edited on July 13 of 2018, at 01:26 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -24,6 +24,7 @@ else ifeq ($(ARCH),x86-64)
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += io/debug.c.o
 	ARCH_OBJECTS += system/gdt.c.o system/idt.c.o
+	ARCH_OBJECTS += mem/pmm.c.o
 	
 	LINKER_SCRIPT := link.ld
 	
@@ -50,7 +51,7 @@ else
 endif
 
 OBJECTS := main.c.o
-OBJECTS += mem/heap.c.o mem/pmm.c.o
+OBJECTS += mem/alloc.c.o mem/heap.c.o mem/pmm.c.o
 
 ARCH_OBJECTS := $(addprefix build/arch/$(ARCH)/,$(ARCH_OBJECTS))
 OBJECTS := $(addprefix build/,$(OBJECTS))

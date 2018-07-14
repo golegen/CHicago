@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 19:26 BRT
-// Last edited on June 29 of 2018, at 17:57 BRT
+// Last edited on July 13 of 2018, at 18:51 BRT
 
 #ifndef __CHICAGO_ARCH_VMM_H__
 #define __CHICAGO_ARCH_VMM_H__
@@ -17,8 +17,10 @@
 #define MmGetPTEInt(pt, i) ((PUInt32)(pt))[(((i) & 0xFFFFF000) >> 12) & 0x3FFF]
 #define MmSetPTEInt(pt, i, p, f) ((PUInt32)(pt))[(((i) & 0xFFFFF000) >> 12) & 0x3FFF] = ((p) & 0xFFFFF000) | ((f) & 0xFFF)
 
-Void VMMPreInit(Void);
-Void VMMInit(Void);
+#ifndef __CHICAGO_VMM__
+extern PUInt32 MmCurrentDirectory;
+extern PUInt32 MmCurrentTables;
+extern PUInt32 MmTempAddresses;
+#endif
 
 #endif		// __CHICAGO_ARCH_VMM_H__
-

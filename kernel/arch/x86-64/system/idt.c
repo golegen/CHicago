@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 27 of 2018, at 10:51 BRT
-// Last edited on June 29 of 2018, at 17:08 BRT
+// Last edited on July 12 of 2018, at 21:35 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
@@ -56,8 +56,15 @@ Void ISRDefaultHandler(PRegisters regs) {
 	else
 	{
 		if (regs->int_num < 32) {
-			DbgWriteFormated("PANIC! %s exception\n", ExceptionStrings[regs->int_num]);
-			while (1) ;
+			if (regs->int_num == 14) {
+				UInt64 cr2;
+				Asm Volatile("mov %%cr2, %0" : "=r"(cr2));
+				DbgWriteFormated("PANIC! Page Fault at address 0x%x!\r\n", cr2);
+				while (1) ;
+			} else {
+				DbgWriteFormated("PANIC! %s exception\r\n", ExceptionStrings[regs->int_num]);
+				while (1) ;
+			}
 		} else {
 			DbgWriteFormated("PANIC! Unhandled interrupt 0x%x\n", regs->int_num);
 			while (1) ;

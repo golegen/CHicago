@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 29 of 2018, at 22:30 BRT
-// Last edited on June 29 of 2018, at 22:57 BRT
+// Last edited on July 13 of 2018, at 12:42 BRT
 
 #include <chicago/mm.h>
 
@@ -33,11 +33,11 @@ Boolean HeapIncrement(UIntPtr amount) {
 	UIntPtr old = HeapCurrentAligned;
 	
 	for (; HeapCurrentAligned < new; HeapCurrentAligned += MM_PAGE_SIZE) {
-		UIntPtr phys = MmAllocPage();														// Allocate one new page
+		UIntPtr phys = MmReferencePage(0);													// Allocate one new page
 		
 		if (phys == 0) {																	// Failed?
 			for (UIntPtr i = old; i < HeapCurrentAligned; i += MM_PAGE_SIZE) {				// Yes, undo everything
-				MmFreePage(MmGetPhys(i));
+				MmDereferencePage(MmGetPhys(i));
 				MmUnmap(i);
 			}
 			
@@ -47,10 +47,10 @@ Boolean HeapIncrement(UIntPtr amount) {
 		}
 		
 		if (!MmMap(HeapCurrentAligned, phys, MM_MAP_KDEF)) {								// Now try to map it
-			MmFreePage(phys);																// Failed, so undo everything
+			MmDereferencePage(phys);														// Failed, so undo everything
 			
 			for (UIntPtr i = old; i < HeapCurrentAligned; i += MM_PAGE_SIZE) {
-				MmFreePage(MmGetPhys(i));
+				MmDereferencePage(MmGetPhys(i));
 				MmUnmap(i);
 			}
 			
@@ -77,7 +77,7 @@ Boolean HeapDecrement(UIntPtr amount) {
 	while ((HeapCurrentAligned - MM_PAGE_SIZE) > HeapCurrent) {								// And the aligned one
 		HeapCurrentAligned -= MM_PAGE_SIZE;
 		
-		MmFreePage(MmGetPhys(HeapCurrentAligned));											// Free the physical page
+		MmDereferencePage(MmGetPhys(HeapCurrentAligned));									// Dereference the physical page
 		MmUnmap(HeapCurrentAligned);														// And unmap
 	}
 	

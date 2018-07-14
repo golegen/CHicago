@@ -1,6 +1,6 @@
 // File author is Ítalo Lima Marconato Matias
 //
-// Created on May 31 of 2018, at 18:45 BRT
+// Created on July 12 of 2018, at 21:18 BRT
 // Last edited on July 13 of 2018, at 12:37 BRT
 
 #define __CHICAGO_PMM__
@@ -27,17 +27,17 @@ UIntPtr MmBootAlloc(UIntPtr size, Boolean align) {
 
 UIntPtr PMMCountMemory(Void) {
 	PMultibootMemoryMap mmap = (PMultibootMemoryMap)MultibootHeaderPointer->mmap_address;								// Here we're going to use the memory map for getting the memory size because mem_lower and mem_upper are obsolete
+	UIntPtr memsize = 0;
 	UInt32 mmapi = 0;
-	UInt32 memsize = 0;
 	
 	while ((UIntPtr)mmap < MultibootHeaderPointer->mmap_address + MultibootHeaderPointer->mmap_length) {
 		if (mmap->type > 4) {																							// Valid?
 			mmap->type = 2;																								// Nope, so let's set as reserved
-		} else if ((mmapi > 0) && (mmap->base_low == 0)) {																// End (before expected)?
+		} else if ((mmapi > 0) && (mmap->base == 0)) {																	// End (before expected)?
 			break;
 		} else {
 			if (mmap->type == 1) {																						// Add to memsize?
-				memsize += mmap->length_low;																			// Yes
+				memsize += mmap->length;																				// Yes
 			}
 		}
 		
@@ -62,18 +62,18 @@ Void PMMInit(Void) {
 	
 	PMultibootMemoryMap mmap = (PMultibootMemoryMap)MultibootHeaderPointer->mmap_address;
 	UIntPtr mmapi = 0;
-	UIntPtr kstart = ((UIntPtr)(&KernelStart)) - 0xC0000000;
-	UIntPtr kend = KernelRealEnd - 0xC0000000;
+	UIntPtr kstart = ((UIntPtr)(&KernelStart)) - 0xFFFFFFFF80000000;
+	UIntPtr kend = KernelRealEnd - 0xFFFFFFFF80000000;
 	
 	while ((UIntPtr)mmap < MultibootHeaderPointer->mmap_address + MultibootHeaderPointer->mmap_length) {
 		if (mmap->type > 4) {																							// Valid?
 			mmap->type = 2;																								// Nope, so let's set as reserved
-		} else if ((mmapi > 0) && (mmap->base_low == 0)) {																// End (before expected)?
+		} else if ((mmapi > 0) && (mmap->base == 0)) {																	// End (before expected)?
 			break;
 		} else {
 			if (mmap->type == 1) {																						// Avaliable for use?
-				for (UIntPtr i = 0; i < mmap->length_low; i += MM_PAGE_SIZE) {											// YES!
-					UIntPtr addr = mmap->base_low + i;
+				for (UIntPtr i = 0; i < mmap->length; i += MM_PAGE_SIZE) {												// YES!
+					UIntPtr addr = mmap->base + i;
 					
 					if ((addr != 0) && (!((addr >= kstart) && (addr <= kend)))) {										// Just check if the addr isn't 0 nor it's the kernel physical address
 						MmFreePage(addr);																				// Everything is ok, SO FREE IT!

@@ -1,14 +1,16 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 26 of 2018, at 22:00 BRT
-// Last edited on July 10 of 2018, at 23:45 BRT
+// Last edited on July 13 of 2018, at 23:49 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
 #include <chicago/arch/registers.h>
+#include <chicago/arch/vmm.h>
 
 #include <chicago/arch.h>
 #include <chicago/debug.h>
+#include <chicago/mm.h>
 
 UInt8 IDTEntries[256][8];
 
@@ -57,10 +59,56 @@ Void ISRDefaultHandler(PRegisters regs) {
 	} else {
 		if (regs->int_num < 32) {
 			if (regs->int_num == 14) {
-				UInt32 cr2;
-				Asm Volatile("mov %%cr2, %0" : "=r"(cr2));
-				DbgWriteFormated("PANIC! Page Fault at address 0x%x!\r\n", cr2);
-				while (1) ;
+				UInt32 faddr;
+				
+				Asm Volatile("mov %%cr2, %0" : "=r"(faddr));
+				
+				if ((MmGetPDE(MmCurrentDirectory, faddr) & 0x01) != 0x01) {
+					DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);
+					while (1) ;
+				} else if ((MmGetPTE(MmCurrentTables, faddr) & 0x01) != 0x01) {
+					DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);
+					while (1) ;
+				} else if ((MmGetPTE(MmCurrentTables, faddr) & 0x200) != 0x200) {
+					DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);
+					while (1) ;
+				}
+				
+				UInt32 oldp = MmGetPTE(MmCurrentTables, faddr) & 0xFFFFF000;
+				UInt32 oldf = MmGetPTE(MmCurrentTables, faddr) & 0xFFF;
+				
+				if (MmGetReferences(oldp) == 1) {
+					MmSetPTE(MmCurrentTables, faddr, oldp, oldf | 2);
+					Asm Volatile("invlpg (%0)" :: "b"(faddr));
+					return;
+				}
+				
+				UIntPtr newp = MmReferencePage(0);
+				
+				if (newp == 0) {
+					DbgWriteFormated("PANIC! Couldn't alloc page for CoW\r\n", faddr);
+					while (1) ;
+				}
+				
+				MmSetPTE(MmCurrentTables, faddr, oldp, oldf | 2);
+				Asm Volatile("invlpg (%0)" :: "b"(faddr));
+				
+				PUIntPtr tmp = (PUIntPtr)MmMapTemp(newp, MM_MAP_KDEF);
+				
+				if (tmp == Null) {
+					MmSetPTE(MmCurrentTables, faddr, oldp, oldf);
+					Asm Volatile("invlpg (%0)" :: "b"(faddr));
+					DbgWriteFormated("PANIC! Couldn't map temp page for CoW\r\n", faddr);
+					while (1) ;
+				}
+				
+				for (UIntPtr i = 0; i < MM_PAGE_SIZE / sizeof(UIntPtr); i++) {
+					tmp[i] = ((PUIntPtr)faddr)[i];
+				}
+				
+				MmSetPTE(MmCurrentTables, faddr, newp, oldf | 2);
+				Asm Volatile("invlpg (%0)" :: "b"(faddr));
+				MmDereferencePage(oldp);
 			} else {
 				DbgWriteFormated("PANIC! %s exception\r\n", ExceptionStrings[regs->int_num]);
 				while (1) ;
