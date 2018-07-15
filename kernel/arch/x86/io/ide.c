@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 23:40 BRT
-// Last edited on July 15 of 2018, at 01:46 BRT
+// Last edited on July 15 of 2018, at 13:15 BRT
 
 #include <chicago/arch/ide.h>
 #include <chicago/arch/idt.h>
@@ -398,7 +398,7 @@ Void IDEInit(Void) {
 					name = (PChar)MemAllocate(7);																// Yes, so the name will be CdRomX, where X is the "cdrom number"
 					
 					if (name == Null) {																			// Failed?
-						DbgWriteFormated("[x86] Failed to add CdRom%d\r\n", cdc++);								// Yes...
+						DbgWriteFormated("[x86] Failed to add CdRom%d device\r\n", cdc++);						// Yes...
 						goto next;
 					}
 					
@@ -411,7 +411,7 @@ Void IDEInit(Void) {
 					name = (PChar)MemAllocate(10);																// Yes, so the name will be HardDiskX, where X is the "harddisk number"
 					
 					if (name == Null) {																			// Failed?
-						DbgWriteFormated("[x86] Failed to add HardDisk%d\r\n", hdc++);							// Yes...
+						DbgWriteFormated("[x86] Failed to add HardDisk%d device\r\n", hdc++);					// Yes...
 						goto next;
 					}
 					
@@ -423,7 +423,7 @@ Void IDEInit(Void) {
 				}
 				
 				if (!FsAddDevice(name, (PVoid)((i << 8) | j), IDEDeviceRead, IDEDeviceWrite)) {					// At end try to add us to the device list!
-					DbgWriteFormated("[x86] Failed to add %s\r\n", name);
+					DbgWriteFormated("[x86] Failed to add %s device\r\n", name);
 					MemFree((UIntPtr)name);
 				}
 				

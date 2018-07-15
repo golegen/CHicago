@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:38 BRT
-// Last edited on July 15 of 2018, at 01:33 BRT
+// Last edited on July 15 of 2018, at 13:17 BRT
 
 #ifndef __CHICAGO_DEVICE_H__
 #define __CHICAGO_DEVICE_H__
@@ -14,6 +14,9 @@ typedef struct DeviceStruct {
 	Boolean (*read)(struct DeviceStruct *, UIntPtr, UIntPtr, PUInt8);
 	Boolean (*write)(struct DeviceStruct *, UIntPtr, UIntPtr, PUInt8);
 } Device, *PDevice;
+
+Void NullDeviceInit(Void);
+Void ZeroDeviceInit(Void);
 
 Boolean FsReadDevice(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf);
 Boolean FsWriteDevice(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf);

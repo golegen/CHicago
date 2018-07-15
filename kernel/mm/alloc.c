@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 13 of 2018, at 00:44 BRT
-// Last edited on July 14 of 2018, at 18:03 BRT
+// Last edited on July 15 of 2018, at 12:05 BRT
 
 #include <chicago/alloc-int.h>
 #include <chicago/heap.h>
@@ -93,7 +93,7 @@ UIntPtr MemAllocate(UIntPtr size) {
 	
 	PMemAllocateBlock block;
 	PMemAllocateBlock last;
-	UIntPtr rsize = ((((size - 1) >> (sizeof(UIntPtr) - 1)) << (sizeof(UIntPtr) - 1)) + sizeof(UIntPtr));
+	UIntPtr rsize = ((((size - 1) >> (sizeof(UIntPtr) / 2)) << (sizeof(UIntPtr) / 2)) + sizeof(UIntPtr));
 	
 	if (MemAllocateBase) {															// First time using it?
 		last = MemAllocateBase;														// No, so let's try to find a free block
@@ -189,7 +189,7 @@ UIntPtr MemZAllocate(UIntPtr size) {
 	UIntPtr ret = MemAllocate(size);
 	
 	if (ret) {
-		UIntPtr rsize = ((((size - 1) >> (sizeof(UIntPtr) - 1)) << (sizeof(UIntPtr) - 1)) + sizeof(UIntPtr));
+		UIntPtr rsize = ((((size - 1) >> (sizeof(UIntPtr) / 2)) << (sizeof(UIntPtr) / 2)) + sizeof(UIntPtr));
 		PUIntPtr ptr = (PUIntPtr)ret;
 		
 		for (UIntPtr i = 0; i < rsize / sizeof(UIntPtr); i++) {
@@ -210,7 +210,7 @@ UIntPtr MemReallocate(UIntPtr blockk, UIntPtr size) {
 	} else if (blockk > HeapGetCurrent()) {
 		return 0;
 	} else {
-		UIntPtr rsize = ((((size - 1) >> (sizeof(UIntPtr) - 1)) << (sizeof(UIntPtr) - 1)) + sizeof(UIntPtr));
+		UIntPtr rsize = ((((size - 1) >> (sizeof(UIntPtr) / 2)) << (sizeof(UIntPtr) / 2)) + sizeof(UIntPtr));
 		UIntPtr hsize = (sizeof(UIntPtr) * 4) + sizeof(UInt32);
 		PMemAllocateBlock block = (PMemAllocateBlock)(blockk - hsize);
 		
