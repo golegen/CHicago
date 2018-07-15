@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:38 BRT
-// Last edited on July 15 of 2018, at 13:17 BRT
+// Last edited on July 15 of 2018, at 14:20 BRT
 
 #ifndef __CHICAGO_DEVICE_H__
 #define __CHICAGO_DEVICE_H__
@@ -21,7 +21,10 @@ Void ZeroDeviceInit(Void);
 Boolean FsReadDevice(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf);
 Boolean FsWriteDevice(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf);
 Boolean FsAddDevice(PChar name, PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUInt8), Boolean (*write)(PDevice, UIntPtr, UIntPtr, PUInt8));
+Boolean FsRemoveDevice(PChar name);
 PDevice FsGetDevice(PChar name);
+Void FsSetBootDevice(PChar name);
+PChar FsGetBootDevice(Void);
 Void FsDbgListDevices(Void);
 Void FsInitDevices(Void);
 

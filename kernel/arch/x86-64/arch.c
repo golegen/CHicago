@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:19 BRT
-// Last edited on July 14 of 2018, at 22:47 BRT
+// Last edited on July 15 of 2018, at 13:57 BRT
 
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/idt.h>
@@ -28,7 +28,7 @@ Void ArchInit(Void) {
 		MultibootHeaderPointer64.flags = MultibootHeaderPointer32->flags;												// Fix the multiboot pointer structure
 		MultibootHeaderPointer64.mem_lower = MultibootHeaderPointer32->mem_lower;
 		MultibootHeaderPointer64.mem_upper = MultibootHeaderPointer32->mem_upper;
-		MultibootHeaderPointer64.boot_device = MultibootHeaderPointer32->boot_device + 0xFFFFFFFF80000000;
+		MultibootHeaderPointer64.boot_device = MultibootHeaderPointer32->boot_device;
 		MultibootHeaderPointer64.cmd_line = MultibootHeaderPointer32->cmd_line + 0xFFFFFFFF80000000;
 		MultibootHeaderPointer64.mods_count = MultibootHeaderPointer32->mods_count;
 		MultibootHeaderPointer64.mods_address = MultibootHeaderPointer32->mods_address + 0xFFFFFFFF80000000;

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 23:40 BRT
-// Last edited on July 15 of 2018, at 13:15 BRT
+// Last edited on July 15 of 2018, at 14:27 BRT
 
 #include <chicago/arch/ide.h>
 #include <chicago/arch/idt.h>
@@ -27,6 +27,14 @@ Void IDEHandler(PRegisters regs) {
 Void IDEWaitIRQ(Void) {
 	while (!IDEIRQInvoked) ;
 	IDEIRQInvoked = False;
+}
+
+PChar IDEGetHardDiskString(Void) {
+	return IDEHardDiskString;
+}
+
+PChar IDEGetCDROMString(Void) {
+	return IDECDROMString;
 }
 
 Boolean IDEPolling(UInt16 io, Boolean adv) {

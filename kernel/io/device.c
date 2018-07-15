@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:35 BRT
-// Last edited on July 15 of 2018, at 12:10 BRT
+// Last edited on July 15 of 2018, at 14:19 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -9,6 +9,7 @@
 #include <chicago/list.h>
 
 PList FsDeviceList = Null;
+PChar FsBootDevice = Null;
 
 Boolean FsReadDevice(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	if (dev->read != Null) {													// We can call the device's function?
@@ -50,6 +51,43 @@ Boolean FsAddDevice(PChar name, PVoid priv, Boolean (*read)(PDevice, UIntPtr, UI
 	return True;
 }
 
+Boolean FsRemoveDevice(PChar name) {
+	if (FsDeviceList == Null) {													// Device list was initialized?
+		return False;															// No...
+	}
+	
+	PDevice dev = FsGetDevice(name);											// Try to get the device
+	UIntPtr idx = 0;
+	Boolean found = False;
+	
+	if (dev == Null) {															// Failed?
+		return False;															// Yes, so this device doesn't exists
+	}
+	
+	for (; !found && idx < FsDeviceList->length; idx++) {
+		if (ListGet(FsDeviceList, idx) == dev) {								// Found?
+			found = True;														// Yes!
+		}
+	}
+	
+	if (!found) {																// Found?
+		return False;															// No (What? But we found it earlier)
+	}
+	
+	if (ListRemove(FsDeviceList, idx) == Null) {								// Try to remove it
+		return False;															// Failed...
+	}
+	
+	if (FsGetDevice(name) != Null) {											// We really removed it?
+		return False;															// No (for some reason)
+	}
+	
+	MemFree((UIntPtr)(dev->name));												// Free the name
+	MemFree((UIntPtr)dev);														// And the dev struct
+	
+	return True;																// AND RETURN TRUE!
+}
+
 PDevice FsGetDevice(PChar name) {
 	if (FsDeviceList == Null) {													// Device list was initialized?
 		return Null;															// No...
@@ -85,6 +123,16 @@ PDevice FsGetDevice(PChar name) {
 	}
 	
 	return Null;
+}
+
+Void FsSetBootDevice(PChar name) {
+	if (FsGetDevice(name) != Null) {
+		FsBootDevice = name;
+	}
+}
+
+PChar FsGetBootDevice(Void) {
+	return FsBootDevice;
 }
 
 Void FsDbgListDevices(Void) {
