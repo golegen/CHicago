@@ -1,19 +1,19 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 13 of 2018, at 00:44 BRT
-// Last edited on July 14 of 2018, at 00:36 BRT
+// Last edited on July 14 of 2018, at 18:03 BRT
 
 #include <chicago/alloc-int.h>
 #include <chicago/heap.h>
 
-PVoid MemoryAllocBase = Null;
+PVoid MemAllocateBase = Null;
 
-static PMemoryAllocBlock MemoryAllocExtendHeap(PMemoryAllocBlock last, UIntPtr size) {
+static PMemAllocateBlock MemAllocateExtendHeap(PMemAllocateBlock last, UIntPtr size) {
 	if (!size) {																	// We need a size...
 		return Null;
 	}
 	
-	PMemoryAllocBlock block = (PMemoryAllocBlock)HeapGetCurrent();					// Let's try to expand the heap!
+	PMemAllocateBlock block = (PMemAllocateBlock)HeapGetCurrent();					// Let's try to expand the heap!
 	UIntPtr hsize = (sizeof(UIntPtr) * 4) + sizeof(UInt32);
 	
 	if (!HeapIncrement(size + hsize)) {
@@ -33,8 +33,8 @@ static PMemoryAllocBlock MemoryAllocExtendHeap(PMemoryAllocBlock last, UIntPtr s
 	return block;
 }
 
-static PMemoryAllocBlock MemoryAllocFindBlock(PMemoryAllocBlock *last, UIntPtr size) {
-	PMemoryAllocBlock block = MemoryAllocBase;
+static PMemAllocateBlock MemAllocateFindBlock(PMemAllocateBlock *last, UIntPtr size) {
+	PMemAllocateBlock block = MemAllocateBase;
 	
 	while ((block != Null) && (!((block->free) && (block->size >= size)))) {		// Check if the block is free and if it's equal or greater than specified size
 		*last = block;																// YES!
@@ -44,8 +44,8 @@ static PMemoryAllocBlock MemoryAllocFindBlock(PMemoryAllocBlock *last, UIntPtr s
 	return block;
 }
 
-static Void MemoryAllocSplitBlock(PMemoryAllocBlock block, UIntPtr size) {
-	PMemoryAllocBlock new = (PMemoryAllocBlock)(block->data + size);
+static Void MemAllocateSplitBlock(PMemAllocateBlock block, UIntPtr size) {
+	PMemAllocateBlock new = (PMemAllocateBlock)(block->data + size);
 	UIntPtr hsize = (sizeof(UIntPtr) * 4) + sizeof(UInt32);
 	
 	new->size = block->size - size - hsize;
@@ -62,7 +62,7 @@ static Void MemoryAllocSplitBlock(PMemoryAllocBlock block, UIntPtr size) {
 	}
 }
 
-static PMemoryAllocBlock MemoryAllocFuseBlock(PMemoryAllocBlock block) {
+static PMemAllocateBlock MemAllocateFuseBlock(PMemAllocateBlock block) {
 	UIntPtr hsize = (sizeof(UIntPtr) * 4) + sizeof(UInt32);
 	
 	if ((block->next != Null) && (block->next->free)) {
@@ -77,7 +77,7 @@ static PMemoryAllocBlock MemoryAllocFuseBlock(PMemoryAllocBlock block) {
 	return block;
 }
 
-static Void MemoryAllocCopyBlock(PMemoryAllocBlock src, PMemoryAllocBlock dst) {
+static Void MemAllocateCopyBlock(PMemAllocateBlock src, PMemAllocateBlock dst) {
 	PUIntPtr from = (PUIntPtr)src->addr;
 	PUIntPtr to = (PUIntPtr)dst->addr;
 	
@@ -86,46 +86,46 @@ static Void MemoryAllocCopyBlock(PMemoryAllocBlock src, PMemoryAllocBlock dst) {
 	}
 }
 
-UIntPtr MemoryAlloc(UIntPtr size) {
+UIntPtr MemAllocate(UIntPtr size) {
 	if (!size) {
 		return 0;
 	}
 	
-	PMemoryAllocBlock block;
-	PMemoryAllocBlock last;
+	PMemAllocateBlock block;
+	PMemAllocateBlock last;
 	UIntPtr rsize = ((((size - 1) >> (sizeof(UIntPtr) - 1)) << (sizeof(UIntPtr) - 1)) + sizeof(UIntPtr));
 	
-	if (MemoryAllocBase) {															// First time using it?
-		last = MemoryAllocBase;														// No, so let's try to find a free block
-		block = MemoryAllocFindBlock(&last, rsize);
+	if (MemAllocateBase) {															// First time using it?
+		last = MemAllocateBase;														// No, so let's try to find a free block
+		block = MemAllocateFindBlock(&last, rsize);
 		
 		if (block) {																// Found?
 			if ((block->size - rsize) >= 16) {										// Yes! Let's try to split it
-				MemoryAllocSplitBlock(block, rsize);
+				MemAllocateSplitBlock(block, rsize);
 			}
 			
 			block->free = False;													// And.. NOW THIS BLOCK BELONG TO US
 		} else {
-			block = MemoryAllocExtendHeap(last, rsize);								// No, so let's (try to) expand the heap
+			block = MemAllocateExtendHeap(last, rsize);								// No, so let's (try to) expand the heap
 			
 			if (block == Null) {
 				return 0;
 			}
 		}
 	} else {
-		block = MemoryAllocExtendHeap(Null, rsize);									// Yes, so let's (try to) init!
+		block = MemAllocateExtendHeap(Null, rsize);									// Yes, so let's (try to) init!
 		
 		if (!block) {
 			return 0;
 		}
 		
-		MemoryAllocBase = block;
+		MemAllocateBase = block;
 	}
 	
 	return (UIntPtr)block->data;
 }
 
-UIntPtr MemoryAlignedAlloc(UIntPtr size, UIntPtr align) {
+UIntPtr MemAAllocate(UIntPtr size, UIntPtr align) {
 	if (size == 0) {
 		return 0;
 	} else if (align == 0) {
@@ -138,7 +138,7 @@ UIntPtr MemoryAlignedAlloc(UIntPtr size, UIntPtr align) {
 	PUIntPtr p2 = Null;
 	Int off = align - 1 + sizeof(UIntPtr);
 	
-	if ((p1 = MemoryAlloc(size + off)) == 0) {
+	if ((p1 = MemAllocate(size + off)) == 0) {
 		return 0;
 	}
 	
@@ -148,31 +148,31 @@ UIntPtr MemoryAlignedAlloc(UIntPtr size, UIntPtr align) {
 	return (UIntPtr)p2;
 }
 
-Void MemoryFree(UIntPtr blockk) {
+Void MemFree(UIntPtr blockk) {
 	if (blockk == 0) {																// Some checks...
 		return;
-	} else if (blockk < (UIntPtr)MemoryAllocBase) {
+	} else if (blockk < (UIntPtr)MemAllocateBase) {
 		return;
 	} else if (blockk > HeapGetCurrent()) {
 		return;
 	}
 	
 	UIntPtr hsize = (sizeof(UIntPtr) * 4) + sizeof(UInt32);
-	PMemoryAllocBlock block = (PMemoryAllocBlock)(blockk - hsize);					// Let's get the block struct
+	PMemAllocateBlock block = (PMemAllocateBlock)(blockk - hsize);					// Let's get the block struct
 	
 	block->free = True;
 	
 	if ((block->prev != Null) && (block->prev->free)) {								// Fuse with the prev?
-		block = MemoryAllocFuseBlock(block->prev);									// Yes!
+		block = MemAllocateFuseBlock(block->prev);									// Yes!
 	}
 	
 	if (block->next != Null) {														// Fuse with the next?
-		MemoryAllocFuseBlock(block);												// Yes!
+		MemAllocateFuseBlock(block);												// Yes!
 	} else {
 		if (block->prev != Null) {													// Free the end of the heap
 			block->prev->next = Null;
 		} else {
-			MemoryAllocBase = Null;													// No more blocks!
+			MemAllocateBase = Null;													// No more blocks!
 		}
 		
 		UIntPtr decr = HeapGetCurrent() - (UIntPtr)block;
@@ -181,12 +181,12 @@ Void MemoryFree(UIntPtr blockk) {
 	}
 }
 
-Void MemoryAlignedFree(UIntPtr block) {
-	MemoryFree(((PUIntPtr)block)[-1]);
+Void MemAFree(UIntPtr block) {
+	MemFree(((PUIntPtr)block)[-1]);
 }
 
-UIntPtr MemoryZAlloc(UIntPtr size) {
-	UIntPtr ret = MemoryAlloc(size);
+UIntPtr MemZAllocate(UIntPtr size) {
+	UIntPtr ret = MemAllocate(size);
 	
 	if (ret) {
 		UIntPtr rsize = ((((size - 1) >> (sizeof(UIntPtr) - 1)) << (sizeof(UIntPtr) - 1)) + sizeof(UIntPtr));
@@ -200,100 +200,40 @@ UIntPtr MemoryZAlloc(UIntPtr size) {
 	return ret;
 }
 
-UIntPtr MemoryAlignedZAlloc(UIntPtr size, UIntPtr align) {
-	UIntPtr ret = MemoryAlignedAlloc(size, align);
-	
-	if (ret) {
-		UIntPtr rsize = ((((size - 1) >> (sizeof(UIntPtr) - 1)) << (sizeof(UIntPtr) - 1)) + sizeof(UIntPtr));
-		PUIntPtr ptr = (PUIntPtr)ret;
-		
-		for (UIntPtr i = 0; i < rsize / sizeof(UIntPtr); i++) {
-			ptr[i] = 0;
-		}
-	}
-	
-	return ret;
-}
-
-UIntPtr MemoryRealloc(UIntPtr blockk, UIntPtr size) {
+UIntPtr MemReallocate(UIntPtr blockk, UIntPtr size) {
 	if (size == 0) {
 		return 0;
 	} else if (blockk == 0) {
-		return MemoryAlloc(size);
-	} else if (blockk < (UIntPtr)MemoryAllocBase) {
+		return MemAllocate(size);
+	} else if (blockk < (UIntPtr)MemAllocateBase) {
 		return 0;
 	} else if (blockk > HeapGetCurrent()) {
 		return 0;
 	} else {
 		UIntPtr rsize = ((((size - 1) >> (sizeof(UIntPtr) - 1)) << (sizeof(UIntPtr) - 1)) + sizeof(UIntPtr));
 		UIntPtr hsize = (sizeof(UIntPtr) * 4) + sizeof(UInt32);
-		PMemoryAllocBlock block = (PMemoryAllocBlock)(blockk - hsize);
+		PMemAllocateBlock block = (PMemAllocateBlock)(blockk - hsize);
 		
 		if (block->size >= rsize) {
 			if ((block->size - rsize) >= 24) {
-				MemoryAllocSplitBlock(block, rsize);
+				MemAllocateSplitBlock(block, rsize);
 			}
 		} else {
 			if ((block->next != Null) && (block->next->free) && ((block->size - hsize + block->next->size) >= rsize)) {
-				MemoryAllocFuseBlock(block);
+				MemAllocateFuseBlock(block);
 				
 				if (block->size - rsize >= 24) {
-					MemoryAllocSplitBlock(block, rsize);
+					MemAllocateSplitBlock(block, rsize);
 				}
 			} else {
-				UIntPtr new = MemoryAlloc(size);
+				UIntPtr new = MemAllocate(size);
 				
 				if (new == 0) {
 					return 0;
 				}
 				
-				MemoryAllocCopyBlock(block, (PMemoryAllocBlock)(new - hsize));
-				MemoryFree(blockk);
-				
-				return new;
-			}
-		}
-		
-		return blockk;
-	}
-}
-
-UIntPtr MemoryAlignedRealloc(UIntPtr blockkk, UIntPtr size, UIntPtr align) {
-	UIntPtr blockk = (UIntPtr)(((PUIntPtr)blockkk)[-1]);
-	
-	if (size == 0) {
-		return 0;
-	} else if (blockk == 0) {
-		return MemoryAlloc(size);
-	} else if (blockk < (UIntPtr)MemoryAllocBase) {
-		return 0;
-	} else if (blockk > HeapGetCurrent()) {
-		return 0;
-	} else {
-		UIntPtr rsize = ((((size - 1) >> (sizeof(UIntPtr) - 1)) << (sizeof(UIntPtr) - 1)) + sizeof(UIntPtr));
-		UIntPtr hsize = (sizeof(UIntPtr) * 4) + sizeof(UInt32);
-		PMemoryAllocBlock block = (PMemoryAllocBlock)(blockk - hsize);
-		
-		if (block->size >= rsize) {
-			if ((block->size - rsize) >= 24) {
-				MemoryAllocSplitBlock(block, rsize);
-			}
-		} else {
-			if ((block->next != Null) && (block->next->free) && ((block->size - size + block->next->size) >= rsize)) {
-				MemoryAllocFuseBlock(block);
-				
-				if (block->size - rsize >= 24) {
-					MemoryAllocSplitBlock(block, rsize);
-				}
-			} else {
-				UIntPtr new = MemoryAlignedAlloc(size, align);
-				
-				if (new == 0) {
-					return 0;
-				}
-				
-				MemoryAllocCopyBlock(block, (PMemoryAllocBlock)(new - size));
-				MemoryAlignedFree(blockk);
+				MemAllocateCopyBlock(block, (PMemAllocateBlock)(new - hsize));
+				MemFree(blockk);
 				
 				return new;
 			}

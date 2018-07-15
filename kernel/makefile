@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on July 14 of 2018, at 00:28 BRT
+# Last edited on July 14 of 2018, at 23:40 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -12,9 +12,9 @@ ifeq ($(ARCH),x86)
 	
 	ARCH_OBJECTS := start.s.o
 	ARCH_OBJECTS += arch.c.o
-	ARCH_OBJECTS += io/debug.c.o
-	ARCH_OBJECTS += system/gdt.c.o system/idt.c.o
-	ARCH_OBJECTS += mem/pmm.c.o mem/vmm.c.o
+	ARCH_OBJECTS += io/debug.c.o io/ide.c.o
+	ARCH_OBJECTS += sys/gdt.c.o sys/idt.c.o
+	ARCH_OBJECTS += mm/pmm.c.o mm/vmm.c.o
 	
 	LINKER_SCRIPT := link.ld
 else ifeq ($(ARCH),x86-64)
@@ -23,8 +23,8 @@ else ifeq ($(ARCH),x86-64)
 	ARCH_OBJECTS := start32.s.o start64.s.o
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += io/debug.c.o
-	ARCH_OBJECTS += system/gdt.c.o system/idt.c.o
-	ARCH_OBJECTS += mem/pmm.c.o
+	ARCH_OBJECTS += sys/gdt.c.o sys/idt.c.o
+	ARCH_OBJECTS += mm/pmm.c.o
 	
 	LINKER_SCRIPT := link.ld
 	
@@ -51,7 +51,9 @@ else
 endif
 
 OBJECTS := main.c.o
-OBJECTS += mem/alloc.c.o mem/heap.c.o mem/pmm.c.o
+OBJECTS += ds/list.c.o
+OBJECTS += io/device.c.o
+OBJECTS += mm/alloc.c.o mm/heap.c.o mm/pmm.c.o
 
 ARCH_OBJECTS := $(addprefix build/arch/$(ARCH)/,$(ARCH_OBJECTS))
 OBJECTS := $(addprefix build/,$(OBJECTS))

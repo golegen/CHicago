@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:18 BRT
-// Last edited on July 12 of 2018, at 23:56 BRT
+// Last edited on July 14 of 2018, at 22:46 BRT
 
 #include <chicago/arch/uart.h>
 
@@ -13,5 +13,5 @@ Boolean MmUnmap(UIntPtr virt) { (Void)virt; return 0; }
 
 Void ArchInit(Void) {
 	UARTInit();						// Init the UART (for debugging)
-	DbgWriteFormated("UART initialized\r\n");
+	DbgWriteFormated("[raspi] UART initialized\r\n");
 }

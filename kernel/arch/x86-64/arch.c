@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:19 BRT
-// Last edited on July 13 of 2018, at 00:04 BRT
+// Last edited on July 14 of 2018, at 22:47 BRT
 
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/idt.h>
@@ -19,7 +19,7 @@ Boolean MmUnmap(UIntPtr virt) { (Void)virt; return 0; }
 
 Void ArchInit(Void) {
 	SerialInit(COM1_PORT);																								// Init debugging (using COM1 port)
-	DbgWriteFormated("COM1 initialized\r\n");
+	DbgWriteFormated("[x86-64] COM1 initialized\r\n");
 	
 	if (MultibootHeaderMagic != 0x2BADB002) {
 		DbgWriteFormated("PANIC! We need GRUB (or any other multiboot-compilant bootloader)\r\n");
@@ -53,11 +53,11 @@ Void ArchInit(Void) {
 	}
 	
 	GDTInit();																											// Init the GDT
-	DbgWriteFormated("GDT initialized\r\n");
+	DbgWriteFormated("[x86-64] GDT initialized\r\n");
 	
 	IDTInit();																											// Init the IDT
-	DbgWriteFormated("IDT initialized\r\n");
+	DbgWriteFormated("[x86-64] IDT initialized\r\n");
 	
 	PMMInit();																											// Init the PMM
-	DbgWriteFormated("PMM initialized\r\n");
+	DbgWriteFormated("[x86-64] PMM initialized\r\n");
 }

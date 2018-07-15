@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 19:19 BRT
-// Last edited on July 14 of 2018, at 00:29 BRT
+// Last edited on July 14 of 2018, at 18:28 BRT
 
 #include <chicago/arch/pmm.h>
 #include <chicago/arch/vmm.h>
@@ -305,7 +305,7 @@ UIntPtr MmCloneDirectory(Void) {
 								
 								if (((tmp[k] & 0x01) == 0x01) && ((tmp[k] & 0x200) == 0x200)) {								// CoW?
 									MmSetPTE(MmCurrentTables, addr, page & 0xFFFFF000, (page & 0xFFF) & ~0x200);			// Yes, so undo it in the current directory
-									Asm Volatile("invlpg (%0)" :: "b"(addr));
+									Asm Volatile("invlpg (%0)" :: "b"(addr) : "memory");
 									MmDereferencePage(page & 0xFFFFF000);													// And use the dereference function
 								} else if ((tmp[k] & 0x01) == 0x01) {														// Present?
 									MmDereferencePage(page & 0xFFFFF000);													// Yes, just use the dereference function
@@ -338,7 +338,7 @@ UIntPtr MmCloneDirectory(Void) {
 								if (((tmp[k] & 0x01) == 0x01) && ((tmp[k] & 0x200) == 0x200)) {								// CoW?
 									if (MmGetReferences(page & 0xFFFFF000) == 2) {											// Yes, undo in the current directory?
 										MmSetPTE(MmCurrentTables, addr, page & 0xFFFFF000, (page & 0xFFF) & ~0x200);		// Yes
-										Asm Volatile("invlpg (%0)" :: "b"(addr));
+										Asm Volatile("invlpg (%0)" :: "b"(addr) : "memory");
 									}
 									MmDereferencePage(page & 0xFFFFF000);													// Use the dereference function
 								} else if ((tmp[k] & 0x01) == 0x01) {														// Present?
@@ -371,7 +371,7 @@ UIntPtr MmCloneDirectory(Void) {
 					MmReferencePage(page & 0xFFFFF000);																		// Yes, for read/write we're going to use CoW (Copy-on-Write), our page fault handler will handle it for us!
 					MmSetPTEInt(tabta, addr, page & 0xFFFFF000, ((page & 0xFFF) & ~0x02) | 0x200);
 					MmSetPTE(MmCurrentTables, addr, page & 0xFFFFF000, ((page & 0xFFF) & ~0x02) | 0x200);
-					Asm Volatile("invlpg (%0)" :: "b"(addr));
+					Asm Volatile("invlpg (%0)" :: "b"(addr) : "memory");
 				} else {
 					MmReferencePage(page & 0xFFFFF000);																		// Read only, we don't need CoW!
 					MmSetPTEInt(tabta, addr, page & 0xFFFFF000, page & 0xFFF);
@@ -422,7 +422,7 @@ Void MmFreeDirectory(UIntPtr dir) {
 				if (((page & 0x01) == 0x01) && ((page & 0x200) == 0x200)) {													// CoW?
 					if (MmGetReferences(page & 0xFFFFF000) == 2) {															// Undo in the current directory?
 						MmSetPTE(MmCurrentTables, addr, page & 0xFFFFF000, (page & 0xFFF) & ~0x200);						// Yes
-						Asm Volatile("invlpg (%0)" :: "b"(addr));
+						Asm Volatile("invlpg (%0)" :: "b"(addr) : "memory");
 					}
 					
 					MmDereferencePage(page & 0xFFFFF000);																	// Use the dereference function

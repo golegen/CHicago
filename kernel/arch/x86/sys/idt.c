@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 26 of 2018, at 22:00 BRT
-// Last edited on July 13 of 2018, at 23:49 BRT
+// Last edited on July 14 of 2018, at 21:39 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
@@ -13,6 +13,7 @@
 #include <chicago/mm.h>
 
 UInt8 IDTEntries[256][8];
+PInterruptHandler InterruptHandlers[256];
 
 PChar ExceptionStrings[32] = {
 	"Divide by zero",
@@ -51,97 +52,135 @@ PChar ExceptionStrings[32] = {
 
 Void ISRDefaultHandler(PRegisters regs) {
 	if (regs->int_num >= 32 && regs->int_num <= 47) {
+		if (InterruptHandlers[regs->int_num] != Null) {
+			InterruptHandlers[regs->int_num](regs);
+		}
+		
 		if (regs->int_num >= 40) {
 			PortOutByte(0xA0, 0x20);
 		}
 		
-		PortOutByte(0x20, 0x20);						// OK, lets tell PIC that we "handled" this irq
+		PortOutByte(0x20, 0x20);																	// OK, lets tell PIC that we "handled" this irq
 	} else {
-		if (regs->int_num < 32) {
-			if (regs->int_num == 14) {
-				UInt32 faddr;
+		if (regs->int_num < 32) {																	// Exception?
+			if (InterruptHandlers[regs->int_num] != Null) {											// Yes
+				InterruptHandlers[regs->int_num](regs);
+			}
+			
+			if (regs->int_num == 14) {																//Page fault?
+				UInt32 faddr;																		// Yes, let's handle it
 				
-				Asm Volatile("mov %%cr2, %0" : "=r"(faddr));
+				Asm Volatile("mov %%cr2, %0" : "=r"(faddr));										// CR2 contains the fault addr
 				
-				if ((MmGetPDE(MmCurrentDirectory, faddr) & 0x01) != 0x01) {
+				if ((MmGetPDE(MmCurrentDirectory, faddr) & 0x01) != 0x01) {							// Present?
+					DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);				// No, so it's a normal page fault
+					while (1) ;
+				} else if ((MmGetPTE(MmCurrentTables, faddr) & 0x01) != 0x01) {						// Same as above
 					DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);
 					while (1) ;
-				} else if ((MmGetPTE(MmCurrentTables, faddr) & 0x01) != 0x01) {
-					DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);
-					while (1) ;
-				} else if ((MmGetPTE(MmCurrentTables, faddr) & 0x200) != 0x200) {
-					DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);
+				} else if ((MmGetPTE(MmCurrentTables, faddr) & 0x200) != 0x200) {					// CoW?
+					DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);				// No, so it's a normal page fault
 					while (1) ;
 				}
 				
-				UInt32 oldp = MmGetPTE(MmCurrentTables, faddr) & 0xFFFFF000;
-				UInt32 oldf = MmGetPTE(MmCurrentTables, faddr) & 0xFFF;
+				UInt32 oldp = MmGetPTE(MmCurrentTables, faddr) & 0xFFFFF000;						// Get the old physical address
+				UInt32 oldf = MmGetPTE(MmCurrentTables, faddr) & 0xFFF;								// And the old flags
 				
-				if (MmGetReferences(oldp) == 1) {
-					MmSetPTE(MmCurrentTables, faddr, oldp, oldf | 2);
-					Asm Volatile("invlpg (%0)" :: "b"(faddr));
+				if (MmGetReferences(oldp) == 1) {													// Only one ref?
+					MmSetPTE(MmCurrentTables, faddr, oldp, oldf | 2);								// Yes, we can use the same phys addr!
+					Asm Volatile("invlpg (%0)" :: "b"(faddr) : "memory");
 					return;
 				}
 				
-				UIntPtr newp = MmReferencePage(0);
+				UIntPtr newp = MmReferencePage(0);													// No, let's copy the old data
 				
-				if (newp == 0) {
-					DbgWriteFormated("PANIC! Couldn't alloc page for CoW\r\n", faddr);
+				if (newp == 0) {																	// Failed?
+					DbgWriteFormated("PANIC! Couldn't alloc page for CoW\r\n", faddr);				// Yes...
 					while (1) ;
 				}
 				
-				MmSetPTE(MmCurrentTables, faddr, oldp, oldf | 2);
-				Asm Volatile("invlpg (%0)" :: "b"(faddr));
+				MmSetPTE(MmCurrentTables, faddr, oldp, oldf | 2);									// Map the old physical address as r/w
+				Asm Volatile("invlpg (%0)" :: "b"(faddr) : "memory");
 				
-				PUIntPtr tmp = (PUIntPtr)MmMapTemp(newp, MM_MAP_KDEF);
+				PUIntPtr tmp = (PUIntPtr)MmMapTemp(newp, MM_MAP_KDEF);								// And map the new one
 				
-				if (tmp == Null) {
-					MmSetPTE(MmCurrentTables, faddr, oldp, oldf);
-					Asm Volatile("invlpg (%0)" :: "b"(faddr));
+				if (tmp == Null) {																	// Failed?
+					MmSetPTE(MmCurrentTables, faddr, oldp, oldf);									// Yes
+					Asm Volatile("invlpg (%0)" :: "b"(faddr) : "memory");
 					DbgWriteFormated("PANIC! Couldn't map temp page for CoW\r\n", faddr);
 					while (1) ;
 				}
 				
-				for (UIntPtr i = 0; i < MM_PAGE_SIZE / sizeof(UIntPtr); i++) {
+				for (UIntPtr i = 0; i < MM_PAGE_SIZE / sizeof(UIntPtr); i++) {						// Let's copy!
 					tmp[i] = ((PUIntPtr)faddr)[i];
 				}
 				
-				MmSetPTE(MmCurrentTables, faddr, newp, oldf | 2);
-				Asm Volatile("invlpg (%0)" :: "b"(faddr));
-				MmDereferencePage(oldp);
+				MmSetPTE(MmCurrentTables, faddr, newp, oldf | 2);									// Unset the write flag
+				Asm Volatile("invlpg (%0)" :: "b"(faddr) : "memory");
+				MmDereferencePage(oldp);															// And decrement the references to the phys page (now we can return!)
 			} else {
-				DbgWriteFormated("PANIC! %s exception\r\n", ExceptionStrings[regs->int_num]);
+				DbgWriteFormated("PANIC! %s exception\r\n", ExceptionStrings[regs->int_num]);		// No
 				while (1) ;
 			}
+		} else if (InterruptHandlers[regs->int_num] != Null) {										// No, we have an handler?
+			InterruptHandlers[regs->int_num](regs);													// Yes!
 		} else {
-			DbgWriteFormated("PANIC! Unhandled interrupt 0x%x\r\n", regs->int_num);
+			DbgWriteFormated("PANIC! Unhandled interrupt 0x%x\r\n", regs->int_num);					// No
 			while (1) ;
 		}
 	}
 }
 
 Void IDTSetGate(UInt8 num, UInt32 base, UInt16 selector, UInt8 type) {
-	IDTEntries[num][0] = base & 0xFF;					// Encode the base
+	IDTEntries[num][0] = base & 0xFF;																// Encode the base
 	IDTEntries[num][1] = (base >> 8) & 0xFF;
 	IDTEntries[num][6] = (base >> 16) & 0xFF;
 	IDTEntries[num][7] = (base >> 24) & 0xFF;
 	
-	IDTEntries[num][2] = selector & 0xFF;				// Encode the selector
+	IDTEntries[num][2] = selector & 0xFF;															// Encode the selector
 	IDTEntries[num][3] = (selector >> 8) & 0xFF;
 	
-	IDTEntries[num][4] = 0;								// Always zero
+	IDTEntries[num][4] = 0;																			// Always zero
 	
-	IDTEntries[num][5] = type;							// Encode type
+	IDTEntries[num][5] = type;																		// Encode type
+}
+
+Void IDTRegisterInterruptHandler(UInt8 num, PInterruptHandler handler)
+{
+	if (InterruptHandlers[num])
+		return;
+	InterruptHandlers[num] = handler;
+}
+
+Void IDTRegisterIRQHandler(UInt8 num, PInterruptHandler handler)
+{
+	if (InterruptHandlers[num + 32])
+		return;
+	InterruptHandlers[num + 32] = handler;
+}
+
+Void IDTUnregisterInterruptHandler(UInt8 num)
+{
+	if (!InterruptHandlers[num])
+		return;
+	InterruptHandlers[num] = Null;
+}
+
+Void IDTUnregisterIRQHandler(UInt8 num)
+{
+	if (!InterruptHandlers[num + 32])
+		return;
+	InterruptHandlers[num + 32] = Null;
 }
 
 Void IDTInit(Void) {
-	for (UInt32 i = 0; i < 256; i++) {					// Clear IDT Entries
+	for (UInt32 i = 0; i < 256; i++) {																// Clear IDT Entries
 		for (UInt32 j = 0; j < 8; j++) {
 			IDTEntries[i][j] = 0;
 		}
 	}
 	
-	PortOutByte(0x20, 0x11);							// Remap PIC
+	PortOutByte(0x20, 0x11);																		// Remap PIC
 	PortOutByte(0xA0, 0x11);
 	PortOutByte(0x21, 0x20);
 	PortOutByte(0xA1, 0x28);
@@ -152,7 +191,7 @@ Void IDTInit(Void) {
 	PortOutByte(0x21, 0x00);
 	PortOutByte(0xA1, 0x00);
 	
-	IDTSetGate(0, (UInt32)ISRHandler0, 0x08, 0x8E);		// Set all ISR entries
+	IDTSetGate(0, (UInt32)ISRHandler0, 0x08, 0x8E);													// Set all ISR entries
 	IDTSetGate(1, (UInt32)ISRHandler1, 0x08, 0x8E);
 	IDTSetGate(2, (UInt32)ISRHandler2, 0x08, 0x8E);
 	IDTSetGate(3, (UInt32)ISRHandler3, 0x08, 0x8E);
@@ -409,7 +448,7 @@ Void IDTInit(Void) {
 	IDTSetGate(254, (UInt32)ISRHandler254, 0x08, 0x8E);
 	IDTSetGate(255, (UInt32)ISRHandler255, 0x08, 0x8E);
 	
-	IDTLoad((UInt32)IDTEntries, 8 * 256 - 1);			// Load new IDT
+	IDTLoad((UInt32)IDTEntries, 8 * 256 - 1);														// Load new IDT
 	
-	Asm("sti");											// Enable interrupts
+	Asm("sti");																						// Enable interrupts
 }
