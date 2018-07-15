@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on July 15 of 2018, at 14:40 BRT
+// Last edited on July 15 of 2018, at 20:24 BRT
 
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/ide.h>
@@ -12,10 +12,10 @@
 #include <chicago/arch/serial.h>
 #include <chicago/arch/vmm.h>
 
-#include <chicago/alloc.h>
 #include <chicago/debug.h>
 #include <chicago/device.h>
 #include <chicago/heap.h>
+#include <chicago/string.h>
 
 Void ArchInit(Void) {
 	UIntPtr bddrive = 0;
@@ -62,36 +62,24 @@ Void ArchInit(Void) {
 	IDEInit();
 	
 	if ((bddrive >= 0x80) && (bddrive <= 0x89) && (bdpart1 == 0) && (bdpart2 == 0) && (bdpart3 == 0)) {					// RAW Hard Disk?
-		PChar name = (PChar)MemAllocate(10);																			// Allocate space for the name
-		PChar hname = IDEGetHardDiskString();
+		PChar name = StrDuplicate(IDEGetHardDiskString());																// Yes, duplicate the HardDiskX string
 		
 		if (name == Null) {																								// Failed?
 			DbgWriteFormated("[x86] Falling back boot device to HardDisk0\r\n");										// Yes, so let's use the HardDisk0
 			FsSetBootDevice("HardDisk0");
 		} else {
-			for (UIntPtr i = 0; i < 10; i++) {																			// Copy the HardDisk base dev name
-				name[i] = hname[i];
-			}
-			
-			name[8] = (Char)((bddrive - 0x80) + '0');																	// Set the CDROM num
-			
-			FsSetBootDevice(name);																						// Set the device
+			name[8] = (Char)((bddrive - 0x80) + '0');																	// Set the num
+			FsSetBootDevice(name);																						// Try to set the device
 		}
 	} else if ((bddrive >= 0xE0) && (bddrive <= 0xE9)) {																// CDROM boot value
-		PChar name = (PChar)MemAllocate(7);																				// Allocate space for the name
-		PChar cname = IDEGetCDROMString();
+		PChar name = StrDuplicate(IDEGetCDROMString());																	// Yes, duplicate the CdRomX string
 		
 		if (name == Null) {																								// Failed?
 			DbgWriteFormated("[x86] Falling back boot device to CdRom0\r\n");											// Yes, so let's use the CdRom0
 			FsSetBootDevice("CdRom0");
 		} else {
-			for (UIntPtr i = 0; i < 7; i++) {																			// Copy the CDROM base dev name
-				name[i] = cname[i];
-			}
-			
-			name[5] = (Char)((bddrive - 0xE0) + '0');																	// Set the CDROM num
-			
-			FsSetBootDevice(name);																						// Set the device
+			name[6] = (Char)((bddrive - 0xE0) + '0');																	// Set the num
+			FsSetBootDevice(name);																						// Try to set the device
 		}
 	} else if (bddrive == 0x9F) {																						// Other possible value for CDROM boot, but with this one we can't get the exactly boot device, let's put CdRom0
 		DbgWriteFormated("[x86] Falling back boot device to CdRom0\r\n");

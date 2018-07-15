@@ -1,12 +1,13 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 19:19 BRT
-// Last edited on July 14 of 2018, at 18:28 BRT
+// Last edited on July 15 of 2018, at 20:22 BRT
 
 #include <chicago/arch/pmm.h>
 #include <chicago/arch/vmm.h>
 
 #include <chicago/mm.h>
+#include <chicago/string.h>
 
 PUInt32 MmCurrentDirectory = (PUInt32)0xFFFFF000;
 PUInt32 MmCurrentTables = (PUInt32)0xFFC00000;
@@ -102,10 +103,7 @@ Boolean MmMapInt(UIntPtr dir, UIntPtr virt, UIntPtr phys, UInt32 flags) {
 			return False;
 		}
 		
-		for (UInt32 i = 0; i < 1024; i++) {																					// Clear the page table
-			temp[i] = 0;
-		}
-		
+		StrSetMemory(temp, 0, 4096);																						// Clear the page table
 		MmSetPTEInt(temp, virt, phys, flags2);																				// Map the phys addr to the virt addr
 		MmUnmap((UIntPtr)temp);																								// Unmap the temp addr
 		
@@ -221,10 +219,7 @@ Boolean MmMap(UIntPtr virt, UIntPtr phys, UInt32 flags) {
 		}
 		
 		Asm Volatile("invlpg (%0)" :: "b"(((UIntPtr)(&MmGetPTE(MmCurrentTables, virt))) & 0xFFFFF000) : "memory");			// Map it (already mapped but we need to update the pde)
-		
-		for (UInt32 i = 0; i < 1024; i++) {																					// Clear the page table
-			((PUInt32)(((UIntPtr)(&MmGetPTE(MmCurrentTables, virt))) & 0xFFFFF000))[i] = 0;
-		}
+		StrSetMemory((PVoid)(((UIntPtr)(&MmGetPTE(MmCurrentTables, virt))) & 0xFFFFF000), 0, 4096);							// Clear the page table
 	}
 	
 	MmSetPTE(MmCurrentTables, virt, phys, flags2);																			// Map the phys addr to the virt addr

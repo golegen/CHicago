@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 27 of 2018, at 10:51 BRT
-// Last edited on July 12 of 2018, at 21:35 BRT
+// Last edited on July 15 of 2018, at 20:26 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
@@ -96,12 +96,6 @@ Void IDTSetGate(UInt8 num, UInt64 base, UInt16 selector, UInt8 type) {
 }
 
 Void IDTInit(Void) {
-	for (Int i = 0; i < 256; i++) {						// Clear IDT Entries
-		for (Int j = 0; j < 16; j++) {
-			IDTEntries[i][j] = 0;
-		}
-	}
-	
 	PortOutByte(0x20, 0x11);							// Remap PIC
 	PortOutByte(0xA0, 0x11);
 	PortOutByte(0x21, 0x20);

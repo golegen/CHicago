@@ -1,12 +1,13 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:35 BRT
-// Last edited on July 15 of 2018, at 14:19 BRT
+// Last edited on July 15 of 2018, at 20:30 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
 #include <chicago/device.h>
 #include <chicago/list.h>
+#include <chicago/string.h>
 
 PList FsDeviceList = Null;
 PChar FsBootDevice = Null;
@@ -93,32 +94,13 @@ PDevice FsGetDevice(PChar name) {
 		return Null;															// No...
 	}
 	
-	UIntPtr nl = 0;
-	
-	for (; name[nl] != 0; nl++) ;												// First let's get the name length
-	
-	ListForeach(FsDeviceList, i) {												// Now let's do an for in each (foreach) list entry
+	ListForeach(FsDeviceList, i) {												// Let's do an for in each (foreach) list entry
 		PChar dname = ((PDevice)(i->data))->name;								// Save the entry name
-		Boolean equal = True;
-		Boolean end = False;
-		UIntPtr dnl = 0;
 		
-		for (; dname[dnl] != 0; dnl++) ;										// Get the entry name length
-		
-		if (dnl !=  nl) {														// They are equal?
-			continue;															// Nope!
-		}
-		
-		for (UInt32 j = 0; equal && !end; j++) {								// Yes, so let's compare then
-			if (dname[j] != name[j]) {											// The char at j in entry's name is equals to the char at j in the name?
-				equal = False;													// Nope...
-			} else if (dname[j] == '\0') {										// End of string?
-				end = True;														// YES!
-			}
-			
-			if (equal) {														// Equals?
-				return (PDevice)(i->data);										// Yes, so return it
-			}
+		if (StrGetLength(dname) != StrGetLength(name)) {						// Same length?
+			continue;															// No, so we don't even need to compare this entry
+		} else if (StrCompare(dname, name)) {									// dname == name?
+			return (PDevice)(i->data);											// YES!
 		}
 	}
 	
@@ -136,7 +118,7 @@ PChar FsGetBootDevice(Void) {
 }
 
 Void FsDbgListDevices(Void) {
-	if (!FsDeviceList) {
+	if (FsDeviceList == Null) {
 		DbgWriteFormated("[FsDbgListDevices] Device list isn't initialized!\r\n");
 	} else if (FsDeviceList->length == 0) {
 		DbgWriteFormated("[FsDbgListDevices] No devices avaliable.\r\n");

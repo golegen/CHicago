@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 23:40 BRT
-// Last edited on July 15 of 2018, at 14:27 BRT
+// Last edited on July 15 of 2018, at 20:33 BRT
 
 #include <chicago/arch/ide.h>
 #include <chicago/arch/idt.h>
@@ -10,6 +10,7 @@
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
 #include <chicago/device.h>
+#include <chicago/string.h>
 
 IDEDevice IDEDevices[4];
 
@@ -403,28 +404,20 @@ Void IDEInit(Void) {
 				PChar name = Null;																				// Yes, let's allocate memory for the name
 				
 				if (IDEDevices[(i * 2) + j].atapi) {															// ATAPI?
-					name = (PChar)MemAllocate(7);																// Yes, so the name will be CdRomX, where X is the "cdrom number"
+					name = StrDuplicate(IDECDROMString);														// Yes, so duplicate the CdRomX string
 					
 					if (name == Null) {																			// Failed?
 						DbgWriteFormated("[x86] Failed to add CdRom%d device\r\n", cdc++);						// Yes...
 						goto next;
 					}
 					
-					for (UInt32 k = 0; k < 7; k++) {															// Copy the string
-						name[k] = IDECDROMString[k];
-					}
-					
 					name[5] = (Char)(cdc++ + '0');																// And set the num
 				} else {
-					name = (PChar)MemAllocate(10);																// Yes, so the name will be HardDiskX, where X is the "harddisk number"
+					name = StrDuplicate(IDEHardDiskString);														// No, so duplicate the HardDiskX string
 					
 					if (name == Null) {																			// Failed?
 						DbgWriteFormated("[x86] Failed to add HardDisk%d device\r\n", hdc++);					// Yes...
 						goto next;
-					}
-					
-					for (UInt32 k = 0; k < 10; k++) {															// Copy the string
-						name[k] = IDEHardDiskString[k];
 					}
 					
 					name[8] = (Char)(hdc++ + '0');																// And set the num

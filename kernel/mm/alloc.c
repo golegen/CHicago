@@ -1,10 +1,11 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 13 of 2018, at 00:44 BRT
-// Last edited on July 15 of 2018, at 12:05 BRT
+// Last edited on July 15 of 2018, at 20:32 BRT
 
 #include <chicago/alloc-int.h>
 #include <chicago/heap.h>
+#include <chicago/string.h>
 
 PVoid MemAllocateBase = Null;
 
@@ -189,12 +190,7 @@ UIntPtr MemZAllocate(UIntPtr size) {
 	UIntPtr ret = MemAllocate(size);
 	
 	if (ret) {
-		UIntPtr rsize = ((((size - 1) >> (sizeof(UIntPtr) / 2)) << (sizeof(UIntPtr) / 2)) + sizeof(UIntPtr));
-		PUIntPtr ptr = (PUIntPtr)ret;
-		
-		for (UIntPtr i = 0; i < rsize / sizeof(UIntPtr); i++) {
-			ptr[i] = 0;
-		}
+		StrSetMemory((PVoid)ret, 0, size);
 	}
 	
 	return ret;

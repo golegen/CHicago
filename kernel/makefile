@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on July 15 of 2018, at 13:22 BRT
+# Last edited on July 15 of 2018, at 19:05 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -53,7 +53,7 @@ endif
 OBJECTS := main.c.o
 OBJECTS += ds/list.c.o
 OBJECTS += io/device.c.o io/null.c.o io/zero.c.o
-OBJECTS += mm/alloc.c.o mm/heap.c.o mm/pmm.c.o
+OBJECTS += mm/alloc.c.o mm/heap.c.o mm/pmm.c.o mm/string.c.o
 
 ARCH_OBJECTS := $(addprefix build/arch/$(ARCH)/,$(ARCH_OBJECTS))
 OBJECTS := $(addprefix build/,$(OBJECTS))

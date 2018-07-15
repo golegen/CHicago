@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 26 of 2018, at 22:00 BRT
-// Last edited on July 14 of 2018, at 21:39 BRT
+// Last edited on July 15 of 2018, at 20:27 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
@@ -11,6 +11,7 @@
 #include <chicago/arch.h>
 #include <chicago/debug.h>
 #include <chicago/mm.h>
+#include <chicago/string.h>
 
 UInt8 IDTEntries[256][8];
 PInterruptHandler InterruptHandlers[256];
@@ -111,9 +112,7 @@ Void ISRDefaultHandler(PRegisters regs) {
 					while (1) ;
 				}
 				
-				for (UIntPtr i = 0; i < MM_PAGE_SIZE / sizeof(UIntPtr); i++) {						// Let's copy!
-					tmp[i] = ((PUIntPtr)faddr)[i];
-				}
+				StrCopyMemory(tmp, (PVoid)faddr, MM_PAGE_SIZE);										// Let's copy!
 				
 				MmSetPTE(MmCurrentTables, faddr, newp, oldf | 2);									// Unset the write flag
 				Asm Volatile("invlpg (%0)" :: "b"(faddr) : "memory");
@@ -174,12 +173,6 @@ Void IDTUnregisterIRQHandler(UInt8 num)
 }
 
 Void IDTInit(Void) {
-	for (UInt32 i = 0; i < 256; i++) {																// Clear IDT Entries
-		for (UInt32 j = 0; j < 8; j++) {
-			IDTEntries[i][j] = 0;
-		}
-	}
-	
 	PortOutByte(0x20, 0x11);																		// Remap PIC
 	PortOutByte(0xA0, 0x11);
 	PortOutByte(0x21, 0x20);
