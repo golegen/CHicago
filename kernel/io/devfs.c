@@ -1,0 +1,173 @@
+// File author is Ítalo Lima Marconato Matias
+//
+// Created on July 16 of 2018, at 18:29 BRT
+// Last edited on July 16 of 2018, at 20:51 BRT
+
+#include <chicago/alloc.h>
+#include <chicago/debug.h>
+#include <chicago/device.h>
+#include <chicago/file.h>
+#include <chicago/string.h>
+
+Boolean DevFsReadFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
+	if (file == Null) {																			// Any null pointer?
+		return False;																			// Yes, so we can't continue
+	}  else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {									// We're trying to read raw bytes in an... Directory?
+		return False;																			// Yes (Why?)
+	}
+	
+	PDevice dev = FsGetDevice(file->name);														// Get the device using the name
+	
+	if (dev == Null) {																			// Failed for some unknown reason?
+		return False;																			// Yes
+	}
+	
+	return FsReadDevice(dev, off, len, buf);													// Redirect to the FsReadDevice function
+}
+
+Boolean DevFsWriteFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
+	if (file == Null) {																			// Any null pointer?
+		return False;																			// Yes, so we can't continue
+	}  else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {									// We're trying to write raw bytes in an... Directory?
+		return False;																			// Yes (Why?)
+	}
+	
+	PDevice dev = FsGetDevice(file->name);														// Get the device using the name
+	
+	if (dev == Null) {																			// Failed for some unknown reason?
+		return False;																			// Yes
+	}
+	
+	return FsWriteDevice(dev, off, len, buf);													// Redirect to the FsWriteDevice function
+}
+
+Boolean DevFsOpenFile(PFsNode node) {
+	if (node == Null) {																			// Null pointer?
+		return False;																			// Yes
+	} else if (StrCompare(node->name, "\\")) {													// Root directory?
+		return True;																			// Yes, we don't need to check anything so!
+	} else if (FsGetDevice(node->name) == Null) {												// The device really exists?
+		return False;																			// Nope
+	} else {
+		return True;																			// Yes!
+	}
+}
+
+Void DevFsCloseFile(PFsNode node) {
+	if (node == Null) {																			// Null pointer?
+		return;																					// Yes
+	} else if (StrCompare(node->name, "\\")) {													// Root directory?
+		return;																					// Yes, DON'T FREE IT, NEVER!
+	}
+	
+	MemFree((UIntPtr)node->name);																// Free everything!
+	MemFree((UIntPtr)node);
+}
+
+PChar DevFsReadDirectoryEntry(PFsNode dir, UIntPtr entry) {
+	if (dir == Null) {																			// Any null pointer?
+		return Null;																			// Yes, so we can't continue
+	}  else if ((dir->flags & FS_FLAG_DIR) != FS_FLAG_DIR) {									// We're trying to do ReadDirectoryEntry in an... File?
+		return Null;																			// Yes (Why?)
+	} else {
+		PDevice dev = FsGetDeviceByID(entry);													// Get the device by ID (using the entry)
+		
+		if (dev == Null) {																		// Found?
+			return Null;																		// Nope
+		}
+		
+		return dev->name;																		// Return the device's name
+	}
+}
+
+PFsNode DevFsFindInDirectory(PFsNode dir, PChar name) {
+	if ((dir == Null) || (name == Null)) {														// Any null pointer?
+		return Null;																			// Yes, so we can't continue
+	}  else if ((dir->flags & FS_FLAG_DIR) != FS_FLAG_DIR) {									// We're trying to do FindInDirectory in an... File?
+		return Null;																			// Yes (Why?)
+	}
+	
+	PDevice dev = FsGetDevice(name);															// Try to get the device by the name
+	
+	if (dev == Null) {																			// Failed?
+		return Null;																			// Yes
+	}
+	
+	PFsNode node = (PFsNode)MemAllocate(sizeof(FsNode));										// Alloc the fs node struct
+	
+	if (node == Null) {																			// Failed?
+		return Null;																			// Yes
+	}
+	
+	node->name = StrDuplicate(dev->name);														// Duplicate the name
+	
+	if (node->name == Null) {																	// Failed?
+		MemFree((UIntPtr)node);																	// Yes, so free everything
+		return Null;																			// And return
+	}
+	
+	node->flags = FS_FLAG_FILE;
+	node->inode = FsGetDeviceID(name);															// Try to get the device idx in the list
+	
+	if (node->inode == (UIntPtr)-1) {															// Failed?
+		MemFree((UIntPtr)node->name);															// Yes, so free everything
+		MemFree((UIntPtr)node);
+		return Null;																			// And return
+	}
+	
+	node->device = dev;
+	
+	node->read = DevFsReadFile;
+	node->write = DevFsWriteFile;
+	node->open = DevFsOpenFile;
+	node->close = DevFsCloseFile;
+	node->readdir = Null;
+	node->finddir = Null;
+	
+	return node;
+}
+
+Void DevFsInit(Void) {
+	PChar path = StrDuplicate("\\Devices");														// Try to duplicate the path string
+	
+	if (path == Null) {																			// Failed?
+		DbgWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Yes (halt, as we need DevFs for everything)
+		while (1);
+	}
+	
+	PChar type = StrDuplicate("DevFs");															// Try to duplicate the type string
+	
+	if (type == Null) {																			// Failed?
+		DbgWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Yes (same as above)
+		while (1);
+	}
+	
+	PFsNode root = (PFsNode)MemAllocate(sizeof(FsNode));										// Try to alloc some space for the root directory
+	
+	if (root == Null) {																			// Failed?
+		DbgWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Yes (same as above)
+		while (1);
+	}
+	
+	root->name = StrDuplicate("\\");															// Try to duplicate the root directory string
+	
+	if (root->name == Null) {																	// Failed?
+		DbgWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Yes (same as above)
+		while (1);
+	}
+	
+	root->flags = FS_FLAG_DIR;
+	root->inode = (UIntPtr)-1;
+	root->device = Null;
+	root->read = Null;
+	root->write = Null;
+	root->open = DevFsOpenFile;
+	root->close = DevFsCloseFile;
+	root->readdir = DevFsReadDirectoryEntry;
+	root->finddir = DevFsFindInDirectory;
+	
+	if (!FsAddMountPoint(path, type, root)) {													// Try to add this device
+		DbgWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Failed (same as above)
+		while (1);
+	}
+}

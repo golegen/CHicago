@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 15 of 2018, at 19:05 BRT
-// Last edited on July 15 of 2018, at 20:05 BRT
+// Last edited on July 15 of 2018, at 21:45 BRT
 
 #include <chicago/alloc.h>
 
@@ -81,7 +81,7 @@ UIntPtr StrGetLength(PChar str) {
 		return 0;																	// Yes
 	}
 	
-	UIntPtr n = 0;																	// This time, we're not going to use Duff's Device, WE'RE GOING TO USE... loop unroll... it's almost the samething so...
+	UIntPtr n = 0;																	// This time, we're not going to use Duff's Device, WE'RE GOING TO USE... loop unroll... it's almost the same thing so...
 	
 	while (1) {
 		if (*(str + n++) == 0) { return n - 1; }
@@ -100,7 +100,7 @@ Boolean StrCompare(PChar dest, PChar src) {
 }
 
 PChar StrCopy(PChar dest, PChar src) {
-	return StrCopyMemory(dest, src, StrGetLength(dest) + 1);						// Just redirect to StrCopyMemory function
+	return StrCopyMemory(dest, src, StrGetLength(src) + 1);							// Just redirect to StrCopyMemory function
 }
 
 Void StrConcatenate(PChar dest, PChar src) {
@@ -116,42 +116,6 @@ Void StrConcatenate(PChar dest, PChar src) {
 	*end = '\0';
 }
 
-PChar StrTokenize(PChar str, PChar delim) {
-	if (delim == Null) {															// The delimiter list is an Null pointer?
-		return Null;																// ...
-	}
-	
-	static PChar buf = Null;
-	
-	if (str != Null) {																// First call?
-		buf = str;																	// Yes, set the buffer
-	}
-	
-	if (buf[0] == '\0') {															// End of the buffer (everthing is tokenized)?
-		return Null;																// Yes, so we don't have anything!
-	}
-	
-	PChar ret = buf;
-	
-	for (PChar b = buf; *b != '\0'; b++) {
-		for (PChar d = delim; *d != '\0'; d++) {
-			if (*b == *d) {
-				*b = '\0';
-				buf = b + 1;
-				
-				if (b == ret) {														// We may find more then one delim entries in the str, ie: str is " -Hello, World!" and delim is " -,!"
-					ret++;
-					continue;
-				}
-				
-				return ret;
-			}
-		}
-	}
-	
-	return ret;
-}
-
 PChar StrDuplicate(PChar str) {
 	PChar ret = (PChar)MemAllocate(StrGetLength(str) + 1);
 	
@@ -159,5 +123,52 @@ PChar StrDuplicate(PChar str) {
 		return Null;
 	}
 	
-	return StrCopy(ret, str);
+	return StrCopy(ret, str);;
+}
+
+PChar StrTokenize(PChar str, PChar delim) {
+	static PChar temp = Null;
+	
+	if (str != Null) {																// First call?
+		temp = StrDuplicate(str);													// Yes, try to set the copy the str to temp
+		
+		if (temp == Null) {															// Failed?
+			return Null;															// Yes
+		}
+	} else if (temp == Null) {														// Not the first call but temp is Null?
+		return Null;																// Yes, so return Null
+	} else {
+		str = temp;
+	}
+	
+	UIntPtr chars = 0;
+	UIntPtr flag = 0;
+	
+	while (*temp) {
+		for (PChar d = delim; *d != '\0'; d++) {
+			if (*temp == *d) {														// Found delim in the string?
+				if (chars == 0) {													// First character in the string?
+					flag = 1;														// Yes, there may be other after it, so go to the next one
+					str++;
+				} else {
+					temp++;															// No, so we can return
+					str[chars] = '\0';
+					
+					return str;
+				}
+			}
+		}
+		
+		if (flag == 0) {															// Found delim?
+			chars++;																// No, so increase chars
+		}
+		
+		temp++;
+		flag = 0;
+	}
+	
+	temp = Null;
+	str[chars] = '\0';
+	
+	return str;
 }

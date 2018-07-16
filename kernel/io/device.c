@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:35 BRT
-// Last edited on July 15 of 2018, at 20:30 BRT
+// Last edited on July 16 of 2018, at 18:20 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -107,9 +107,42 @@ PDevice FsGetDevice(PChar name) {
 	return Null;
 }
 
+PDevice FsGetDeviceByID(UIntPtr id) {
+	if (FsDeviceList == Null) {
+		return Null;
+	} else if (id >= FsDeviceList->length) {
+		return Null;
+	}
+	
+	return (PDevice)ListGet(FsDeviceList, id);
+}
+
+UIntPtr FsGetDeviceID(PChar name) {
+	if (FsDeviceList == Null) {
+		return 0;
+	}
+	
+	UIntPtr idx = 0;
+	
+	ListForeach(FsDeviceList, i) {
+		PChar dname = ((PDevice)(i->data))->name;
+		
+		if (StrGetLength(dname) != StrGetLength(name)) {
+			idx++;
+			continue;
+		} else if (StrCompare(dname, name)) {
+			return idx;
+		} else {
+			idx++;
+		}
+	}
+	
+	return (UIntPtr)-1;
+}
+
 Void FsSetBootDevice(PChar name) {
-	if (FsGetDevice(name) != Null) {
-		FsBootDevice = name;
+	if (FsGetDevice(name) != Null) {												// Device with this name exists?
+		FsBootDevice = name;														// Yes! So set it as boot device (just like the user asked)
 	}
 }
 
@@ -129,6 +162,16 @@ Void FsDbgListDevices(Void) {
 	}
 }
 
+Void FsInitDeviceList(Void) {
+	FsDeviceList = ListNew(True);													// Try to init the device list
+	
+	if (FsDeviceList == Null) {														// Failed?
+		DbgWriteFormated("PANIC! Couldn't init the device list\r\n");				// Yes, so halt
+		while (1) ;
+	}
+}
+
 Void FsInitDevices(Void) {
-	FsDeviceList = ListNew(True);
+	NullDeviceInit();																// Add the Null device
+	ZeroDeviceInit();																// Add the Zero device
 }

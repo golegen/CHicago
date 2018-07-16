@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 13 of 2018, at 00:44 BRT
-// Last edited on July 15 of 2018, at 20:32 BRT
+// Last edited on July 16 of 2018, at 19:48 BRT
 
 #include <chicago/alloc-int.h>
 #include <chicago/heap.h>
@@ -154,7 +154,7 @@ Void MemFree(UIntPtr blockk) {
 		return;
 	} else if (blockk < (UIntPtr)MemAllocateBase) {
 		return;
-	} else if (blockk > HeapGetCurrent()) {
+	} else if (blockk >= HeapGetCurrent()) {
 		return;
 	}
 	
@@ -203,7 +203,7 @@ UIntPtr MemReallocate(UIntPtr blockk, UIntPtr size) {
 		return MemAllocate(size);
 	} else if (blockk < (UIntPtr)MemAllocateBase) {
 		return 0;
-	} else if (blockk > HeapGetCurrent()) {
+	} else if (blockk >= HeapGetCurrent()) {
 		return 0;
 	} else {
 		UIntPtr rsize = ((((size - 1) >> (sizeof(UIntPtr) / 2)) << (sizeof(UIntPtr) / 2)) + sizeof(UIntPtr));

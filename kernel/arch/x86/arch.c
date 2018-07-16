@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on July 15 of 2018, at 20:24 BRT
+// Last edited on July 16 of 2018, at 18:22 BRT
 
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/ide.h>
@@ -58,7 +58,7 @@ Void ArchInit(Void) {
 	HeapInit(KernelRealEnd, 0xFFC00000);																				// Init the kernel heap (start after all the internal kernel structs and end at the start of the temp addresses)
 	DbgWriteFormated("[x86] VMM initialized\r\n");
 	
-	FsInitDevices();																									// Init the x86-only devices (and the device list)
+	FsInitDeviceList();																									// Init the x86-only devices (and the device list)
 	IDEInit();
 	
 	if ((bddrive >= 0x80) && (bddrive <= 0x89) && (bdpart1 == 0) && (bdpart2 == 0) && (bdpart3 == 0)) {					// RAW Hard Disk?
