@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on July 16 of 2018, at 19:15 BRT
+# Last edited on July 17 of 2018, at 16:11 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -52,8 +52,8 @@ endif
 
 OBJECTS := main.c.o
 OBJECTS += ds/list.c.o
-OBJECTS += io/device.c.o io/devfs.c.o io/file.c.o io/null.c.o
-OBJECTS += io/zero.c.o
+OBJECTS += io/device.c.o io/devfs.c.o io/file.c.o io/iso9660.c.o
+OBJECTS += io/null.c.o io/zero.c.o
 OBJECTS += mm/alloc.c.o mm/heap.c.o mm/pmm.c.o mm/string.c.o
 
 ARCH_OBJECTS := $(addprefix build/arch/$(ARCH)/,$(ARCH_OBJECTS))
@@ -103,6 +103,7 @@ build/chicago-$(ARCH).iso: build/chkrnl-$(ARCH)
 	$(NOECHO)if [ -d $(dir $@)/iso ]; then rm -rf $(dir $@)/iso; fi
 	$(NOECHO)mkdir -p $(dir $@)/iso
 	$(NOECHO)mkdir -p $(dir $@)/iso/boot
+	$(NOECHO)mkdir -p $(dir $@)/iso/testdir
 	$(NOECHO)mkdir -p $(dir $@)/iso/boot/grub
 	$(NOECHO)cp build/chkrnl-$(ARCH) $(dir $@)/iso/boot/chkrnl
 	$(NOECHO)echo 'set timeout=30' > $(dir $@)/iso/boot/grub/grub.cfg
@@ -116,10 +117,12 @@ build/chicago-$(ARCH).iso: build/chkrnl-$(ARCH)
 	$(NOECHO)echo '    multiboot /boot/chkrnl' >> $(dir $@)/iso/boot/grub/grub.cfg
 	$(NOECHO)echo '    boot' >> $(dir $@)/iso/boot/grub/grub.cfg
 	$(NOECHO)echo '}' >> $(dir $@)/iso/boot/grub/grub.cfg
+	$(NOECHO)echo 'Hello, World!' >> $(dir $@)/iso/testdir/test.txt
+	$(NOECHO)echo 'Other test file' >> $(dir $@)/iso/TestFile.txt
 ifdef ($(GRUB_DIR))
-	$(NOECHO)grub-mkrescue -d $(GRUB_DIR) --output=$(dir $@)/chicago-$(ARCH).iso $(dir $@)/iso 2>/dev/null
+	$(NOECHO)grub-mkrescue -d $(GRUB_DIR) --output=$(dir $@)/chicago-$(ARCH).iso $(dir $@)/iso -c boot/boot.cat 2>/dev/null
 else
-	$(NOECHO)grub-mkrescue --output=$(dir $@)/chicago-$(ARCH).iso $(dir $@)/iso 2>/dev/null
+	$(NOECHO)grub-mkrescue --output=$(dir $@)/chicago-$(ARCH).iso $(dir $@)/iso -c boot/boot.cat 2>/dev/null
 endif
 	$(NOECHO)rm -rf $(dir $@)/iso
 endif

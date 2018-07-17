@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on July 16 of 2018, at 18:22 BRT
+// Last edited on July 17 of 2018, at 16:10 BRT
 
 #include <chicago/arch.h>
 #include <chicago/debug.h>
@@ -16,7 +16,7 @@ Void KernelMain(Void) {
 	DbgWriteFormated("[Kernel] Devices initialized\r\n");
 	
 	FsInit();																			// Init the filesystem list, mount point list, and add the basic mount points
-	DbgWriteFormated("[Kernel] Filesystem initialized\r\n");
+	DbgWriteFormated("[Kernel] Filesystem initialized\r\n\r\n");
 	
 	while (1) ;
 }

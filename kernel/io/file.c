@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:28 BRT
-// Last edited on July 16 of 2018, at 20:53 BRT
+// Last edited on July 17 of 2018, at 14:23 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -14,9 +14,7 @@ PList FsTypeList = Null;
 PList FsTokenizePath(PChar path) {
 	if (path == Null) {																													// Path is Null?
 		return Null;																													// Yes...
-	} else if (path[0] == '\0') {																										// Path is... nothing?
-		return Null;																													// Why????
-	} else if ((StrGetLength(path) == 1) && (path[0] == '\\')) {																		// Root directory?
+	} else if ((StrGetLength(path) == 0) || ((StrGetLength(path) == 1) && (path[0] == '\\'))) {											// Root directory?
 		return ListNew(True);																											// Yes, so just return an empty list
 	}
 	
@@ -299,7 +297,7 @@ Boolean FsMountFile(PChar path, PChar file, PChar type) {
 		return False;
 	}
 	
-	PFsMountPoint mp = typ->mount(src);																									// Try to mount it
+	PFsMountPoint mp = typ->mount(src, path);																							// Try to mount it
 	
 	if (mp == Null) {																													// The mount failed?
 		FsCloseFile(dest);																												// Yes :(
@@ -308,7 +306,6 @@ Boolean FsMountFile(PChar path, PChar file, PChar type) {
 	}
 	
 	FsCloseFile(dest);																													// Let's close our files, we don't need them anymore!
-	FsCloseFile(src);
 	
 	if (!FsAddMountPoint(mp->path, mp->type, mp->root)) {																				// And let's try to add this mount point
 		MemFree((UIntPtr)mp);																											// Failed, so return False
@@ -411,7 +408,7 @@ PFsMountPoint FsGetMountPoint(PChar path, PChar *outp) {
 					MemFree((UIntPtr)dup);																								// WE FOUND IT! So free our duplicate, we don't need it anymore :)
 					
 					if (outp != Null) {																									// If the user requested, let's save the relative path
-						if (mp->path[StrGetLength(mp->path) - 1] == '\\') {																// The mount point path finishes with an slash?
+						if ((mp->path[StrGetLength(mp->path) - 1] == '\\') || (StrCompare(mp->path, path))) {							// The mount point path finishes with an slash (or we're trying to "get" the root directory of the mount point)?
 							*outp = path + StrGetLength(mp->path);																		// Yes, so we can use mp->path length
 						} else {
 							*outp = path + StrGetLength(mp->path) + 1;																	// No, so we need to use mp->path length + 1
@@ -534,7 +531,7 @@ Boolean FsRemoveMountPoint(PChar path) {
 	return True;																														// And return True!
 }
 
-Boolean FsAddType(PChar name, Boolean (*probe)(PFsNode), PFsMountPoint (*mount)(PFsNode), Boolean (*umount)(PFsMountPoint)) {
+Boolean FsAddType(PChar name, Boolean (*probe)(PFsNode), PFsMountPoint (*mount)(PFsNode, PChar), Boolean (*umount)(PFsMountPoint)) {
 	if ((FsTypeList == Null) || (name == Null) || (probe == Null) || (mount == Null) || (umount == Null)) {								// Null pointer checks
 		return False;
 	} else if (FsGetType(name) != Null) {																								// This fs type doesn't exists... right?
@@ -552,7 +549,7 @@ Boolean FsAddType(PChar name, Boolean (*probe)(PFsNode), PFsMountPoint (*mount)(
 	type->mount = mount;
 	type->umount = umount;
 	
-	if (!ListAdd(FsMountPointList, type)) {																								// Try to add it to the list
+	if (!ListAdd(FsTypeList, type)) {																									// Try to add it to the list
 		MemFree((UIntPtr)type);																											// Failed...
 		return False;
 	}
@@ -614,8 +611,21 @@ Void FsDbgListMountPoints(Void) {
 	}
 }
 
+Void FsDbgListTypes(Void) {
+	if (FsTypeList == Null) {
+		DbgWriteFormated("[FsDbgListTypes] Filesystem type list isn't initialized!\r\n");
+	} else if (FsTypeList->length == 0) {
+		DbgWriteFormated("[FsDbgListTypes] No filesystem types avaliable.\r\n");
+	} else {
+		ListForeach(FsTypeList, i) {
+			DbgWriteFormated("[FsDbgListTypes] %s\r\n", ((PFsType)(i->data))->name);
+		}
+	}
+}
+
 Void FsInitTypes(Void) {
 	DevFsInit();																														// Mount the DevFs
+	Iso9660Init();																													// Add the Iso9660 to the fs type list
 }
 
 Void FsInit(Void) {

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 23:40 BRT
-// Last edited on July 15 of 2018, at 21:21 BRT
+// Last edited on July 17 of 2018, at 13:48 BRT
 
 #include <chicago/arch/ide.h>
 #include <chicago/arch/idt.h>
@@ -123,69 +123,6 @@ Boolean IDEATAReadSector(UInt8 bus, UInt8 drive, UInt32 lba, PUInt8 buf) {
 	return True;
 }
 
-Boolean IDEATAWriteSector(UInt8 bus, UInt8 drive, UInt32 lba, PUInt8 buf) {
-	if (bus > 1 || drive > 1) {																					// Valid?
-		return False;																							// No....
-	}
-	
-	IDEDevice dev = IDEDevices[(bus * 2) + drive];																// Let's get our int device
-	
-	if (!dev.valid) {																							// Valid device?
-		return False;																							// No
-	} else if (dev.atapi) {																						// ATAPI device?
-		return False;																							// Yes, in this function we only handle ATA
-	}
-	
-	UInt16 io = dev.io;
-	UInt8 slave = dev.slave;
-	
-	PortOutByte(io + ATA_REG_CONTROL, (IDEIRQInvoked = 0) + 2);													// Disable IRQs
-	
-	while (PortInByte(io + ATA_REG_STATUS) & ATA_SR_BSY) ;														// Poll until BSY is clear
-	
-	if (dev.addr48 && lba >= 0x10000000) {																		// We support, and need 48-bit addressing?
-		PortOutByte(io + ATA_REG_HDDEVSEL, 0xE0 | (slave << 4));												// Yes!
-	} else if (lba >= 0x10000000) {																				// We don't support, and need 48-bit addressing?
-		return False;																							// No...
-	} else {																									// So, it's normal addressing
-		PortOutByte(io + ATA_REG_HDDEVSEL, 0xE0 | (slave << 4) | ((lba & 0xF0000000) >> 24));
-	}
-	
-	if (lba >= 0x10000000) {																					// 48-bit addressing?
-		PortOutByte(io + ATA_REG_SECCOUNT1, 0);																	// Yes, so setup 48-bit addressing mode
-		PortOutByte(io + ATA_REG_LBA3, ((lba & 0xFF000000) >> 24));
-		PortOutByte(io + ATA_REG_LBA4, 0);
-		PortOutByte(io + ATA_REG_LBA5, 0);
-	}
-	
-	PortOutByte(io + ATA_REG_SECCOUNT0, 1);																		// 1 sector per time
-	PortOutByte(io + ATA_REG_LBA0, (lba & 0xFF));																// Let's send the LBA
-	PortOutByte(io + ATA_REG_LBA1, ((lba & 0xFF00) >> 8));
-	PortOutByte(io + ATA_REG_LBA2, ((lba & 0xFF0000) >> 16));
-	
-	if (lba >= 0x10000000) {																					// Send extended (48-bits addressing mode) command?
-		PortOutByte(io + ATA_REG_COMMAND, ATA_CMD_WRITE_PIO_EXT);												// Yes
-	} else {
-		PortOutByte(io + ATA_REG_COMMAND, ATA_CMD_WRITE_PIO);													// No
-	}
-	
-	if (!IDEPolling(io, True)) {																				// Poll, and return error if error
-		return False;
-	}
-	
-	PortOutMultiple(io + ATA_REG_DATA, buf, 256);																// Write the data
-	
-	if (lba >= 0x10000000) {																					// Send extended (48-bits addressing mode) FLUSH command?
-		PortOutByte(io + ATA_REG_COMMAND, ATA_CMD_CACHE_FLUSH_EXT);												// Yes
-	} else {
-		PortOutByte(io + ATA_REG_COMMAND, ATA_CMD_CACHE_FLUSH);													// No
-	}
-	
-	IDEPolling(io, False);																						// Do some polling
-	
-	return True;
-}
-
 Boolean IDEATAPIReadSector(UInt8 bus, UInt8 drive, UInt32 lba, PUInt8 buf) {
 	if (bus > 1 || drive > 1) {																					// Valid?
 		return False;																							// No....
@@ -276,28 +213,22 @@ Boolean IDEReadSectors(UInt8 bus, UInt8 drive, UInt8 count, UInt32 lba, PUInt8 b
 	return ret;
 }
 
-Boolean IDEWriteSectors(UInt8 bus, UInt8 drive, UInt8 count, UInt32 lba, PUInt8 buf) {
-	if (bus > 1 || drive > 1) {																					// Valid?
-		return False;																							// No....
+UIntPtr IDEGetBlockSize(UInt8 bus, UInt8 drive) {
+	if (bus > 1 || drive > 1) {
+		return 0;
 	}
 	
-	IDEDevice dev = IDEDevices[(bus * 2) + drive];																// Let's get our int device
+	IDEDevice dev = IDEDevices[(bus * 2) + drive];
 	
-	if (!dev.valid) {																							// Valid device?
-		return False;																							// No
+	if (!dev.valid) {
+		return 0;
 	}
 	
-	Boolean ret = False;
-	
-	if (dev.atapi) {																							// ATAPI?
-		ret = False;																							// Yes... but we don't support ATAPI write...
+	if (dev.atapi) {
+		return 2048;
 	} else {
-		for (UInt32 i = 0; i < count; i++) {																	// No, so yse the ATA write sector function
-			ret = IDEATAWriteSector(bus, drive, lba + i, buf + (i * 512));
-		}
+		return 512;
 	}
-	
-	return ret;
 }
 
 Void IDEInitializeInt(UInt32 bus, UInt32 drive)
@@ -374,15 +305,65 @@ Void IDEInitializeInt(UInt32 bus, UInt32 drive)
 Boolean IDEDeviceRead(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	UInt8 bus = (((UInt32)dev->priv) >> 8) & 0xFF;
 	UInt8 drive = ((UInt32)dev->priv) & 0xFF;
+	UIntPtr bsize = IDEGetBlockSize(bus, drive);
+	UIntPtr end = 0;
+	UIntPtr curr = 0;
+	UIntPtr start = 0;
 	
-	return IDEReadSectors(bus, drive, (UInt32)len, (UInt32)off, buf);											// UIntPtr may be different from UInt32, so let's cast it
-}
-
-Boolean IDEDeviceWrite(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf) {
-	UInt8 bus = (((UInt32)dev->priv) >> 8) & 0xFF;
-	UInt8 drive = ((UInt32)dev->priv) & 0xFF;
+	if (bsize == 0) {
+		return False;
+	}
 	
-	return IDEWriteSectors(bus, drive, (UInt32)len, (UInt32)off, buf);											// UIntPtr may be different from UInt32, so let's cast it
+	start = off / bsize;
+	end = (off + len - 1) / bsize;
+	
+	if ((off % bsize) != 0) {
+		PUInt8 buff = (PUInt8)MemAllocate(bsize);
+		
+		if (buf == Null) {
+			return False;
+		}
+		
+		if (!IDEReadSectors(bus, drive, 1, start, buff)) {
+			MemFree((UIntPtr)buff);
+			return False;
+		}
+		
+		StrCopyMemory(buf, (PVoid)(((UIntPtr)buff) + (off % bsize)), bsize - (off % bsize));
+		MemFree((UIntPtr)buff);
+		
+		curr += bsize - (off % bsize);
+		start++;
+	}
+	
+	if (((off + len) % bsize) && (start <= end)) {
+		PUInt8 buff = (PUInt8)MemAllocate(bsize);
+		
+		if (buf == Null) {
+			return False;
+		}
+		
+		if (!IDEReadSectors(bus, drive, 1, end, buff)) {
+			MemFree((UIntPtr)buff);
+			return False;
+		}
+		
+		StrCopyMemory((PVoid)(((UIntPtr)buf) + len - ((off + len) % bsize)), buff, (off + len) % bsize);
+		MemFree((UIntPtr)buff);
+		
+		end--;
+	}
+	
+	while (start <= end) {
+		if (!IDEReadSectors(bus, drive, 1, start, (PVoid)(((UIntPtr)buf) + curr))) {
+			return False;
+		}
+		
+		curr += bsize;
+		start++;
+	}
+	
+	return True;
 }
 
 Void IDEInit(Void) {
@@ -423,7 +404,7 @@ Void IDEInit(Void) {
 					name[8] = (Char)(hdc++ + '0');																// And set the num
 				}
 				
-				if (!FsAddDevice(name, (PVoid)((i << 8) | j), IDEDeviceRead, IDEDeviceWrite)) {					// At end try to add us to the device list!
+				if (!FsAddDevice(name, (PVoid)((i << 8) | j), IDEDeviceRead, Null)) {							// At end try to add us to the device list!
 					DbgWriteFormated("[x86] Failed to add %s device\r\n", name);
 					MemFree((UIntPtr)name);
 				}

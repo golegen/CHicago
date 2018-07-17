@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:29 BRT
-// Last edited on July 16 of 2018, at 20:51 BRT
+// Last edited on July 17 of 2018, at 14:42 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -12,7 +12,7 @@
 Boolean DevFsReadFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	if (file == Null) {																			// Any null pointer?
 		return False;																			// Yes, so we can't continue
-	}  else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {									// We're trying to read raw bytes in an... Directory?
+	} else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {									// We're trying to read raw bytes in an... Directory?
 		return False;																			// Yes (Why?)
 	}
 	
@@ -28,7 +28,7 @@ Boolean DevFsReadFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
 Boolean DevFsWriteFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	if (file == Null) {																			// Any null pointer?
 		return False;																			// Yes, so we can't continue
-	}  else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {									// We're trying to write raw bytes in an... Directory?
+	} else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {									// We're trying to write raw bytes in an... Directory?
 		return False;																			// Yes (Why?)
 	}
 	
@@ -44,12 +44,8 @@ Boolean DevFsWriteFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
 Boolean DevFsOpenFile(PFsNode node) {
 	if (node == Null) {																			// Null pointer?
 		return False;																			// Yes
-	} else if (StrCompare(node->name, "\\")) {													// Root directory?
-		return True;																			// Yes, we don't need to check anything so!
-	} else if (FsGetDevice(node->name) == Null) {												// The device really exists?
-		return False;																			// Nope
 	} else {
-		return True;																			// Yes!
+		return True;
 	}
 }
 
@@ -67,7 +63,7 @@ Void DevFsCloseFile(PFsNode node) {
 PChar DevFsReadDirectoryEntry(PFsNode dir, UIntPtr entry) {
 	if (dir == Null) {																			// Any null pointer?
 		return Null;																			// Yes, so we can't continue
-	}  else if ((dir->flags & FS_FLAG_DIR) != FS_FLAG_DIR) {									// We're trying to do ReadDirectoryEntry in an... File?
+	} else if ((dir->flags & FS_FLAG_DIR) != FS_FLAG_DIR) {										// We're trying to do ReadDirectoryEntry in an... File?
 		return Null;																			// Yes (Why?)
 	} else {
 		PDevice dev = FsGetDeviceByID(entry);													// Get the device by ID (using the entry)
@@ -76,14 +72,14 @@ PChar DevFsReadDirectoryEntry(PFsNode dir, UIntPtr entry) {
 			return Null;																		// Nope
 		}
 		
-		return dev->name;																		// Return the device's name
+		return StrDuplicate(dev->name);															// Return the device's name
 	}
 }
 
 PFsNode DevFsFindInDirectory(PFsNode dir, PChar name) {
 	if ((dir == Null) || (name == Null)) {														// Any null pointer?
 		return Null;																			// Yes, so we can't continue
-	}  else if ((dir->flags & FS_FLAG_DIR) != FS_FLAG_DIR) {									// We're trying to do FindInDirectory in an... File?
+	} else if ((dir->flags & FS_FLAG_DIR) != FS_FLAG_DIR) {										// We're trying to do FindInDirectory in an... File?
 		return Null;																			// Yes (Why?)
 	}
 	
@@ -106,6 +102,7 @@ PFsNode DevFsFindInDirectory(PFsNode dir, PChar name) {
 		return Null;																			// And return
 	}
 	
+	node->priv = Null;
 	node->flags = FS_FLAG_FILE;
 	node->inode = FsGetDeviceID(name);															// Try to get the device idx in the list
 	
@@ -115,8 +112,7 @@ PFsNode DevFsFindInDirectory(PFsNode dir, PChar name) {
 		return Null;																			// And return
 	}
 	
-	node->device = dev;
-	
+	node->length = 0;
 	node->read = DevFsReadFile;
 	node->write = DevFsWriteFile;
 	node->open = DevFsOpenFile;
@@ -156,9 +152,10 @@ Void DevFsInit(Void) {
 		while (1);
 	}
 	
+	root->priv = Null;
 	root->flags = FS_FLAG_DIR;
 	root->inode = (UIntPtr)-1;
-	root->device = Null;
+	root->length = 0;
 	root->read = Null;
 	root->write = Null;
 	root->open = DevFsOpenFile;

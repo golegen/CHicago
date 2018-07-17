@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:18 BRT
-// Last edited on July 16 of 2018, at 20:14 BRT
+// Last edited on July 17 of 2018, at 14:42 BRT
 
 #ifndef __CHICAGO_FILE_H__
 #define __CHICAGO_FILE_H__
@@ -14,9 +14,10 @@
 
 typedef struct FsNodeStruct {
 	PChar name;
+	PVoid priv;
 	UIntPtr flags;
 	UIntPtr inode;
-	PDevice device;
+	UIntPtr length;
 	Boolean (*read)(struct FsNodeStruct *, UIntPtr, UIntPtr, PUInt8);
 	Boolean (*write)(struct FsNodeStruct *, UIntPtr, UIntPtr, PUInt8);
 	Boolean (*open)(struct FsNodeStruct *);
@@ -34,11 +35,12 @@ typedef struct {
 typedef struct {
 	PChar name;
 	Boolean (*probe)(PFsNode);
-	PFsMountPoint (*mount)(PFsNode);
+	PFsMountPoint (*mount)(PFsNode, PChar);
 	Boolean (*umount)(PFsMountPoint);
 } FsType, *PFsType;
 
 Void DevFsInit(Void);
+Void Iso9660Init(Void);
 
 PList FsTokenizePath(PChar path);
 PChar FsCanonicalizePath(PChar path);
@@ -55,9 +57,10 @@ PFsMountPoint FsGetMountPoint(PChar path, PChar *outp);
 PFsType FsGetType(PChar type);
 Boolean FsAddMountPoint(PChar path, PChar type, PFsNode root);
 Boolean FsRemoveMountPoint(PChar path);
-Boolean FsAddType(PChar name, Boolean (*probe)(PFsNode), PFsMountPoint (*mount)(PFsNode), Boolean (*umount)(PFsMountPoint));
+Boolean FsAddType(PChar name, Boolean (*probe)(PFsNode), PFsMountPoint (*mount)(PFsNode, PChar), Boolean (*umount)(PFsMountPoint));
 Boolean FsRemoveType(PChar name);
 Void FsDbgListMountPoints(Void);
+Void FsDbgListTypes(Void);
 Void FsInit(Void);
 
 #endif		// __CHICAGO_FILE_H__
