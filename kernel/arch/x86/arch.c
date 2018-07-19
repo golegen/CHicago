@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on July 16 of 2018, at 18:22 BRT
+// Last edited on July 19 of 2018, at 02:24 BRT
 
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/ide.h>
@@ -10,6 +10,7 @@
 #include <chicago/arch/pmm.h>
 #include <chicago/arch/registers.h>
 #include <chicago/arch/serial.h>
+#include <chicago/arch/vga.h>
 #include <chicago/arch/vmm.h>
 
 #include <chicago/debug.h>
@@ -52,8 +53,12 @@ Void ArchInit(Void) {
 	IDTInit();																											// Init the IDT
 	DbgWriteFormated("[x86] IDT initialized\r\n");
 	
+	VGAPreInit();																										// Some VGA struct allocs
 	PMMInit();																											// Init the PMM
 	DbgWriteFormated("[x86] PMM initialized\r\n");
+	
+	VGAInit();																											// Init the VGA display (320x200x256)
+	DbgWriteFormated("[x86] VGA initialized\r\n");
 	
 	HeapInit(KernelRealEnd, 0xFFC00000);																				// Init the kernel heap (start after all the internal kernel structs and end at the start of the temp addresses)
 	DbgWriteFormated("[x86] VMM initialized\r\n");

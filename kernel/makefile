@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on July 17 of 2018, at 16:11 BRT
+# Last edited on July 19 of 2018, at 02:26 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -12,7 +12,7 @@ ifeq ($(ARCH),x86)
 	
 	ARCH_OBJECTS := start.s.o
 	ARCH_OBJECTS += arch.c.o
-	ARCH_OBJECTS += io/debug.c.o io/ide.c.o
+	ARCH_OBJECTS += io/debug.c.o io/ide.c.o io/vga.c.o
 	ARCH_OBJECTS += sys/gdt.c.o sys/idt.c.o
 	ARCH_OBJECTS += mm/pmm.c.o mm/vmm.c.o
 	
@@ -52,8 +52,8 @@ endif
 
 OBJECTS := main.c.o
 OBJECTS += ds/list.c.o
-OBJECTS += io/device.c.o io/devfs.c.o io/file.c.o io/iso9660.c.o
-OBJECTS += io/null.c.o io/zero.c.o
+OBJECTS += io/device.c.o io/display.c.o io/devfs.c.o io/file.c.o
+OBJECTS += io/framebuffer.c.o io/iso9660.c.o io/null.c.o io/zero.c.o
 OBJECTS += mm/alloc.c.o mm/heap.c.o mm/pmm.c.o mm/string.c.o
 
 ARCH_OBJECTS := $(addprefix build/arch/$(ARCH)/,$(ARCH_OBJECTS))
@@ -103,7 +103,6 @@ build/chicago-$(ARCH).iso: build/chkrnl-$(ARCH)
 	$(NOECHO)if [ -d $(dir $@)/iso ]; then rm -rf $(dir $@)/iso; fi
 	$(NOECHO)mkdir -p $(dir $@)/iso
 	$(NOECHO)mkdir -p $(dir $@)/iso/boot
-	$(NOECHO)mkdir -p $(dir $@)/iso/testdir
 	$(NOECHO)mkdir -p $(dir $@)/iso/boot/grub
 	$(NOECHO)cp build/chkrnl-$(ARCH) $(dir $@)/iso/boot/chkrnl
 	$(NOECHO)echo 'set timeout=30' > $(dir $@)/iso/boot/grub/grub.cfg
@@ -117,8 +116,6 @@ build/chicago-$(ARCH).iso: build/chkrnl-$(ARCH)
 	$(NOECHO)echo '    multiboot /boot/chkrnl' >> $(dir $@)/iso/boot/grub/grub.cfg
 	$(NOECHO)echo '    boot' >> $(dir $@)/iso/boot/grub/grub.cfg
 	$(NOECHO)echo '}' >> $(dir $@)/iso/boot/grub/grub.cfg
-	$(NOECHO)echo 'Hello, World!' >> $(dir $@)/iso/testdir/test.txt
-	$(NOECHO)echo 'Other test file' >> $(dir $@)/iso/TestFile.txt
 ifdef ($(GRUB_DIR))
 	$(NOECHO)grub-mkrescue -d $(GRUB_DIR) --output=$(dir $@)/chicago-$(ARCH).iso $(dir $@)/iso -c boot/boot.cat 2>/dev/null
 else

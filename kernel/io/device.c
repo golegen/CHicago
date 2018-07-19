@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:35 BRT
-// Last edited on July 16 of 2018, at 18:20 BRT
+// Last edited on July 18 of 2018, at 22:24 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -174,4 +174,5 @@ Void FsInitDeviceList(Void) {
 Void FsInitDevices(Void) {
 	NullDeviceInit();																// Add the Null device
 	ZeroDeviceInit();																// Add the Zero device
+	FrameBufferDeviceInit();														// Add the FrameBuffer device
 }
