@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 15:21 BRT
-// Last edited on July 19 of 2018, at 02:25 BRT
+// Last edited on July 20 of 2018, at 17:30 BRT
 
 #ifndef __CHICAGO_ARCH_VGA_H__
 #define __CHICAGO_ARCH_VGA_H__
@@ -28,7 +28,7 @@
 #define VGA_NUM_GC_REGS 9
 #define VGA_NUM_AC_REGS 21
 #define VGA_NUM_REGS (1 + VGA_NUM_SEQ_REGS + VGA_NUM_CRTC_REGS + VGA_NUM_GC_REGS + VGA_NUM_AC_REGS)
-#define VGA_FRAMEBUFFER 0xA00000
+#define VGA_FRAMEBUFFER 0xA0000
 
 Void VGAPreInit(Void);
 Void VGAInit(Void);

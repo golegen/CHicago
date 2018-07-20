@@ -1,12 +1,14 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 15:28 BRT
-// Last edited on July 19 of 2018, at 02:25 BRT
+// Last edited on July 20 of 2018, at 18:31 BRT
 
 #include <chicago/arch/port.h>
 #include <chicago/arch/vga.h>
 
 #include <chicago/display.h>
+#include <chicago/mm.h>
+#include <chicago/string.h>
 
 UInt8 VGARegisters[] = {
 	0x63, 0x03, 0x01, 0x0F, 0x00,
@@ -16,11 +18,12 @@ UInt8 VGARegisters[] = {
 	0x00, 0x00, 0x9C, 0x0E, 0x8F,
 	0x28, 0x40, 0x96, 0xB9, 0xA3,
 	0xFF, 0x00, 0x00, 0x00, 0x00,
-	0x40, 0x05, 0x0F, 0xFF, 0x00,
-	0x01, 0x02, 0x03, 0x04, 0x05,
-	0x06, 0x07, 0x08, 0x09, 0x0A,
-	0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
-	0x41, 0x00, 0x0F, 0x00,	0x00
+	0x00, 0x40, 0x05, 0x0F, 0xFF,
+	0x00, 0x01, 0x02, 0x03, 0x04,
+	0x05, 0x06, 0x07, 0x08, 0x09,
+	0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+	0x0F, 0x41, 0x00, 0x0F, 0x00,
+	0x00
 };
 
 Void VGAPreInit(Void) {
@@ -57,14 +60,24 @@ Void VGAPreInit(Void) {
 		PortOutByte(VGA_AC_WRITE, *curr++);
 	}
 	
-	PortInByte(VGA_INSTAT_READ);										// Lock the 16-color palette and unblank the display
-	PortOutByte(VGA_AC_INDEX, 0x20);
-	PortOutByte(VGA_DAC_WRITE_INDEX, 0x00);								// The DAC is still in an undefined state, so let's setup it, so we have a guaranteed set of colors
+	PUIntPtr palette = DispGetPalette256();
 	
-	for (UInt32 i = 0; i < 4; i++) {
-		PortOutByte(VGA_DAC_DATA, 0x3F);
+	PortOutByte(VGA_DAC_WRITE_INDEX, 0x00);								// Setup the palette
+	
+	for (UInt32 i = 0; i < 256; i++) {
+		UInt8 r;
+		UInt8 g;
+		UInt8 b;
+		
+		DispExtractRGB(palette[i], &r, &g, &b);							// Extract the r (red), g (green) and b (blue) values
+		
+		PortOutByte(VGA_DAC_DATA, r);									// Write them
+		PortOutByte(VGA_DAC_DATA, g);
+		PortOutByte(VGA_DAC_DATA, b);
 	}
 	
+	PortInByte(VGA_INSTAT_READ);										// Lock the 16-color palette and unblank the display
+	PortOutByte(VGA_AC_INDEX, 0x20);
 	DispPreInit(320, 200, 1);											// Call the DispPreInit function to create the framebuffer space!
 }
 

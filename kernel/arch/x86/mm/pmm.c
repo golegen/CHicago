@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 31 of 2018, at 18:45 BRT
-// Last edited on July 19 of 2018, at 01:58 BRT
+// Last edited on July 20 of 2018, at 12:21 BRT
 
 #define __CHICAGO_PMM__
 
@@ -75,7 +75,7 @@ Void PMMInit(Void) {
 				for (UIntPtr i = 0; i < mmap->length_low; i += MM_PAGE_SIZE) {											// YES!
 					UIntPtr addr = mmap->base_low + i;
 					
-					if ((addr != 0) && (!((addr >= kstart) && (addr <= kend)))) {										// Just check if the addr isn't 0 nor it's the kernel physical address
+					if ((addr != 0) && (!((addr >= kstart) && (addr < kend)))) {										// Just check if the addr isn't 0 nor it's the kernel physical address
 						MmFreePage(addr);																				// Everything is ok, SO FREE IT!
 					}
 				}
