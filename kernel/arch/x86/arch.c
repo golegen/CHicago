@@ -1,16 +1,15 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on July 19 of 2018, at 02:24 BRT
+// Last edited on July 22 of 2018, at 14:12 BRT
 
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/ide.h>
 #include <chicago/arch/idt.h>
+#include <chicago/arch/mbdisp.h>
 #include <chicago/arch/multiboot.h>
 #include <chicago/arch/pmm.h>
-#include <chicago/arch/registers.h>
 #include <chicago/arch/serial.h>
-#include <chicago/arch/vga.h>
 #include <chicago/arch/vmm.h>
 
 #include <chicago/debug.h>
@@ -18,15 +17,40 @@
 #include <chicago/heap.h>
 #include <chicago/string.h>
 
-Void ArchInit(Void) {
-	UIntPtr bddrive = 0;
-	UIntPtr bdpart1 = 0;
-	UIntPtr bdpart2 = 0;
-	UIntPtr bdpart3 = 0;
+UIntPtr ArchBootDrive = 0;
+UIntPtr ArchBootPart1 = 0;
+UIntPtr ArchBootPart2 = 0;
+UIntPtr ArchBootPart3 = 0;
+
+Void ArchInitFPU(Void) {
+	UInt16 cw0 = 0x37E;
+	UInt16 cw1 = 0x37A;
+	UIntPtr cr0;
+	UIntPtr d;
 	
-	SerialInit(COM1_PORT);																								// Init debugging (using COM1 port)
-	DbgWriteFormated("[x86] COM1 initialized\r\n");
+	if (!CPUIDCheck()) {																								// Let's check if we can use the CPUID instruction
+		DbgWriteFormated("PANIC! CPUID instruction isn't avaliable\r\n");												// We can't but we need it...
+		while (1) ;
+	}
 	
+	Asm Volatile("cpuid" : "=d"(d) : "a"(1) : "ecx", "ebx");															// EAX = 1, Get features
+	
+	if (!(d & (1 << 0))) {																								// FPU avaliable?
+		DbgWriteFormated("PANIC! FPU isn't avaliable\r\n");																// Nope
+		while (1) ;
+	}
+	
+	Asm Volatile("mov %%cr0, %0" : "=r"(cr0));
+	
+	cr0 &= ~(1 << 3);																									// Disable the EMulation bit
+	
+	Asm Volatile("mov %0, %%cr0" :: "r"(cr0));
+	Asm Volatile("fninit");																								// Write some initial FPU settings
+	Asm Volatile("fldcw %0" :: "m"(cw0));																				// Invalid operand exceptions enabled
+	Asm Volatile("fldcw %0" :: "m"(cw1));																				// Both division-by-zero and invalid operands cause exceptions
+}
+
+Void ArchInitPMM(Void) {
 	if (MultibootHeaderMagic != 0x2BADB002) {
 		DbgWriteFormated("PANIC! We need GRUB (or any other multiboot-compilant bootloader)\r\n");
 		while (1) ;
@@ -41,24 +65,36 @@ Void ArchInit(Void) {
 		MultibootHeaderPointer->apm_table += 0xC0000000;
 		MultibootHeaderPointer->vbe_control_info += 0xC0000000;
 		MultibootHeaderPointer->vbe_mode_info += 0xC0000000;
-		bddrive = (MultibootHeaderPointer->boot_device >> 24) & 0xFF;
-		bdpart1 = (MultibootHeaderPointer->boot_device >> 16) & 0xFF;
-		bdpart2 = (MultibootHeaderPointer->boot_device >> 8) & 0xFF;
-		bdpart3 = MultibootHeaderPointer->boot_device & 0xFF;
+		ArchBootDrive = (MultibootHeaderPointer->boot_device >> 24) & 0xFF;
+		ArchBootPart1 = (MultibootHeaderPointer->boot_device >> 16) & 0xFF;
+		ArchBootPart2 = (MultibootHeaderPointer->boot_device >> 8) & 0xFF;
+		ArchBootPart3 = MultibootHeaderPointer->boot_device & 0xFF;
 	}
 	
+	PMMInit();																											// Init the PMM
+}
+
+Void ArchInitDebug(Void) {
+	SerialInit(COM1_PORT);																								// Init debugging (using COM1 port)
+}
+
+Void ArchInitDisplay(Void) {
+	MultibootDisplayInit();
+}
+
+Void ArchPreInitDisplay(Void) {
+	if (!MultibootDisplayPreInit()) {
+		DbgWriteFormated("PANIC! Couldn't init the display\r\n");
+		while (1) ;
+	}
+}
+
+Void ArchInit(Void) {
 	GDTInit();																											// Init the GDT
 	DbgWriteFormated("[x86] GDT initialized\r\n");
 	
 	IDTInit();																											// Init the IDT
 	DbgWriteFormated("[x86] IDT initialized\r\n");
-	
-	VGAPreInit();																										// Some VGA struct allocs
-	PMMInit();																											// Init the PMM
-	DbgWriteFormated("[x86] PMM initialized\r\n");
-	
-	VGAInit();																											// Init the VGA display (320x200x256)
-	DbgWriteFormated("[x86] VGA initialized\r\n");
 	
 	HeapInit(KernelRealEnd, 0xFFC00000);																				// Init the kernel heap (start after all the internal kernel structs and end at the start of the temp addresses)
 	DbgWriteFormated("[x86] VMM initialized\r\n");
@@ -66,27 +102,17 @@ Void ArchInit(Void) {
 	FsInitDeviceList();																									// Init the x86-only devices (and the device list)
 	IDEInit();
 	
-	if ((bddrive >= 0x80) && (bddrive <= 0x89) && (bdpart1 == 0) && (bdpart2 == 0) && (bdpart3 == 0)) {					// RAW Hard Disk?
-		PChar name = StrDuplicate(IDEGetHardDiskString());																// Yes, duplicate the HardDiskX string
-		
-		if (name == Null) {																								// Failed?
-			DbgWriteFormated("[x86] Falling back boot device to HardDisk0\r\n");										// Yes, so let's use the HardDisk0
-			FsSetBootDevice("HardDisk0");
-		} else {
-			name[8] = (Char)((bddrive - 0x80) + '0');																	// Set the num
-			FsSetBootDevice(name);																						// Try to set the device
-		}
-	} else if ((bddrive >= 0xE0) && (bddrive <= 0xE9)) {																// CDROM boot value
+	if ((ArchBootDrive >= 0xE0) && (ArchBootDrive <= 0xE9)) {															// CDROM boot value
 		PChar name = StrDuplicate(IDEGetCDROMString());																	// Yes, duplicate the CdRomX string
 		
 		if (name == Null) {																								// Failed?
 			DbgWriteFormated("[x86] Falling back boot device to CdRom0\r\n");											// Yes, so let's use the CdRom0
 			FsSetBootDevice("CdRom0");
 		} else {
-			name[6] = (Char)((bddrive - 0xE0) + '0');																	// Set the num
+			name[6] = (Char)((ArchBootDrive - 0xE0) + '0');																// Set the num
 			FsSetBootDevice(name);																						// Try to set the device
 		}
-	} else if (bddrive == 0x9F) {																						// Other possible value for CDROM boot, but with this one we can't get the exactly boot device, let's put CdRom0
+	} else if ((ArchBootDrive == 0xEF) || (ArchBootDrive == 0x9F)) {													// Other possible value for CDROM boot, but with this one we can't get the exactly boot device, let's put CdRom0
 		DbgWriteFormated("[x86] Falling back boot device to CdRom0\r\n");
 		FsSetBootDevice("CdRom0");
 	}

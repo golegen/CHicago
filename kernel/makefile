@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on July 19 of 2018, at 02:26 BRT
+# Last edited on July 21 of 2018, at 14:08 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -10,9 +10,9 @@ DEBUG ?= false
 ifeq ($(ARCH),x86)
 	PREFIX ?= i686-elf-
 	
-	ARCH_OBJECTS := start.s.o
+	ARCH_OBJECTS += start.s.o
 	ARCH_OBJECTS += arch.c.o
-	ARCH_OBJECTS += io/debug.c.o io/ide.c.o io/vga.c.o
+	ARCH_OBJECTS += io/debug.c.o io/ide.c.o io/mbdisp.c.o
 	ARCH_OBJECTS += sys/gdt.c.o sys/idt.c.o
 	ARCH_OBJECTS += mm/pmm.c.o mm/vmm.c.o
 	

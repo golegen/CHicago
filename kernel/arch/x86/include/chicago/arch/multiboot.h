@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 27 of 2018, at 13:38 BRT
-// Last edited on May 27 of 2018, at 13:38 BRT
+// Last edited on July 21 of 2018, at 22:03 BRT
 
 #ifndef __CHICAGO_ARCH_MULTIBOOT_H__
 #define __CHICAGO_ARCH_MULTIBOOT_H__
@@ -30,10 +30,17 @@ typedef struct MultibootHeaderStruct
 	UInt32 apm_table;
 	UInt32 vbe_control_info;
 	UInt32 vbe_mode_info;
-	UInt32 vbe_mode;
-	UInt32 vbe_interface_segment;
-	UInt32 vbe_interface_offset;
-	UInt32 vbe_interface_length;
+	UInt16 vbe_mode;
+	UInt16 vbe_interface_segment;
+	UInt16 vbe_interface_offset;
+	UInt16 vbe_interface_length;
+	UInt32 framebuffer_address_low;
+	UInt32 framebuffer_address_high;
+	UInt32 framebuffer_pitch;
+	UInt32 framebuffer_width;
+	UInt32 framebuffer_height;
+	UInt8 framebuffer_bpp;
+	UInt8 framebuffer_type;
 } Packed MultibootHeader, *PMultibootHeader;
 
 typedef struct MultibootMemoryMapStruct
@@ -48,5 +55,7 @@ typedef struct MultibootMemoryMapStruct
 
 extern UInt32 MultibootHeaderMagic;
 extern PMultibootHeader MultibootHeaderPointer;
+
+Boolean CPUIDCheck();
 
 #endif		// __CHICAGO_ARCH_MULTIBOOT_H__

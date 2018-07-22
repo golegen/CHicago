@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:15 BRT
-// Last edited on June 28 of 2018, at 18:36 BRT
+// Last edited on July 21 of 2018, at 22:16 BRT
 
 #ifndef __CHICAGO_TYPES_H__
 #define __CHICAGO_TYPES_H__
@@ -18,6 +18,8 @@
 #define PInt int*
 #define Long long
 #define PLong long*
+#define Float float
+#define Double double
 
 /* Unsigned types */
 

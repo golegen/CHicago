@@ -1,14 +1,16 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on July 10 of 2018, at 23:42 BRT
+// Last edited on July 21 of 2018, at 22:09 BRT
 
 .section .multiboot
 
 .align 4																												// Multiboot header
 .long 0x1BADB002
-.long (1 << 0) | (1 << 1)
-.long -(0x1BADB002 + ((1 << 0) | (1 << 1)))
+.long (1 << 0) | (1 << 1) | (1 << 2)
+.long -(0x1BADB002 + ((1 << 0) | (1 << 1) | (1 << 2)))
+.long 0, 0, 0, 0, 0, 0
+.long 800, 600, 32
 
 .section .text
 
@@ -76,6 +78,24 @@ KernelEntry:
 6:
 	pause
 	jmp 6b
+
+.global CPUIDCheck
+CPUIDCheck:
+	pushfl
+	pop %eax
+	movl %eax, %ebx
+	xorl $0x200000, %eax
+	pushl %eax
+	popfl
+	pushfl
+	pop %eax
+	cmp %eax, %ebx
+	jnz 0f
+	mov $0x00, %eax
+	ret
+0:
+	mov $0x01, %eax
+	ret
 
 GDTPointerLimit:
 	.word 0																												// GDT limit storage
