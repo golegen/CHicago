@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 15 of 2018, at 19:05 BRT
-// Last edited on July 20 of 2018, at 17:33 BRT
+// Last edited on July 24 of 2018, at 14:10 BRT
 
 #include <chicago/alloc.h>
 
@@ -130,6 +130,10 @@ PChar StrTokenize(PChar str, PChar delim) {
 	static PChar temp = Null;
 	
 	if (str != Null) {																// First call?
+		if (temp != Null) {															// Free the current temp?
+			MemFree((UIntPtr)temp);													// Yup
+		}
+		
 		temp = StrDuplicate(str);													// Yes, try to set the copy the str to temp
 		
 		if (temp == Null) {															// Failed?
@@ -169,6 +173,9 @@ PChar StrTokenize(PChar str, PChar delim) {
 	
 	temp = Null;
 	str[chars] = '\0';
+	str = StrDuplicate(str);														// *HACKHACKHACK*
+	
+	MemFree((UIntPtr)temp);
 	
 	return str;
 }

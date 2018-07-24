@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on July 22 of 2018, at 14:12 BRT
+// Last edited on July 24 of 2018, at 14:56 BRT
 
 #include <chicago/arch.h>
 #include <chicago/debug.h>
@@ -29,15 +29,15 @@ Void KernelMain(Void) {
 	DbgWriteFormated("[Kernel] The boot progress bar has been shown\r\n");
 	
 	ArchInit();																			// Let's finish it by initalizating the architecture-dependent bits of the kernel
-	DispDrawProgessBar();
+	DispIncrementProgessBar();
 	DbgWriteFormated("[Kernel] Arch initialized\r\n");	
 	
 	FsInitDevices();																	// Now init the basic devices
-	DispDrawProgessBar();
+	DispIncrementProgessBar();
 	DbgWriteFormated("[Kernel] Devices initialized\r\n");
 	
 	FsInit();																			// Init the filesystem list, mount point list, and add the basic mount points
-	DispDrawProgessBar();
+	DispIncrementProgessBar();
 	DbgWriteFormated("[Kernel] Filesystem initialized\r\n");
 	
 	DispFillProgressBar();																// BOOT PROCESS, FINISHED!

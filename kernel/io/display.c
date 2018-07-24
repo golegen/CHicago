@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 21:12 BRT
-// Last edited on July 22 of 2018, at 14:13 BRT
+// Last edited on July 24 of 2018, at 01:36 BRT
 
 #include <chicago/debug.h>
 #include <chicago/mm.h>
@@ -420,7 +420,7 @@ Void DispFillProgressBar(Void) {
 
 Void DispDrawProgessBar(Void) {
 	DispDrawRectangle(DispWidth / 2 - 100, DispHeight - 30, 200, 20, 0xFFFFFF);													// Draw the border
-	DispDrawString(DispWidth / 2 - 56, DispHeight - 52, 0x000000, 0xFFFFFF, "Starting up...");									// And the "Starting up..." text
+	DispDrawString(DispWidth / 2 - 54, DispHeight - 52, 0x000000, 0xFFFFFF, "Starting up...");									// And the "Starting up..." text
 }
 
 Void DispPreInit(UIntPtr w, UIntPtr h, UIntPtr bpp) {
