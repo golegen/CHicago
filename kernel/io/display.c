@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 21:12 BRT
-// Last edited on July 24 of 2018, at 01:36 BRT
+// Last edited on July 24 of 2018, at 16:29 BRT
 
 #include <chicago/debug.h>
 #include <chicago/mm.h>
@@ -320,10 +320,10 @@ Void DispDrawLine(UIntPtr x0, UIntPtr y0, UIntPtr x1, UIntPtr y1, UIntPtr c) {
 }
 
 Void DispDrawRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr c) {
-	DispDrawLine(x, y, x, y + h, c);																							// Let's use the DispDrawLine to draw the rectangle (we just need to draw 4 lines)
-	DispDrawLine(x, y, x + w, y, c);
-	DispDrawLine(x, y + h, x + w, y + h, c);
-	DispDrawLine(x + w, y, x + w, y + h, c);
+	DispDrawLine(x, y, x, y + h - 1, c);																							// Let's use the DispDrawLine to draw the rectangle (we just need to draw 4 lines)
+	DispDrawLine(x, y, x + w - 1, y, c);
+	DispDrawLine(x, y + h - 1, x + w - 1, y + h - 1, c);
+	DispDrawLine(x + w - 1, y, x + w - 1, y + h - 1, c);
 }
 
 Void DispFillRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr c) {
@@ -381,6 +381,95 @@ Void DispFillRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr c) {
 	}
 }
 
+Void DispDrawRoundedRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr r, UIntPtr c) {
+	if (r == 0) {																												// Radius is 0?
+		DispDrawRectangle(x, y, w, h, c);																						// Yes, so just draw an rectangle
+		return;
+	}
+	
+	IntPtr f = 1 - r;
+	IntPtr dfx = 1;
+	IntPtr dfy = -2 * r;
+	UIntPtr xx = 0;
+	UIntPtr yy = r;
+	
+	if (w > 0) {
+		w--;
+	}
+	
+	if (h > 0) {
+		h--;
+	}
+	
+	while (xx < yy) {
+		if (f >= 0) {
+			yy--;
+			dfy += 2;
+			f += dfy;
+		}
+		
+		xx++;
+		dfx += 2;
+		f += dfx;
+		
+		DispPutPixel(x - xx + r, y + h + yy - r, c);																			// Bottom left
+		DispPutPixel(x - yy + r, y + h + xx - r, c);
+		DispPutPixel(x - xx + r, y - yy + r, c);																				// Top left
+		DispPutPixel(x - yy + r, y - xx + r, c);
+		DispPutPixel(x + w + xx - r, y + h + yy - r, c);																		// Bottom right
+		DispPutPixel(x + w + yy - r, y + h + xx - r, c);
+		DispPutPixel(x + w + xx - r, y - yy + r, c);																			// Top right
+		DispPutPixel(x + w + yy - r, y - xx + r, c);
+	}
+	
+	DispDrawLine(x + r, y, x + w - r, y, c);																					// Draw the top line
+	DispDrawLine(x + r, y + h, x + w - r, y + h, c);																			// The bottom one
+	DispDrawLine(x, y + r, x, y + h - r, c);																					// The left one
+	DispDrawLine(x + w, y + r, x + w, y + h - r, c);																			// And, the right one!
+}
+
+Void DispFillRoundedRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr r, UIntPtr c) {
+	if (r == 0) {																												// Radius is 0?
+		DispFillRectangle(x, y, w, h, c);																						// Yes, so just fill an rectangle
+		return;
+	}
+	
+	IntPtr f = 1 - r;
+	IntPtr dfx = 1;
+	IntPtr dfy = -2 * r;
+	UIntPtr xx = 0;
+	UIntPtr yy = r;
+	
+	if (w > 0) {
+		w--;
+	}
+	
+	if (h > 0) {
+		h--;
+	}
+	
+	while (xx < yy) {
+		if (f >= 0) {
+			yy--;
+			dfy += 2;
+			f += dfy;
+		}
+		
+		xx++;
+		dfx += 2;
+		f += dfx;
+		
+		DispDrawLine(x - xx + r, y + h + yy - r, x - xx + r, y - yy + r, c);													// Left
+		DispDrawLine(x - yy + r, y + h + xx - r, x - yy + r, y - xx + r, c);
+		DispDrawLine(x + w + xx - r, y + h + yy - r, x + w + xx - r, y - yy + r, c);											// Right
+		DispDrawLine(x + w + yy - r, y + h + xx - r, x + w + yy - r, y - xx + r, c);
+	}
+	
+	DispFillRectangle(x + r, y, w - r * 2 + 1, h + 1, c);																		// Fill the center rectangle
+	DispDrawLine(x, y + r, x, y + h - r, c);																					// The left line
+	DispDrawLine(x + w, y + r, x + w, y + h - r, c);																			// And the right one
+}
+
 Void DispDrawCharacter(UIntPtr x, UIntPtr y, UIntPtr bg, UIntPtr fg, Char data) {
 	for (UIntPtr i = 0; i < 16; i++) {																							// 8x8 font!
 		for (IntPtr j = 15; j >= 0; j--) {
@@ -400,14 +489,20 @@ Void DispDrawString(UIntPtr x, UIntPtr y, UIntPtr bg, UIntPtr fg, PChar data) {
 }
 
 Void DispIncrementProgessBar(Void) {
-	if (DispProgressBar == 0) {																									// This first entry is 2 pixel smaller than the others
-		DispFillRectangle(DispWidth / 2 - 100 + (DispProgressBar * 2) + 3, DispHeight - 27, 16, 15, 0x0000A8);
+	if (DispProgressBar == 0) {																									// This first one is different
+		DispFillRectangle(DispWidth / 2 - 100 + (DispProgressBar * 2) + 3, DispHeight - 24, 1, 9, 0x0000A8);
+		DispFillRectangle(DispWidth / 2 - 100 + (DispProgressBar * 2) + 4, DispHeight - 25, 1, 11, 0x0000A8);
+		DispFillRectangle(DispWidth / 2 - 100 + (DispProgressBar * 2) + 5, DispHeight - 26, 1, 13, 0x0000A8);
+		DispFillRectangle(DispWidth / 2 - 100 + (DispProgressBar * 2) + 6, DispHeight - 27, 11, 15, 0x0000A8);
 		DispProgressBar += 10;
 	} else if (DispProgressBar < 90) {
-		DispFillRectangle(DispWidth / 2 - 100 + (DispProgressBar * 2) + 1, DispHeight - 27, 18, 15, 0x0000A8);					// The others are... normal
+		DispFillRectangle(DispWidth / 2 - 100 + (DispProgressBar * 2), DispHeight - 27, 17, 15, 0x0000A8);						// The others are... normal
 		DispProgressBar += 10;
 	} else if (DispProgressBar < 100) {
-		DispFillRectangle(DispWidth / 2 - 100 + (DispProgressBar * 2) + 1, DispHeight - 27, 17, 15, 0x0000A8);					// The last one is 1 pixel smaller
+		DispFillRectangle(DispWidth / 2 - 100 + (DispProgressBar * 2), DispHeight - 27, 15, 15, 0x0000A8);						// The last one is also different
+		DispFillRectangle(DispWidth / 2 - 100 + (DispProgressBar * 2) + 15, DispHeight - 26, 1, 13, 0x0000A8);
+		DispFillRectangle(DispWidth / 2 - 100 + (DispProgressBar * 2) + 16, DispHeight - 25, 1, 11, 0x0000A8);
+		DispFillRectangle(DispWidth / 2 - 100 + (DispProgressBar * 2) + 17, DispHeight - 24, 1, 9, 0x0000A8);
 		DispProgressBar += 10;
 	}
 }
@@ -419,8 +514,8 @@ Void DispFillProgressBar(Void) {
 }
 
 Void DispDrawProgessBar(Void) {
-	DispDrawRectangle(DispWidth / 2 - 100, DispHeight - 30, 200, 20, 0xFFFFFF);													// Draw the border
-	DispDrawString(DispWidth / 2 - 54, DispHeight - 52, 0x000000, 0xFFFFFF, "Starting up...");									// And the "Starting up..." text
+	DispDrawRoundedRectangle(DispWidth / 2 - 100, DispHeight - 30, 201, 21, 7, 0xFFFFFF);										// Draw the border
+	DispDrawString(DispWidth / 2 - 44, DispHeight - 50, 0x000000, 0xFFFFFF, "Starting up");										// And the "Starting up" text
 }
 
 Void DispPreInit(UIntPtr w, UIntPtr h, UIntPtr bpp) {
