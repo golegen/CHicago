@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:10 BRT
-// Last edited on July 14 of 2018, at 22:45 BRT
+// Last edited on July 28 of 2018, at 22:41 BRT
 
 #ifndef __CHICAGO_LIST_H__
 #define __CHICAGO_LIST_H__

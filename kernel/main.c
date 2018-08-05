@@ -1,13 +1,16 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on July 24 of 2018, at 14:56 BRT
+// Last edited on July 29 of 2018, at 20:12 BRT
 
 #include <chicago/arch.h>
 #include <chicago/debug.h>
 #include <chicago/device.h>
 #include <chicago/display.h>
 #include <chicago/file.h>
+#include <chicago/heap.h>
+#include <chicago/mm.h>
+#include <chicago/process.h>
 
 Void KernelMain(Void) {
 	ArchInitDebug();																	// Init the architecture-dependent debugging method
@@ -39,6 +42,15 @@ Void KernelMain(Void) {
 	FsInit();																			// Init the filesystem list, mount point list, and add the basic mount points
 	DispIncrementProgessBar();
 	DbgWriteFormated("[Kernel] Filesystem initialized\r\n");
+	
+	PsInit();																			// Init tasking
+	
+	while (1) ;
+}
+
+Void KernelMainLate(Void) {
+	PsTaskSwitchEnabled = True;															// Enable task switch
+	DbgWriteFormated("[Kernel] Tasking initialized\r\n");
 	
 	DispFillProgressBar();																// BOOT PROCESS, FINISHED!
 	DbgWriteFormated("[Kernel] Boot process finished\r\n");

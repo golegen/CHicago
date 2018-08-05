@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on July 24 of 2018, at 14:59 BRT
+# Last edited on July 29 of 2018, at 01:28 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -13,7 +13,7 @@ ifeq ($(ARCH),x86)
 	ARCH_OBJECTS += start.s.o
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += io/debug.c.o io/ide.c.o io/mbdisp.c.o
-	ARCH_OBJECTS += sys/gdt.c.o sys/idt.c.o sys/pit.c.o
+	ARCH_OBJECTS += sys/gdt.c.o sys/idt.c.o sys/pit.c.o sys/process.c.o
 	ARCH_OBJECTS += mm/pmm.c.o mm/vmm.c.o
 	
 	LINKER_SCRIPT := link.ld
@@ -54,7 +54,8 @@ OBJECTS := main.c.o
 OBJECTS += ds/list.c.o
 OBJECTS += io/device.c.o io/display.c.o io/devfs.c.o io/file.c.o
 OBJECTS += io/framebuffer.c.o io/iso9660.c.o io/null.c.o io/zero.c.o
-OBJECTS += mm/alloc.c.o mm/heap.c.o mm/pmm.c.o mm/string.c.o
+OBJECTS += mm/alloc.c.o mm/heap.c.o mm/pmm.c.o
+OBJECTS += sys/process.c.o sys/string.c.o
 
 ARCH_OBJECTS := $(addprefix build/arch/$(ARCH)/,$(ARCH_OBJECTS))
 OBJECTS := $(addprefix build/,$(OBJECTS))
@@ -104,7 +105,7 @@ build/chicago-$(ARCH).iso: build/chkrnl-$(ARCH)
 	$(NOECHO)mkdir -p $(dir $@)/iso
 	$(NOECHO)mkdir -p $(dir $@)/iso/boot
 	$(NOECHO)mkdir -p $(dir $@)/iso/boot/grub
-	$(NOECHO)cp build/chkrnl-$(ARCH) $(dir $@)/iso/boot/chkrnl
+	$(NOECHO)cp build/chkrnl-$(ARCH) $(dir $@)/iso/boot/chkrnl.che
 	$(NOECHO)echo 'set timeout=30' > $(dir $@)/iso/boot/grub/grub.cfg
 	$(NOECHO)echo 'set default=0' >> $(dir $@)/iso/boot/grub/grub.cfg
 	$(NOECHO)echo '' >> $(dir $@)/iso/boot/grub/grub.cfg
@@ -113,7 +114,7 @@ build/chicago-$(ARCH).iso: build/chkrnl-$(ARCH)
 	$(NOECHO)echo '}' >> $(dir $@)/iso/boot/grub/grub.cfg
 	$(NOECHO)echo '' >> $(dir $@)/iso/boot/grub/grub.cfg
 	$(NOECHO)echo 'menuentry "CHicago Operating System" {' >> $(dir $@)/iso/boot/grub/grub.cfg
-	$(NOECHO)echo '    multiboot /boot/chkrnl' >> $(dir $@)/iso/boot/grub/grub.cfg
+	$(NOECHO)echo '    multiboot /boot/chkrnl.che' >> $(dir $@)/iso/boot/grub/grub.cfg
 	$(NOECHO)echo '    boot' >> $(dir $@)/iso/boot/grub/grub.cfg
 	$(NOECHO)echo '}' >> $(dir $@)/iso/boot/grub/grub.cfg
 ifdef ($(GRUB_DIR))
@@ -131,7 +132,7 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)echo Linking $@
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(NOECHO)TZ=America/Sao_Paulo $(PREFIX)gcc -T$(LINKER_SCRIPT) -ffreestanding -nostdlib -o $@ $(ARCH_OBJECTS) $(OBJECTS) $(ARCH_LDFLAGS) -lgcc
+	$(NOECHO)TZ=America/Sao_Paulo $(PREFIX)gcc -g -T$(LINKER_SCRIPT) -ffreestanding -nostdlib -o $@ $(ARCH_OBJECTS) $(OBJECTS) $(ARCH_LDFLAGS) -lgcc
 
 build/%.s.o: %.s
 ifeq ($(UNSUPPORTED_ARCH),true)
@@ -147,4 +148,4 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)echo Compiling $<
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -std=c11 -Iinclude -Iarch/$(ARCH)/include -ffreestanding -O2 -Wall -Wextra -Wno-implicit-fallthrough $(ARCH_CFLAGS) -c $< -o $@
+	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -g -std=c11 -Iinclude -Iarch/$(ARCH)/include -ffreestanding -O2 -Wall -Wextra -Wno-implicit-fallthrough $(ARCH_CFLAGS) -c $< -o $@

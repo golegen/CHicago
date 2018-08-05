@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on July 21 of 2018, at 22:09 BRT
+// Last edited on July 28 of 2018, at 16:04 BRT
 
 .section .multiboot
 
@@ -19,7 +19,7 @@
 KernelEntry:
 	cli																													// Clear interrupts
 	
-	movl $(KernelBootPageTable1 - 0xC0000000), %edi																		// Let's map the first 4MB
+	movl $(KernelPageTable1 - 0xC0000000), %edi																			// Let's map the first 4MB
 	movl $0, %esi
 1:
 	cmpl $0x400000, %esi																								// ... Just 4MB
@@ -34,7 +34,7 @@ KernelEntry:
 	
 	loop 1b																												// Keep on looping (if we need)
 2:
-	movl $(KernelBootPageTable2 - 0xC0000000), %edi
+	movl $(KernelPageTable2 - 0xC0000000), %edi
 	movl $0, %esi
 3:
 	cmpl $0x800000, %esi																								// ... Just more 4MB
@@ -49,12 +49,12 @@ KernelEntry:
 	
 	loop 3b																												// Keep on looping (if we need)
 4:
-	movl $(KernelBootPageTable1 - 0xC0000000 + 0x03), KernelBootPageDirectory - 0xC0000000 + 0 * 4						// Let's put the tables in the page directory
-	movl $(KernelBootPageTable1 - 0xC0000000 + 0x03), KernelBootPageDirectory - 0xC0000000 + 768 * 4
-	movl $(KernelBootPageTable1 - 0xC0000000 + 0x03), KernelBootPageDirectory - 0xC0000000 + 769 * 4
-	movl $(KernelBootPageDirectory - 0xC0000000 + 0x03), KernelBootPageDirectory - 0xC0000000 + 1023 * 4
+	movl $(KernelPageTable1 - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 0 * 4								// Let's put the tables in the page directory
+	movl $(KernelPageTable1 - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 768 * 4
+	movl $(KernelPageTable2 - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 769 * 4
+	movl $(MmKernelDirectoryInt - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 1023 * 4
 	
-	movl $(KernelBootPageDirectory - 0xC0000000), %ecx																	// Let's load our page directory
+	movl $(MmKernelDirectoryInt - 0xC0000000), %ecx																		// Let's load our page directory
 	movl %ecx, %cr3
 	
 	movl %cr0, %ecx																										// AND ENABLE PAGING!
@@ -64,7 +64,7 @@ KernelEntry:
 	lea 5f, %ecx
 	jmp *%ecx
 5:
-	movl $0, KernelBootPageDirectory + 0																				// And remove the initial pt
+	movl $0, MmKernelDirectoryInt + 0																					// And remove the initial pt
 	invlpg 0
 	
 	movl $KernelStack, %esp																								// Setup kernel stack
@@ -450,6 +450,15 @@ ISRCommonStub:
 	add $8, %esp
 	iret
 
+.global PsGetEIP
+PsGetEIP:
+	pop %eax
+	jmp *%eax
+
+.global PsGetEAX
+PsGetEAX:
+	ret
+
 .section .data
 
 .global MultibootHeaderMagic
@@ -462,11 +471,12 @@ MultibootHeaderPointer:
 .section .bss
 
 .align 4096
-KernelBootPageDirectory:
+.global MmKernelDirectoryInt
+MmKernelDirectoryInt:
 .skip 4096
-KernelBootPageTable1:
+KernelPageTable1:
 .skip 4096
-KernelBootPageTable2:
+KernelPageTable2:
 .skip 4096
 
 .align 16

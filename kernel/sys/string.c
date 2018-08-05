@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 15 of 2018, at 19:05 BRT
-// Last edited on July 24 of 2018, at 14:10 BRT
+// Last edited on July 28 of 2018, at 22:40 BRT
 
 #include <chicago/alloc.h>
 
@@ -123,7 +123,7 @@ PChar StrDuplicate(PChar str) {
 		return Null;
 	}
 	
-	return StrCopy(ret, str);;
+	return StrCopy(ret, str);
 }
 
 PChar StrTokenize(PChar str, PChar delim) {

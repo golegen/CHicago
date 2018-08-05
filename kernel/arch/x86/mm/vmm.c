@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 19:19 BRT
-// Last edited on July 20 of 2018, at 12:21 BRT
+// Last edited on July 29 of 2018, at 11:50 BRT
 
 #include <chicago/arch/pmm.h>
 #include <chicago/arch/vmm.h>
@@ -13,133 +13,6 @@ PUInt32 MmCurrentDirectory = (PUInt32)0xFFFFF000;
 PUInt32 MmCurrentTables = (PUInt32)0xFFC00000;
 UIntPtr MmTempAddressStart = 0xFF800000;
 UIntPtr MmTempAddressEnd = 0xFFC00000;
-
-UIntPtr MmGetPhysInt(UIntPtr dir, UIntPtr virt) {
-	if (dir == 0) {																											// Pointer to the page dir is Null?
-		return (UIntPtr)-1;																									// Yes, so we can't do anything
-	} else if ((MmGetPDE(dir, virt) & 0x01) != 0x01) {																		// The page table exists?
-		return (UIntPtr)-1;																									// No, so just return 0
-	}
-	
-	PUInt32 temp = (PUInt32)MmMapTemp(MmGetPDE(dir, virt) & 0xFFFFF000, MM_MAP_KDEF);										// Map the page table to an temp addr
-	
-	if (temp == Null) {
-		return (UIntPtr)-1;
-	}
-	
-	UIntPtr ret = (MmGetPTEInt(temp, virt) & 0xFFFFF000) + (virt & 0xFFF);													// Get what we want
-	
-	MmUnmap((UIntPtr)temp);																									// And unmap the temp addr
-	
-	return ret;
-}
-
-UInt32 MmQueryInt(UIntPtr dir, UIntPtr virt) {
-	if (dir == 0) {																											// Pointer to the page dir is Null?
-		return (UInt32)-1;																									// Yes, so we can't do anything
-	} else if ((MmGetPDE(dir, virt) & 0x01) != 0x01) {																		// The page table exists?
-		return (UInt32)-1;																									// No, so just return 0
-	}
-	
-	PUInt32 temp = (PUInt32)MmMapTemp(MmGetPDE(dir, virt) & 0xFFFFF000, MM_MAP_KDEF);										// Map the page table to an temp addr
-	
-	if (temp == Null) {
-		return (UIntPtr)-1;
-	}
-	
-	UInt32 page = MmGetPTEInt(temp, virt);																					// Get what we want
-	
-	MmUnmap((UIntPtr)temp);																									// And unmap the temp
-	
-	UInt32 ret = MM_MAP_READ;																								// Convert the page flags to MmMap flags
-	
-	if ((page & 0x02) == 0x02) {
-		ret |= MM_MAP_WRITE;
-	}
-	
-	if ((page & 0x04) == 0x04) {
-		ret |= (MM_MAP_USER | MM_MAP_KERNEL);
-	} else {
-		ret |= MM_MAP_KERNEL;
-	}
-	
-	return ret;
-}
-
-Boolean MmMapInt(UIntPtr dir, UIntPtr virt, UIntPtr phys, UInt32 flags) {
-	if ((dir == 0) || ((virt % MM_PAGE_SIZE) != 0) || ((phys % MM_PAGE_SIZE) != 0)) {										// Basic sanity checks (check if it isn't a Null directory pointer and the check if the addresses are page aligned)
-		return False;																										// Failed in any of them? Return False
-	}
-	
-	UInt32 flags2 = 0x01;																									// Convert the MmMap flags to page flags
-	
-	if (((flags & MM_MAP_USER) == MM_MAP_USER) && ((flags & MM_MAP_KERNEL) == MM_MAP_KERNEL)) {
-		flags2 |= 0x04;
-	} else if ((flags & MM_MAP_USER) == MM_MAP_USER) {
-		flags2 |= 0x04;
-	}
-	
-	if ((flags & MM_MAP_WRITE) == MM_MAP_WRITE) {
-		flags2 |= 0x02;
-	}
-	
-	if ((MmGetPDE(dir, virt) & 0x01) != 0x01) {																				// This page table exists?
-		UIntPtr block = MmReferencePage(0);																					// No, so let's alloc it
-		
-		if (block == 0) {																									// Failed?
-			return False;																									// Then just return
-		}
-		
-		if (virt >= 0xC0100000) {																							// Kernel-only page directory?
-			MmSetPDE(dir, virt, block, 0x03);																				// Yes, so put the pde as present, writeable
-		} else {
-			MmSetPDE(dir, virt, block, 0x07);																				// No, so put the pde as present, writeable and set the user bit
-		}
-		
-		PUInt32 temp = (PUInt32)MmMapTemp(block, MM_MAP_KDEF);																// Map the page table to an temp addr
-		
-		if (temp == Null) {
-			MmDereferencePage(block);
-			return False;
-		}
-		
-		StrSetMemory(temp, 0, 4096);																						// Clear the page table
-		MmSetPTEInt(temp, virt, phys, flags2);																				// Map the phys addr to the virt addr
-		MmUnmap((UIntPtr)temp);																								// Unmap the temp addr
-		
-		return True;
-	} else {
-		PUInt32 temp = (PUInt32)MmMapTemp(MmGetPDE(dir, virt) & 0xFFFFF000, MM_MAP_KDEF);									// Yes, so map it to an temp addr
-		
-		if (temp == Null) {
-			return False;
-		}
-		
-		MmSetPTEInt(temp, virt, phys, flags2);																				// Map the phys addr to the virt addr
-		MmUnmap((UIntPtr)temp);																								// Unmap the temp addr
-		
-		return True;
-	}
-}
-
-Boolean MmUnmapInt(UIntPtr dir, UIntPtr virt) {
-	if ((dir == 0) || ((virt % MM_PAGE_SIZE) != 0)) {																		// Basic sanity checks (check if it isn't a Null directory pointer and the check if the address is page aligned)
-		return False;																										// Failed in any of them? Return False
-	} else if ((MmGetPDE(dir, virt) & 0x01) != 0x01) {																		// This page table exists?
-		return False;																										// No, so return False
-	} else {
-		PUInt32 temp = (PUInt32)MmMapTemp(MmGetPDE(dir, virt) & 0xFFFFF000, MM_MAP_KDEF);									// Yes, so map it to an temp addr
-		
-		if (temp == Null) {
-			return False;
-		}
-		
-		MmSetPTEInt(temp, virt, 0, 0);																						// Map the phys addr to the virt addr
-		MmUnmap((UIntPtr)temp);																								// Unmap the temp addr
-		
-		return True;
-	}
-}
 
 UIntPtr MmGetPhys(UIntPtr virt) {
 	if ((MmGetPDE(MmCurrentDirectory, virt) & 0x01) != 0x01) {																// The page table exists?
@@ -173,8 +46,8 @@ UInt32 MmQuery(UIntPtr virt) {
 }
 
 UIntPtr MmMapTemp(UIntPtr phys, UInt32 flags) {
-	if ((phys % MM_PAGE_SIZE) != 0) {																						// Check if the address is page aligned
-		return 0;																											// No? So return 0
+	if ((phys % MM_PAGE_SIZE) != 0) {																						// Align to page size
+		phys -= phys % MM_PAGE_SIZE;
 	}
 	
 	for (UIntPtr i = MmTempAddressStart; i < MmTempAddressEnd; i += MM_PAGE_SIZE) {											// Let's try to find an free temp address
@@ -189,8 +62,12 @@ UIntPtr MmMapTemp(UIntPtr phys, UInt32 flags) {
 }
 
 Boolean MmMap(UIntPtr virt, UIntPtr phys, UInt32 flags) {
-	if (((virt % MM_PAGE_SIZE) != 0) || ((phys % MM_PAGE_SIZE) != 0)) {														// Basic sanity checks (check if the addresses are page aligned)
-		return False;																										// Failed in any of them? Return False
+	if ((virt % MM_PAGE_SIZE) != 0) {																						// Align to page size
+		virt -= virt % MM_PAGE_SIZE;
+	}
+	
+	if ((phys % MM_PAGE_SIZE) != 0) {																						// Align to page size
+		phys -= phys % MM_PAGE_SIZE;
 	}
 	
 	UInt32 flags2 = 0x01;																									// Convert the MmMap flags to page flags
@@ -228,9 +105,7 @@ Boolean MmMap(UIntPtr virt, UIntPtr phys, UInt32 flags) {
 }
 
 Boolean MmUnmap(UIntPtr virt) {
-	if ((virt % MM_PAGE_SIZE) != 0) {																						// Basic sanity check (check if the address is page aligned)
-		return False;
-	} else if ((MmGetPDE(MmCurrentDirectory, virt) & 0x01) != 0x01) {														// This page table exists?
+	if ((MmGetPDE(MmCurrentDirectory, virt) & 0x01) != 0x01) {																// This page table exists?
 		return False;																										// No, so return False
 	} else if ((MmGetPTE(MmCurrentTables, virt) & 0x01) != 0x01) {															// Same as above
 		return False;																										// No, so return False
@@ -389,7 +264,7 @@ UIntPtr MmCloneDirectory(Void) {
 Void MmFreeDirectory(UIntPtr dir) {
 	if (dir == 0) {																											// Sanity check 1
 		return;
-	} else if (dir == MmGetDirectory()) {																					// Sanity check 2 (we can't free ourself)
+	} else if (dir == MmGetCurrentDirectory()) {																			// Sanity check 2 (we can't free ourself)
 		return;
 	}
 	
@@ -432,7 +307,7 @@ Void MmFreeDirectory(UIntPtr dir) {
 	}
 }
 
-UIntPtr MmGetDirectory(Void) {
+UIntPtr MmGetCurrentDirectory(Void) {
 	UIntPtr ret;
 	Asm Volatile("mov %%cr3, %0" : "=r"(ret));																				// Current page directory (physical address) is in CR3
 	return ret;

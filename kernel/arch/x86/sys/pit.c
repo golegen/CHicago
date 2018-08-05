@@ -1,10 +1,12 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 24 of 2018, at 14:57 BRT
-// Last edited on July 24 of 2018, at 14:58 BRT
+// Last edited on July 28 of 2018, at 02:05 BRT
 
 #include <chicago/arch/idt.h>
 #include <chicago/arch/port.h>
+
+#include <chicago/process.h>
 
 Volatile UIntPtr PITTicks = 0;
 
@@ -15,8 +17,8 @@ Void TimerSleep(UIntPtr ms) {
 }
 
 Void PITHandler(PRegisters regs) {
-	(Void)regs;									// Avoid the unused parameter warnings
 	PITTicks++;
+	PsSwitchTask(regs);
 }
 
 Void PITInit(Void) {

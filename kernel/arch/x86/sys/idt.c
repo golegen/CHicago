@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 26 of 2018, at 22:00 BRT
-// Last edited on July 15 of 2018, at 20:27 BRT
+// Last edited on July 26 of 2018, at 21:06 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
@@ -12,6 +12,40 @@
 #include <chicago/debug.h>
 #include <chicago/mm.h>
 #include <chicago/string.h>
+
+/* PROCESS.H */
+
+#define PsTMapBack(i, v, f, b) if (i ## d != MmKernelDirectory) { if (MmMapInt(i ## d, (UIntPtr)v, MmGetPhys((UIntPtr)v), f)) b }
+#define PsFMapBack(i, v, f, b) if (i ## d != MmKernelDirectory) { if (!MmMapInt(i ## d, (UIntPtr)v, MmGetPhys((UIntPtr)v), f)) b }
+#define PsLockTaskSwitch(i) Boolean i ## e = PsTaskSwitchEnabled; UIntPtr i ## d = MmGetCurrentDirectory(); if (i ## e) PsTaskSwitchEnabled = False; if (i ## d != MmKernelDirectory) MmSwitchDirectory(MmKernelDirectory)
+#define PsUnlockTaskSwitch(i) if (i ## e) PsTaskSwitchEnabled = True; if (i ## d != MmKernelDirectory) MmSwitchDirectory(i ## d)
+
+struct ProcessStruct;
+
+typedef struct ThreadStruct {
+	UIntPtr id;
+	PVoid priv;
+	UIntPtr time;
+	Boolean init;
+	struct ThreadStruct *next;
+	struct ThreadStruct *prev;
+} Thread, *PThread;
+
+typedef struct ProcessStruct {
+	UIntPtr id;
+	PChar name;
+	UIntPtr dir;
+	UIntPtr time;
+	UIntPtr lasttid;
+	PThread curthread;
+	struct ProcessStruct *next;
+	struct ProcessStruct *prev;
+} Process, *PProcess;
+
+extern Boolean PsTaskSwitchEnabled;
+extern PProcess PsCurrentProcess;
+
+/*    END    */
 
 UInt8 IDTEntries[256][8];
 PInterruptHandler InterruptHandlers[256];

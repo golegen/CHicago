@@ -1,13 +1,14 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 31 of 2018, at 18:45 BRT
-// Last edited on July 20 of 2018, at 12:21 BRT
+// Last edited on July 25 of 2018, at 14:57 BRT
 
 #define __CHICAGO_PMM__
 
 #include <chicago/arch/multiboot.h>
 #include <chicago/arch/pmm.h>
 
+#include <chicago/debug.h>
 #include <chicago/mm.h>
 
 UIntPtr MmBootAllocPointer = (UIntPtr)&KernelEnd;
@@ -49,6 +50,13 @@ UIntPtr PMMCountMemory(Void) {
 }
 
 Void PMMInit(Void) {
+	UIntPtr memsize = PMMCountMemory();
+	
+	if (memsize < 0x45B7F800) {																							// Because of a bug i found (in the kernel) while playing with vmware, we need at least 1112MB of memory to run...
+		DbgWriteFormated("PANIC! CHicago (for x86) requires at least 1112MB of memory to run!\r\n");
+		while (1) ;
+	}
+	
 	MmMaxPages = PMMCountMemory() / MM_PAGE_SIZE;																		// Get memory size BASED ON THE MEMORY MAP ENTRIES (mem_lower and mem_upper are obsolete)
 	MmUsedPages = MmMaxPages;																							// We're going to free the avaliable pages later
 	MmPageStack = (PUIntPtr)MmBootAlloc(MmMaxPages * sizeof(UIntPtr), False);											// Alloc the page frame allocator stack using the initial boot allocator

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on July 24 of 2018, at 14:59 BRT
+// Last edited on July 28 of 2018, at 16:05 BRT
 
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/ide.h>
@@ -10,6 +10,7 @@
 #include <chicago/arch/multiboot.h>
 #include <chicago/arch/pit.h>
 #include <chicago/arch/pmm.h>
+#include <chicago/arch/process.h>
 #include <chicago/arch/serial.h>
 #include <chicago/arch/vmm.h>
 
@@ -49,6 +50,7 @@ Void ArchInitFPU(Void) {
 	Asm Volatile("fninit");																								// Write some initial FPU settings
 	Asm Volatile("fldcw %0" :: "m"(cw0));																				// Invalid operand exceptions enabled
 	Asm Volatile("fldcw %0" :: "m"(cw1));																				// Both division-by-zero and invalid operands cause exceptions
+	Asm Volatile("fxsave (%0)" :: "r"(PsFPUDefaultState));																// Save the curr state (as it is the "default state")
 }
 
 Void ArchInitPMM(Void) {
@@ -113,7 +115,7 @@ Void ArchInit(Void) {
 			DbgWriteFormated("[x86] Falling back boot device to CdRom0\r\n");											// Yes, so let's use the CdRom0
 			FsSetBootDevice("CdRom0");
 		} else {
-			name[6] = (Char)((ArchBootDrive - 0xE0) + '0');																// Set the num
+			name[5] = (Char)((ArchBootDrive - 0xE0) + '0');																// Set the num
 			FsSetBootDevice(name);																						// Try to set the device
 		}
 	} else if ((ArchBootDrive == 0xEF) || (ArchBootDrive == 0x9F)) {													// Other possible value for CDROM boot, but with this one we can't get the exactly boot device, let's put CdRom0

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:15 BRT
-// Last edited on July 21 of 2018, at 22:16 BRT
+// Last edited on July 28 of 2018, at 01:37 BRT
 
 #ifndef __CHICAGO_TYPES_H__
 #define __CHICAGO_TYPES_H__
@@ -9,17 +9,19 @@
 /* Base types */
 
 #define Void void
-#define PVoid void*
+#define PVoid void *
 #define Char char
-#define PChar char*
+#define PChar char *
 #define Short short
-#define PShort short*
+#define PShort short *
 #define Int int
-#define PInt int*
+#define PInt int *
 #define Long long
-#define PLong long*
+#define PLong long *
 #define Float float
+#define PFloat float *
 #define Double double
+#define PDouble double *
 
 /* Unsigned types */
 
@@ -62,6 +64,8 @@ typedef signed Int IntPtr, *PIntPtr;
 /* Attributes */
 
 #define Packed __attribute__((packed))
+#define Aligned(x) __attribute__((aligned(x)))
+#define NoOpt __attribute__((optimize("O0")))
 
 /* Boolean and other defines */
 
