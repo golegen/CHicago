@@ -1,15 +1,14 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 27 of 2018, at 13:38 BRT
-// Last edited on July 21 of 2018, at 22:03 BRT
+// Last edited on September 15 of 2018, at 13:22 BRT
 
 #ifndef __CHICAGO_ARCH_MULTIBOOT_H__
 #define __CHICAGO_ARCH_MULTIBOOT_H__
 
 #include <chicago/types.h>
 
-typedef struct MultibootHeaderStruct
-{
+typedef struct {
 	UInt32 flags;
 	UInt32 mem_lower;
 	UInt32 mem_upper;
@@ -34,17 +33,44 @@ typedef struct MultibootHeaderStruct
 	UInt16 vbe_interface_segment;
 	UInt16 vbe_interface_offset;
 	UInt16 vbe_interface_length;
-	UInt32 framebuffer_address_low;
-	UInt32 framebuffer_address_high;
-	UInt32 framebuffer_pitch;
-	UInt32 framebuffer_width;
-	UInt32 framebuffer_height;
-	UInt8 framebuffer_bpp;
-	UInt8 framebuffer_type;
 } Packed MultibootHeader, *PMultibootHeader;
 
-typedef struct MultibootMemoryMapStruct
-{
+typedef struct {
+	UInt16 attr;
+	UInt8 wina;
+	UInt8 winb;
+	UInt16 gran;
+	UInt16 wsize;
+	UInt16 sega;
+	UInt16 segb;
+	UInt32 real_rct_ptr;
+	UInt16 pitch;
+	UInt16 width;
+	UInt16 height;
+	UInt8 wchar;
+	UInt8 ychar;
+	UInt8 planes;
+	UInt8 bpp;
+	UInt8 banks;
+	UInt8 mem_model;
+	UInt8 bank_size;
+	UInt8 img_pages;
+	UInt8 res0;
+	UInt8 red_mask;
+	UInt8 red_pos;
+	UInt8 green_mask;
+	UInt8 green_pos;
+	UInt8 blue_mask;
+	UInt8 blue_pos;
+	UInt8 rsv_mask;
+	UInt8 rsv_pos;
+	UInt8 dc_attr;
+	UInt32 phys;
+	UInt32 res1;
+	UInt16 res2;
+} Packed MultibootVbeInfo, *PMultibootVbeInfo;
+
+typedef struct {
 	UInt32 size;
 	UInt32 base_low;
 	UInt32 base_high;
@@ -56,6 +82,6 @@ typedef struct MultibootMemoryMapStruct
 extern UInt32 MultibootHeaderMagic;
 extern PMultibootHeader MultibootHeaderPointer;
 
-Boolean CPUIDCheck();
+extern Boolean CPUIDCheck(Void);
 
 #endif		// __CHICAGO_ARCH_MULTIBOOT_H__

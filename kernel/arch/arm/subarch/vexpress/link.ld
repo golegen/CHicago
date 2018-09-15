@@ -1,15 +1,15 @@
 /*
    File author is Ítalo Lima Marconato Matias
   
-   Created on May 12 of 2018, at 19:05 BRT
-   Last edited on May 12 of 2018, at 09:04 BRT
+   Created on August 11 of 2018, at 14:29 BRT
+   Last edited on August 11 of 2018, at 20:11 BRT
 */
 
 ENTRY(KernelEntry)
 
 SECTIONS
 {
-	. = 0x8000;
+	. = 0x80010000;
 	
 	KernelStart = .;
 	

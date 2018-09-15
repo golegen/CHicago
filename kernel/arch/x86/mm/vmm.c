@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 19:19 BRT
-// Last edited on July 29 of 2018, at 11:50 BRT
+// Last edited on September 15 of 2018, at 13:58 BRT
 
 #include <chicago/arch/pmm.h>
 #include <chicago/arch/vmm.h>
@@ -30,7 +30,7 @@ UInt32 MmQuery(UIntPtr virt) {
 	}
 	
 	UInt32 page = MmGetPTE(MmCurrentTables, virt);																			// Let's get the pte
-	UInt32 ret = MM_MAP_READ;																								// And convert the page flags to MmMap flags
+	UInt32 ret = MM_MAP_READ | MM_MAP_EXEC;																					// And convert the page flags to MmMap flags
 	
 	if ((page & 0x02) == 0x02) {
 		ret |= MM_MAP_WRITE;
@@ -43,6 +43,101 @@ UInt32 MmQuery(UIntPtr virt) {
 	}
 	
 	return ret;
+}
+
+UIntPtr MmFindFreeVirt(UIntPtr start, UIntPtr end, UIntPtr count) {
+	if (start % MM_PAGE_SIZE != 0) {																						// Page align the start
+		start -= count % MM_PAGE_SIZE;
+	}
+	
+	if (end % MM_PAGE_SIZE != 0) {																							// Page align the end
+		end += count % MM_PAGE_SIZE;
+	}
+	
+	if (count % MM_PAGE_SIZE != 0) {																						// Page align the count
+		count += count % MM_PAGE_SIZE;
+	}
+	
+	UIntPtr c = 0;
+	UIntPtr p = start;
+	
+	for (UIntPtr i = start; i < end; i += MM_PAGE_SIZE * 1024) {															// Let's try to find the first free virtual address!
+		if ((MmGetPDE(MmCurrentDirectory, i) & 0x01) == 0x01) {																// This PDE is allocated?
+			for (UIntPtr j = 0; j < MM_PAGE_SIZE * 1024; j += MM_PAGE_SIZE) {												// Yes, let's check the PTEs
+				if (((i == 0) && (j == 0)) || (MmGetPTE(MmCurrentTables, i + j) & 0x01) == 0x01) {							// Allocated?
+					c = 0;																									// Yes :(
+					p = i + (j + MM_PAGE_SIZE);
+				} else {
+					c += MM_PAGE_SIZE;																						// No! (+4KB)
+					
+					if (c >= count) {																						// We need more memory?
+						return p;																							// No, so return!
+					}
+				}
+			}
+		} else {
+			c += MM_PAGE_SIZE * 1024;																						// No! (+4MB)
+			
+			if (i < MM_PAGE_SIZE * 1024) {																					// 0x00000000?
+				c -= MM_PAGE_SIZE;																							// Yes, but it's reserved...
+				p += MM_PAGE_SIZE;
+			}
+			
+			if (c >= count) {																								// We need more memory?
+				return p;																									// No, so return!
+			}
+		}
+	}
+	
+	return 0;																												// We failed :(
+}
+
+UIntPtr MmFindHighestFreeVirt(UIntPtr start, UIntPtr end, UIntPtr count) {
+	if (start % MM_PAGE_SIZE != 0) {																						// Page align the start
+		start -= count % MM_PAGE_SIZE;
+	}
+	
+	if (end % MM_PAGE_SIZE != 0) {																							// Page align the end
+		end += count % MM_PAGE_SIZE;
+	}
+	
+	if (count % MM_PAGE_SIZE != 0) {																						// Page align the count
+		count += count % MM_PAGE_SIZE;
+	}
+	
+	UIntPtr c = 0;
+	UIntPtr p = end;
+	
+	for (UIntPtr i = end - 1; i > start; i -= MM_PAGE_SIZE * 1024) {														// Let's try to find the highest free virtual address!
+		if ((MmGetPDE(MmCurrentDirectory, i) & 0x01) == 0x01) {																// This PDE is allocated?/
+			for (UIntPtr j = MM_PAGE_SIZE * 1024; j > 0; j -= MM_PAGE_SIZE) {												// Yes, let's check the PTEs
+				UIntPtr rj = j - 1;
+				
+				if ((i == start) && (rj == 0)) {																			// curr == start?
+					return 0;																								// Yes, we failed :(
+				} else if ((MmGetPTE(MmCurrentTables, i + rj) & 0x01) == 0x01) {											// Allocated?
+					c = 0;																									// Yes :(
+					p = i + (rj - 1);
+				} else {
+					c += MM_PAGE_SIZE;																						// No! (+4KB)
+					
+					if (c >= count) {																						// We need more memory?
+						return p - count;																					// No, so return!
+					}
+				}
+			}
+		} else {
+			c += MM_PAGE_SIZE * 1024;																						// No! (+4MB)
+			
+			if (i == start) {																								// curr == start?
+				return 0;																									// Yes, we failed :(
+			} if (c >= count) {																								// We need more memory?
+				return p - count;																							// No, so return!
+			}
+		}
+	}
+	
+	return 0;																												// We failed :(
 }
 
 UIntPtr MmMapTemp(UIntPtr phys, UInt32 flags) {

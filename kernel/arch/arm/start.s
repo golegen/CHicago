@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
-// Created on May 11 of 2018, at 13:18 BRT
-// Last edited on May 12 of 2018, at 09:01 BRT
+// Created on August 11 of 2018, at 14:32 BRT
+// Last edited on August 11 of 2018, at 14:34 BRT
 
 .section .text
 
@@ -10,7 +10,7 @@
 .extern KernelMain
 .global KernelEntry
 KernelEntry:
-	mov sp, #0x8000							// Setup kernel stack
+	ldr sp, =KernelStack					// Setup kernel stack
 	
 	ldr r4, =__bss_start					// Clear out bss
 	ldr r9, =__bss_end
@@ -30,3 +30,10 @@ KernelEntry:
 .Loop:
 	wfe
 	b .Loop
+
+.section .bss
+
+.align 8
+.skip 8192
+.global KernelStack
+KernelStack:

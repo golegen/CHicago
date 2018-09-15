@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 17 of 2018, at 16:10 BRT
-// Last edited on July 17 of 2018, at 16:12 BRT
+// Last edited on August 06 of 2018, at 17:04 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/file.h>
@@ -246,20 +246,24 @@ PFsNode Iso9660FindInDirectory(PFsNode dir, PChar name) {
 					node->name = dename;																			// Let's fill everything
 					node->priv = dev;																				// Priv is the "device"
 					
-					if ((dent->flags & 0x02) == 0x02) {
-						node->flags = FS_FLAG_DIR;
+					if ((dent->flags & 0x02) == 0x02) {																// Directory?
+						node->flags = FS_FLAG_DIR;																	// Yes!
+						node->read = Null;
+						node->write = Null;
+						node->readdir = Iso9660ReadDirectoryEntry;
+						node->finddir = Iso9660FindInDirectory;
 					} else {
-						node->flags = FS_FLAG_FILE;
+						node->flags = FS_FLAG_FILE;																	// Nope
+						node->read = Iso9660ReadFile;
+						node->write = Null;
+						node->readdir = Null;
+						node->finddir = Null;
 					}
 					
 					node->inode = (UIntPtr)de;																		// Inode is the directory entry (because of this i copied it before)
 					node->length = dent->extent_length_lsb;
-					node->read = Iso9660ReadFile;
-					node->write = Null;
 					node->open = Iso9660OpenFile;
 					node->close = Iso9660CloseFile;
-					node->readdir = Null;
-					node->finddir = Null;
 					
 					MemFree((UIntPtr)data);																			// Free the allocated/readed directory data
 					

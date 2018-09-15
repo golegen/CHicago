@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on July 28 of 2018, at 16:04 BRT
+// Last edited on August 06 of 2018, at 16:17 BRT
 
 .section .multiboot
 
@@ -35,7 +35,7 @@ KernelEntry:
 	loop 1b																												// Keep on looping (if we need)
 2:
 	movl $(KernelPageTable2 - 0xC0000000), %edi
-	movl $0, %esi
+	movl $0x400000, %esi
 3:
 	cmpl $0x800000, %esi																								// ... Just more 4MB
 	jge 4f
@@ -49,9 +49,25 @@ KernelEntry:
 	
 	loop 3b																												// Keep on looping (if we need)
 4:
+	movl $(KernelPageTable3 - 0xC0000000), %edi
+	movl $0x800000, %esi
+5:
+	cmpl $0xC00000, %esi																								// ... And more 4MB
+	jge 6f
+	
+	movl %esi, %edx																										// Set the present and rw bit
+	orl $0x03, %edx
+	movl %edx, (%edi)
+	
+	addl $4096, %esi																									// Size of page is 4096 bytes
+	addl $4, %edi																										// And the size of page table entries is 4 bytes
+	
+	loop 5b																												// Keep on looping (if we need)
+6:
 	movl $(KernelPageTable1 - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 0 * 4								// Let's put the tables in the page directory
 	movl $(KernelPageTable1 - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 768 * 4
 	movl $(KernelPageTable2 - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 769 * 4
+	movl $(KernelPageTable3 - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 770 * 4
 	movl $(MmKernelDirectoryInt - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 1023 * 4
 	
 	movl $(MmKernelDirectoryInt - 0xC0000000), %ecx																		// Let's load our page directory
@@ -61,9 +77,9 @@ KernelEntry:
 	orl $0x80010001, %ecx
 	movl %ecx, %cr0
 	
-	lea 5f, %ecx
+	lea 7f, %ecx
 	jmp *%ecx
-5:
+7:
 	movl $0, MmKernelDirectoryInt + 0																					// And remove the initial pt
 	invlpg 0
 	
@@ -75,9 +91,9 @@ KernelEntry:
 	mov %ebx, (MultibootHeaderPointer)
 	
 	call KernelMain																										// Go to main kernel function
-6:
+8:
 	pause
-	jmp 6b
+	jmp 8b
 
 .global CPUIDCheck
 CPUIDCheck:
@@ -96,6 +112,29 @@ CPUIDCheck:
 0:
 	mov $0x01, %eax
 	ret
+
+.global ArchUserJump
+ArchUserJump:
+	mov %esp, %ebp
+	
+	mov $0x23, %ax
+	mov %ax, %ds
+	mov %ax, %es
+	mov %ax, %fs
+	mov %ax, %gs
+	
+	push $0x23
+	push %ebp
+	
+	pushf
+	pop %eax
+	or $0x200, %eax
+	push %eax
+	
+	push $0x1B
+	pushl 4(%ebp)
+	
+	iret
 
 GDTPointerLimit:
 	.word 0																												// GDT limit storage
@@ -119,6 +158,12 @@ GDTLoad:
 	mov %ax, %gs
 	mov %ax, %ss
 	
+	ret
+
+.global TSSLoad
+TSSLoad:
+	mov 4(%esp), %ax																									// Load the first arg into AX
+	ltr %ax																												// And load AX into task state register
 	ret
 
 IDTPointerLimit:
@@ -450,15 +495,6 @@ ISRCommonStub:
 	add $8, %esp
 	iret
 
-.global PsGetEIP
-PsGetEIP:
-	pop %eax
-	jmp *%eax
-
-.global PsGetEAX
-PsGetEAX:
-	ret
-
 .section .data
 
 .global MultibootHeaderMagic
@@ -477,6 +513,8 @@ MmKernelDirectoryInt:
 KernelPageTable1:
 .skip 4096
 KernelPageTable2:
+.skip 4096
+KernelPageTable3:
 .skip 4096
 
 .align 16

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:59 BRT
-// Last edited on August 05 of 2018, at 13:31 BRT
+// Last edited on September 14 of 2018, at 19:53 BRT
 
 #define __CHICAGO_PROCESS__
 
@@ -76,7 +76,7 @@ PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir) {
 	
 	PThread th = PsCreateThreadInt(proc, entry);																								// Let's create the first thread!
 	
-	if (th == Null) {
+	if (th == Null) {																										
 		ListFree(proc->threads);																												// Failed...
 		MemFree((UIntPtr)proc->name);
 		MemFree((UIntPtr)proc);
@@ -85,9 +85,9 @@ PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir) {
 	}
 	
 	if (!ListAdd(proc->threads, th)) {																											// Let's add it to this proc thread list!
-		PsFreeThreadPrivateData(th->priv);
+		PsFreeThreadPrivateData(th->priv);																										// Failed...
 		MemFree((UIntPtr)th);
-		ListFree(proc->threads);																												// Failed...
+		ListFree(proc->threads);
 		MemFree((UIntPtr)proc->name);
 		MemFree((UIntPtr)proc);
 		
@@ -98,8 +98,8 @@ PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir) {
 		proc->dir = MmCloneDirectory();																											// Yes
 		
 		if (proc->dir == 0) {
-			PsFreeThreadPrivateData(th->priv);
-			ListFree(proc->threads);																											// Failed...
+			PsFreeThreadPrivateData(th->priv);																									// Failed...
+			ListFree(proc->threads);
 			MemFree((UIntPtr)proc->name);
 			MemFree((UIntPtr)proc);
 			

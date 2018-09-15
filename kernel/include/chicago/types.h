@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:15 BRT
-// Last edited on July 28 of 2018, at 01:37 BRT
+// Last edited on August 11 of 2018, at 16:55 BRT
 
 #ifndef __CHICAGO_TYPES_H__
 #define __CHICAGO_TYPES_H__
@@ -65,7 +65,7 @@ typedef signed Int IntPtr, *PIntPtr;
 
 #define Packed __attribute__((packed))
 #define Aligned(x) __attribute__((aligned(x)))
-#define NoOpt __attribute__((optimize("O0")))
+#define Optional __attribute__((weak))
 
 /* Boolean and other defines */
 

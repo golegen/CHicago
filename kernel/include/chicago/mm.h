@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 18:48 BRT
-// Last edited on July 29 of 2018, at 11:54 BRT
+// Last edited on September 15 of 2018, at 12:47 BRT
 
 #ifndef __CHICAGO_MM_H__
 #define __CHICAGO_MM_H__
@@ -10,6 +10,14 @@
 
 #ifndef MM_PAGE_SIZE
 #define MM_PAGE_SIZE 0x1000
+#endif
+
+#ifndef MM_USER_START
+#define MM_USER_START 0x00000000
+#endif
+
+#ifndef MM_USER_END
+#define MM_USER_END 0xC0000000
 #endif
 
 #define MM_MAP_USER 0x01
@@ -37,6 +45,8 @@ UIntPtr MmGetFree(Void);
 
 UIntPtr MmGetPhys(UIntPtr virt);
 UInt32 MmQuery(UIntPtr virt);
+UIntPtr MmFindFreeVirt(UIntPtr start, UIntPtr end, UIntPtr count);
+UIntPtr MmFindHighestFreeVirt(UIntPtr start, UIntPtr end, UIntPtr count);
 UIntPtr MmMapTemp(UIntPtr phys, UInt32 flags);
 Boolean MmMap(UIntPtr virt, UIntPtr phys, UInt32 flags);
 Boolean MmUnmap(UIntPtr virt);

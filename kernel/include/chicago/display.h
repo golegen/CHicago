@@ -1,10 +1,12 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 21:17 BRT
-// Last edited on July 21 of 2018, at 14:11 BRT
+// Last edited on August 11 of 2018, at 18:27 BRT
 
 #ifndef __CHICAGO_DISPLAY_H__
 #define __CHICAGO_DISPLAY_H__
+
+#include <chicago/types.h>
 
 UIntPtr DispGetFrameBuffer(Void);
 UIntPtr DispGetWidth(Void);

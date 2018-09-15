@@ -1,10 +1,11 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 28 of 2018, at 01:09 BRT
-// Last edited on August 05 of 2018, at 17:58 BRT
+// Last edited on August 05 of 2018, at 19:08 BRT
 
 #define __CHICAGO_ARCH_PROCESS__
 
+#include <chicago/arch/gdt.h>
 #include <chicago/arch/port.h>
 #include <chicago/arch/process.h>
 #include <chicago/arch/idt.h>
@@ -92,6 +93,7 @@ Void PsSwitchTaskTimer(PRegisters regs) {
 		old->time = PS_TIMESLICE - 1;																				// Reset the time slice
 		PsCurrentThread = new;
 		
+		GDTSetKernelStack((UInt32)(((PThreadPrivateData)(new->priv))->kstack));										// Load the kernel stack
 		Asm Volatile("fxsave (%0)" :: "r"(PsFPUStateSave));															// Save the old fp state
 		StrCopyMemory(((PThreadPrivateData)(old->priv))->fpu_state, PsFPUStateSave, 512);
 		StrCopyMemory(PsFPUStateSave, ((PThreadPrivateData)(new->priv))->fpu_state, 512);							// And load the new one!
@@ -134,6 +136,7 @@ Void PsSwitchTaskForce(PRegisters regs) {
 	old->time = PS_TIMESLICE - 1;																					// Reset the old time slice
 	PsCurrentThread = new;
 	
+	GDTSetKernelStack((UInt32)(((PThreadPrivateData)(new->priv))->kstack));											// Load the kernel stack
 	Asm Volatile("fxsave (%0)" :: "r"(PsFPUStateSave));																// Save the old fp state
 	StrCopyMemory(((PThreadPrivateData)(old->priv))->fpu_state, PsFPUStateSave, 512);
 	StrCopyMemory(PsFPUStateSave, ((PThreadPrivateData)(new->priv))->fpu_state, 512);								// And load the new one!
@@ -186,6 +189,7 @@ Void PsInitInt(Void) {
 	}
 	
 	IDTRegisterInterruptHandler(0x3E, PsSwitchTaskForce);															// Register the force task switch handler
+	GDTSetKernelStack((UInt32)(((PThreadPrivateData)(PsCurrentThread->priv))->kstack));								// Load the kernel stack
 	StrCopyMemory(PsFPUStateSave, ((PThreadPrivateData)(PsCurrentThread->priv))->fpu_state, 512);					// Load the intial fpu state
 	Asm Volatile("fxrstor (%0)" :: "r"(PsFPUStateSave));
 	
