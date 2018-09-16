@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:38 BRT
-// Last edited on July 19 of 2018, at 02:27 BRT
+// Last edited on September 15 of 2018, at 17:36 BRT
 
 #ifndef __CHICAGO_DEVICE_H__
 #define __CHICAGO_DEVICE_H__
@@ -13,6 +13,7 @@ typedef struct DeviceStruct {
 	PVoid priv;
 	Boolean (*read)(struct DeviceStruct *, UIntPtr, UIntPtr, PUInt8);
 	Boolean (*write)(struct DeviceStruct *, UIntPtr, UIntPtr, PUInt8);
+	Boolean (*control)(struct DeviceStruct *, UIntPtr, PUInt8, PUInt8);
 } Device, *PDevice;
 
 Void NullDeviceInit(Void);
@@ -21,7 +22,8 @@ Void FrameBufferDeviceInit(Void);
 
 Boolean FsReadDevice(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf);
 Boolean FsWriteDevice(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf);
-Boolean FsAddDevice(PChar name, PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUInt8), Boolean (*write)(PDevice, UIntPtr, UIntPtr, PUInt8));
+Boolean FsControlDevice(PDevice dev, UIntPtr cmd, PUInt8 ibuf, PUInt8 obuf);
+Boolean FsAddDevice(PChar name, PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUInt8), Boolean (*write)(PDevice, UIntPtr, UIntPtr, PUInt8), Boolean (*control)(PDevice, UIntPtr, PUInt8, PUInt8));
 Boolean FsRemoveDevice(PChar name);
 PDevice FsGetDevice(PChar name);
 PDevice FsGetDeviceByID(UIntPtr id);

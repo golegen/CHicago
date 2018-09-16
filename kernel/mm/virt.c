@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on September 15 of 2018, at 12:46 BRT
-// Last edited on September 15 of 2018, at 14:02 BRT
+// Last edited on September 15 of 2018, at 19:25 BRT
 
 #include <chicago/mm.h>
 #include <chicago/virt.h>
@@ -54,7 +54,7 @@ UIntPtr VirtAllocAddress(UIntPtr addr, UIntPtr size, UInt32 flags) {
 	Boolean check = True;
 	
 	if ((size % MM_PAGE_SIZE) == MM_PAGE_SIZE) {										// Page align the size
-		addr += addr % MM_PAGE_SIZE;
+		size += MM_PAGE_SIZE - (size % MM_PAGE_SIZE);
 	}
 	
 	if (addr == 0) {																	// We need to alloc a new address?
@@ -121,7 +121,7 @@ Boolean VirtFreeAddress(UIntPtr addr, UIntPtr size) {
 	}
 	
 	if ((size % MM_PAGE_SIZE) == MM_PAGE_SIZE) {										// Page align the size
-		addr += addr % MM_PAGE_SIZE;
+		size += MM_PAGE_SIZE - (size % MM_PAGE_SIZE);
 	}
 	
 	for (UIntPtr i = addr; i < addr + size; i += MM_PAGE_SIZE) {						// Let's try to do it!
@@ -152,7 +152,7 @@ Boolean VirtChangeProtection(UIntPtr addr, UIntPtr size, UInt32 flags) {
 	}
 	
 	if ((size % MM_PAGE_SIZE) == MM_PAGE_SIZE) {										// Page align the size
-		addr += addr % MM_PAGE_SIZE;
+		size += MM_PAGE_SIZE - (size % MM_PAGE_SIZE);
 	}
 	
 	UInt32 flgs = VirtConvertFlags(flags);												// Convert our flags

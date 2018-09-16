@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 23:40 BRT
-// Last edited on July 17 of 2018, at 13:48 BRT
+// Last edited on September 15 of 2018, at 17:41 BRT
 
 #include <chicago/arch/ide.h>
 #include <chicago/arch/idt.h>
@@ -404,7 +404,7 @@ Void IDEInit(Void) {
 					name[8] = (Char)(hdc++ + '0');																// And set the num
 				}
 				
-				if (!FsAddDevice(name, (PVoid)((i << 8) | j), IDEDeviceRead, Null)) {							// At end try to add us to the device list!
+				if (!FsAddDevice(name, (PVoid)((i << 8) | j), IDEDeviceRead, Null, Null)) {						// At end try to add us to the device list!
 					DbgWriteFormated("[x86] Failed to add %s device\r\n", name);
 					MemFree((UIntPtr)name);
 				}

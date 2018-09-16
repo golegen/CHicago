@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 15 of 2018, at 13:19 BRT
-// Last edited on July 15 of 2018, at 20:31 BRT
+// Last edited on September 15 of 2018, at 17:35 BRT
 
 #include <chicago/debug.h>
 #include <chicago/device.h>
@@ -19,7 +19,8 @@ Boolean ZeroDeviceWrite(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf) {
 }
 
 Void ZeroDeviceInit(Void) {
-	if (!FsAddDevice("Zero", Null, ZeroDeviceRead, ZeroDeviceWrite)) {			// Let's add ourself
-		DbgWriteFormated("[Kernel] Failed to add Zero device\r\n");				// Failed...
+	if (!FsAddDevice("Zero", Null, ZeroDeviceRead, ZeroDeviceWrite, Null)) {	// Let's add ourself
+		DbgWriteFormated("PANIC! Failed to add the Zero device\r\n");			// Failed...
+		while (1) ;
 	}
 }

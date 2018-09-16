@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:35 BRT
-// Last edited on July 18 of 2018, at 22:24 BRT
+// Last edited on September 15 of 2018, at 17:36 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -28,7 +28,15 @@ Boolean FsWriteDevice(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	}
 }
 
-Boolean FsAddDevice(PChar name, PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUInt8), Boolean (*write)(PDevice, UIntPtr, UIntPtr, PUInt8)) {
+Boolean FsControlDevice(PDevice dev, UIntPtr cmd, PUInt8 ibuf, PUInt8 obuf) {
+	if (dev->control != Null) {													// We can call the device's function?
+		return dev->control(dev, cmd, ibuf, obuf);								// Yes!
+	} else {
+		return False;															// Nope, so return False
+	}
+}
+
+Boolean FsAddDevice(PChar name, PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUInt8), Boolean (*write)(PDevice, UIntPtr, UIntPtr, PUInt8), Boolean (*control)(PDevice, UIntPtr, PUInt8, PUInt8)) {
 	if (FsDeviceList == Null) {													// Device list was initialized?
 		return False;															// No...
 	}
@@ -43,6 +51,7 @@ Boolean FsAddDevice(PChar name, PVoid priv, Boolean (*read)(PDevice, UIntPtr, UI
 	dev->priv = priv;
 	dev->read = read;
 	dev->write = write;
+	dev->control = control;
 	
 	if (!ListAdd(FsDeviceList, dev)) {											// Try to add to the list
 		MemFree((UIntPtr)dev);													// Failed, so let's free the dev struct

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 19:19 BRT
-// Last edited on September 15 of 2018, at 13:58 BRT
+// Last edited on September 15 of 2018, at 19:27 BRT
 
 #include <chicago/arch/pmm.h>
 #include <chicago/arch/vmm.h>
@@ -51,11 +51,11 @@ UIntPtr MmFindFreeVirt(UIntPtr start, UIntPtr end, UIntPtr count) {
 	}
 	
 	if (end % MM_PAGE_SIZE != 0) {																							// Page align the end
-		end += count % MM_PAGE_SIZE;
+		end += MM_PAGE_SIZE - (end % MM_PAGE_SIZE);
 	}
 	
 	if (count % MM_PAGE_SIZE != 0) {																						// Page align the count
-		count += count % MM_PAGE_SIZE;
+		count += MM_PAGE_SIZE - (count % MM_PAGE_SIZE);
 	}
 	
 	UIntPtr c = 0;
@@ -98,17 +98,17 @@ UIntPtr MmFindHighestFreeVirt(UIntPtr start, UIntPtr end, UIntPtr count) {
 	}
 	
 	if (end % MM_PAGE_SIZE != 0) {																							// Page align the end
-		end += count % MM_PAGE_SIZE;
+		end += MM_PAGE_SIZE - (end % MM_PAGE_SIZE);
 	}
 	
 	if (count % MM_PAGE_SIZE != 0) {																						// Page align the count
-		count += count % MM_PAGE_SIZE;
+		count += MM_PAGE_SIZE - (count % MM_PAGE_SIZE);
 	}
 	
 	UIntPtr c = 0;
 	UIntPtr p = end;
 	
-	for (UIntPtr i = end - 1; i > start; i -= MM_PAGE_SIZE * 1024) {														// Let's try to find the highest free virtual address!
+	for (UIntPtr i = end - (MM_PAGE_SIZE * 1024); i > start; i -= MM_PAGE_SIZE * 1024) {									// Let's try to find the highest free virtual address!
 		if ((MmGetPDE(MmCurrentDirectory, i) & 0x01) == 0x01) {																// This PDE is allocated?/
 			for (UIntPtr j = MM_PAGE_SIZE * 1024; j > 0; j -= MM_PAGE_SIZE) {												// Yes, let's check the PTEs
 				UIntPtr rj = j - 1;
@@ -117,7 +117,7 @@ UIntPtr MmFindHighestFreeVirt(UIntPtr start, UIntPtr end, UIntPtr count) {
 					return 0;																								// Yes, we failed :(
 				} else if ((MmGetPTE(MmCurrentTables, i + rj) & 0x01) == 0x01) {											// Allocated?
 					c = 0;																									// Yes :(
-					p = i + (rj - 1);
+					p = (i + rj + 1) - MM_PAGE_SIZE;
 				} else {
 					c += MM_PAGE_SIZE;																						// No! (+4KB)
 					
@@ -129,9 +129,11 @@ UIntPtr MmFindHighestFreeVirt(UIntPtr start, UIntPtr end, UIntPtr count) {
 		} else {
 			c += MM_PAGE_SIZE * 1024;																						// No! (+4MB)
 			
-			if (i == start) {																								// curr == start?
-				return 0;																									// Yes, we failed :(
-			} if (c >= count) {																								// We need more memory?
+			if (i == 0) {																									// 0x00000000?
+				c -= MM_PAGE_SIZE;																							// Yes...
+			}
+			
+			if (c >= count) {																								// We need more memory?
 				return p - count;																							// No, so return!
 			}
 		}

@@ -1,11 +1,12 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:42 BRT
-// Last edited on September 14 of 2018, at 19:52RT
+// Last edited on September 15 of 2018, at 23:49 BRT
 
 #ifndef __CHICAGO_PROCESS_H__
 #define __CHICAGO_PROCESS_H__
 
+#include <chicago/file.h>
 #include <chicago/list.h>
 
 #define PsCurrentProcess (PsCurrentThread->parent)
@@ -19,16 +20,13 @@
 
 struct ThreadStruct;
 struct ProcessStruct;
+struct ThreadDataStruct;
 
-typedef struct LockStruct {
-	Boolean locked;
-	struct ThreadStruct *owner;
-} Lock, *PLock;
+typedef Boolean Lock, *PLock;
 
 typedef struct ThreadStruct {
 	UIntPtr id;
 	PVoid priv;
-	PLock waitl;
 	UIntPtr time;
 	UIntPtr retv;
 	UIntPtr wait_time;
@@ -37,6 +35,7 @@ typedef struct ThreadStruct {
 	struct ThreadStruct *waitt;
 	struct ProcessStruct *waitp;
 	struct ProcessStruct *parent;
+	struct ThreadDataStruct *thdata;
 } Thread, *PThread;
 
 typedef struct ProcessStruct {
@@ -44,8 +43,19 @@ typedef struct ProcessStruct {
 	PChar name;
 	UIntPtr dir;
 	UIntPtr lasttid;
+	Int lastfid;
 	PList threads;
+	PList files;
 } Process, *PProcess;
+
+typedef struct ThreadDataStruct {
+	UIntPtr placeholder;
+} ThreadData, *PThreadData;
+
+typedef struct {
+	PFsNode file;
+	Int num;
+} ProcessFile, *PProcessFile;
 
 #ifndef __CHICAGO_PROCESS__
 extern Boolean PsTaskSwitchEnabled;
@@ -53,7 +63,6 @@ extern PThread PsCurrentThread;
 extern PList PsSleepList;
 extern PList PsWaittList;
 extern PList PsWaitpList;
-extern PList PsWaitlList;
 #endif
 
 PThread PsCreateThreadInt(PProcess proc, UIntPtr entry);
@@ -62,6 +71,8 @@ PThread PsCreateThread(UIntPtr entry);
 PProcess PsCreateProcess(PChar name, UIntPtr entry);
 Void PsAddThread(PThread th);
 Void PsAddProcess(PProcess proc);
+PThread PsGetThread(UIntPtr tid);
+PProcess PsGetProcess(UIntPtr pid);
 Void PsSleep(UIntPtr ms);
 UIntPtr PsWaitThread(PThread th);
 UIntPtr PsWaitProcess(PProcess proc);

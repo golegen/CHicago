@@ -1,13 +1,15 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:29 BRT
-// Last edited on July 17 of 2018, at 14:42 BRT
+// Last edited on September 15 of 2018, at 17:56 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
 #include <chicago/device.h>
 #include <chicago/file.h>
 #include <chicago/string.h>
+
+Boolean DevFsControlFile(PFsNode file, UIntPtr cmd, PUInt8 ibuf, PUInt8 obuf);
 
 Boolean DevFsReadFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	if (file == Null) {																			// Any null pointer?
@@ -119,8 +121,25 @@ PFsNode DevFsFindInDirectory(PFsNode dir, PChar name) {
 	node->close = DevFsCloseFile;
 	node->readdir = Null;
 	node->finddir = Null;
+	node->control = DevFsControlFile;
 	
 	return node;
+}
+
+Boolean DevFsControlFile(PFsNode file, UIntPtr cmd, PUInt8 ibuf, PUInt8 obuf) {
+	if (file == Null) {																			// Any null pointer?
+		return False;																			// Yes, so we can't continue
+	} else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {									// ... We're trying to use the control in an directory?
+		return False;																			// Yes (Why?)
+	}
+	
+	PDevice dev = FsGetDevice(file->name);														// Get the device using the name
+	
+	if (dev == Null) {																			// Failed for some unknown reason?
+		return False;																			// Yes
+	}
+	
+	return FsControlDevice(dev, cmd, ibuf, obuf);												// Redirect to the FsControlDevice function
 }
 
 Void DevFsInit(Void) {
@@ -162,6 +181,7 @@ Void DevFsInit(Void) {
 	root->close = DevFsCloseFile;
 	root->readdir = DevFsReadDirectoryEntry;
 	root->finddir = DevFsFindInDirectory;
+	root->control = Null;
 	
 	if (!FsAddMountPoint(path, type, root)) {													// Try to add this device
 		DbgWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Failed (same as above)

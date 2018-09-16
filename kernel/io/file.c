@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:28 BRT
-// Last edited on August 06 of 2018, at 16:57 BRT
+// Last edited on September 15 of 2018, at 17:58 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -364,6 +364,18 @@ PFsNode FsFindInDirectory(PFsNode dir, PChar name) {
 		return dir->finddir(dir, name);
 	} else {
 		return Null;
+	}
+}
+
+Boolean FsControlFile(PFsNode file, UIntPtr cmd, PUInt8 ibuf, PUInt8 obuf) {
+	if (file == Null) {																													// File is Null pointer?
+		return False;																													// Yes, so we can't do anything...
+	} else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {																			// We're trying to control an file?
+		return False;																													// ... Why... WHY?
+	} else if (file->control != Null) {																									// Implementation?
+		return file->control(file, cmd, ibuf, obuf);																					// Yes, so call it!
+	} else {
+		return False;
 	}
 }
 

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:18 BRT
-// Last edited on July 17 of 2018, at 14:42 BRT
+// Last edited on September 15 of 2018, at 17:53 BRT
 
 #ifndef __CHICAGO_FILE_H__
 #define __CHICAGO_FILE_H__
@@ -24,6 +24,7 @@ typedef struct FsNodeStruct {
 	Void (*close)(struct FsNodeStruct *);
 	PChar (*readdir)(struct FsNodeStruct *, UIntPtr);
 	struct FsNodeStruct *(*finddir)(struct FsNodeStruct *, PChar);
+	Boolean (*control)(struct FsNodeStruct *, UIntPtr, PUInt8, PUInt8);
 } FsNode, *PFsNode;
 
 typedef struct {
@@ -53,6 +54,7 @@ Boolean FsMountFile(PChar path, PChar file, PChar type);
 Boolean FsUmountFile(PChar path);
 PChar FsReadDirectoryEntry(PFsNode dir, UIntPtr entry);
 PFsNode FsFindInDirectory(PFsNode dir, PChar name);
+Boolean FsControlFile(PFsNode file, UIntPtr cmd, PUInt8 ibuf, PUInt8 obuf);
 PFsMountPoint FsGetMountPoint(PChar path, PChar *outp);
 PFsType FsGetType(PChar type);
 Boolean FsAddMountPoint(PChar path, PChar type, PFsNode root);

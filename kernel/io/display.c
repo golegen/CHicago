@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 21:12 BRT
-// Last edited on July 24 of 2018, at 16:29 BRT
+// Last edited on September 15 of 2018, at 17:20 BRT
 
 #include <chicago/debug.h>
 #include <chicago/mm.h>
@@ -320,7 +320,7 @@ Void DispDrawLine(UIntPtr x0, UIntPtr y0, UIntPtr x1, UIntPtr y1, UIntPtr c) {
 }
 
 Void DispDrawRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr c) {
-	DispDrawLine(x, y, x, y + h - 1, c);																							// Let's use the DispDrawLine to draw the rectangle (we just need to draw 4 lines)
+	DispDrawLine(x, y, x, y + h - 1, c);																						// Let's use the DispDrawLine to draw the rectangle (we just need to draw 4 lines)
 	DispDrawLine(x, y, x + w - 1, y, c);
 	DispDrawLine(x, y + h - 1, x + w - 1, y + h - 1, c);
 	DispDrawLine(x + w - 1, y, x + w - 1, y + h - 1, c);
@@ -519,7 +519,7 @@ Void DispDrawProgessBar(Void) {
 }
 
 Void DispPreInit(UIntPtr w, UIntPtr h, UIntPtr bpp) {
-	if ((w < 640) || (h < 480) || (w > 800) || (h > 600) || ((bpp != 1) && (bpp != 3) && (bpp != 4))) {							// Minimum resolution should be 640x480! And for now, we only support True Color (... a lot of colors, 3 bytes per pixel) and True Color + ALPHA BLENDING! (... same as the True Color, but with one extra byte)
+	if ((bpp != 3) && (bpp != 4)) {																								// For now, we only support True Color (... a lot of colors, 3 bytes per pixel) and True Color + ALPHA BLENDING! (... same as the True Color, but with one extra byte)
 		DbgWriteFormated("PANIC! Couldn't init the display\r\n");
 		while (1) ;
 	}

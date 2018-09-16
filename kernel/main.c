@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on September 15 of 2018, at 13:20 BRT
+// Last edited on September 16 of 2018, at 12:46 BRT
 
 #include <chicago/arch.h>
 #include <chicago/debug.h>
@@ -14,7 +14,7 @@ Void KernelMain(Void) {
 	ArchInitDebug();																																				// Init the architecture-dependent debugging method
 	DbgWriteFormated("[Kernel] Arch debugging initialized\r\n");
 	
-	DbgWriteFormated("[Kernel] CHicago %d.%d build %d (codename %s, for %s)\r\n",CHICAGO_MAJOR, CHICAGO_MINOR, CHICAGO_BUILD, CHICAGO_CODENAME, CHICAGO_ARCH);		// Print the system version
+	DbgWriteFormated("[Kernel] CHicago %d.%d build %d (codename %s, for %s)\r\n", CHICAGO_MAJOR, CHICAGO_MINOR, CHICAGO_BUILD, CHICAGO_CODENAME, CHICAGO_ARCH);		// Print the system version
 	
 	ArchInitFPU();																																					// Init the architecture-dependent FPU (floating point unit)
 	DbgWriteFormated("[Kernel] Arch FPU initialized\r\n");
@@ -31,7 +31,10 @@ Void KernelMain(Void) {
 	DispDrawProgessBar();																																			// Draw the progress bar
 	DbgWriteFormated("[Kernel] The boot progress bar has been shown\r\n");
 	
-	ArchInit();																																						// Let's finish it by initalizating the architecture-dependent bits of the kernel
+	ArchInitSc();																																					// Init the system call interface
+	DbgWriteFormated("[Kernel] Arch system call interface initialized\r\n");
+	
+	ArchInit();																																						// Let's finish it by initalizating the other architecture-dependent bits of the kernel
 	DispIncrementProgessBar();
 	DbgWriteFormated("[Kernel] Arch initialized\r\n");	
 	
