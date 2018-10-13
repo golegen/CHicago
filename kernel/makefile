@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on October 12 of 2018, at 23:12 BRT
+# Last edited on October 13 of 2018, at 20:07 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -20,6 +20,9 @@ ifeq ($(ARCH),x86)
 	ARCH_OBJECTS += sys/gdt.c.o sys/idt.c.o sys/keyboard.c.o sys/pit.c.o
 	ARCH_OBJECTS += sys/process.c.o
 	ARCH_OBJECTS += mm/pmm.c.o mm/vmm.c.o
+	
+	OBJCOPY_FORMAT := elf32-i386
+	OBJCOPY_ARCH := i386
 	
 	LINKER_SCRIPT := link.ld
 else ifeq ($(ARCH),arm)
@@ -51,8 +54,11 @@ OBJECTS += mm/alloc.c.o mm/heap.c.o mm/pmm.c.o mm/ualloc.c.o
 OBJECTS += mm/virt.c.o
 OBJECTS += sys/process.c.o sys/rand.c.o sys/string.c.o
 
+OTHER_OBJECTS := splash.bmp
+
 ARCH_OBJECTS := $(addprefix build/arch/$(ARCH)/,$(ARCH_OBJECTS))
 OBJECTS := $(addprefix build/,$(OBJECTS))
+OTHER_OBJECTS := $(addsuffix .oo, $(addprefix build/,$(OTHER_OBJECTS)))
 LINKER_SCRIPT := arch/$(ARCH)/$(LINKER_SCRIPT)
 
 ifeq ($(SUBARCH),)
@@ -84,13 +90,22 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 
-$(KERNEL): $(ARCH_OBJECTS) $(OBJECTS) $(LINKER_SCRIPT)
+$(KERNEL): $(ARCH_OBJECTS) $(OBJECTS) $(OTHER_OBJECTS) $(LINKER_SCRIPT)
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 	$(NOECHO)echo Linking $@
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(NOECHO)$(PREFIX)gcc -T$(LINKER_SCRIPT) -ffreestanding -nostdlib -o $@ $(ARCH_OBJECTS) $(OBJECTS) $(ARCH_LDFLAGS) -lgcc
+	$(NOECHO)$(PREFIX)gcc -T$(LINKER_SCRIPT) -ffreestanding -nostdlib -o $@ $(ARCH_OBJECTS) $(OBJECTS) $(OTHER_OBJECTS) $(ARCH_LDFLAGS) -lgcc
+
+build/%.oo: %
+ifeq ($(UNSUPPORTED_ARCH),true)
+	$(error Unsupported architecture $(ARCH))
+endif
+	$(NOECHO)echo Compiling $<
+	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
+	$(NOECHO)$(PREFIX)objcopy -Ibinary -O$(OBJCOPY_FORMAT) -B$(OBJCOPY_ARCH) $< $@
+	$(NOECHO)$(PREFIX)objcopy --rename-section .data=.rodata,alloc,load,readonly,data,contents $@ $@
 
 build/%.s.o: %.s
 ifeq ($(UNSUPPORTED_ARCH),true)

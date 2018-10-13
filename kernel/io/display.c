@@ -1,9 +1,12 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 21:12 BRT
-// Last edited on October 13 of 2018, at 10:56 BRT
+// Last edited on October 13 of 2018, at 20:31 BRT
+
+#define __CHICAGO_DISPLAY__
 
 #include <chicago/debug.h>
+#include <chicago/display.h>
 #include <chicago/mm.h>
 #include <chicago/string.h>
 
@@ -470,6 +473,24 @@ Void DispFillRoundedRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPt
 	DispDrawLine(x + w, y + r, x + w, y + h - r, c);																			// And the right one
 }
 
+Void DispDrawBitmap(PUInt8 bmp, UIntPtr x, UIntPtr y) {
+	PBmpHeader hdr = (PBmpHeader)bmp;																							// BMP file header
+	PBmpInfoHeader ihdr = (PBmpInfoHeader)(((UIntPtr)bmp) + sizeof(BmpHeader));													// BMP info header
+	PUInt8 bytes = (PUInt8)(((UIntPtr)bmp) + hdr->off);																			// The image itself
+	
+	for (UIntPtr i = 0; i < ihdr->height; i++) {																				// Let's do it!
+		PUInt8 row = bytes + i * ihdr->width * 3;																				// Get this row
+		
+		for (UIntPtr j = 0, k = 0; k < ihdr->width; k++) {																		// Let's draw all the pixels
+			UInt8 b = row[j++] & 0xFF;
+			UInt8 g = row[j++] & 0xFF;
+			UInt8 r = row[j++] & 0xFF;
+			
+			DispPutPixel(x + k, y + (ihdr->height - (i + 1)), (((r << 16) | (g << 8) | b) & 0xFFFFFF) | 0xFF000000);			// Convert the R, B and G to the A8R8G8B8 format and ALWAYS REMEMBER THAT IN BMP THE 0, 0 IS AT THE BOTTOM LEFT, AND OUR 0, 0 IS AT TOP LEFT
+		}
+	}
+}
+
 static Void DispWriteFormatedCharacter(PUIntPtr x, PUIntPtr y, UIntPtr bg, UIntPtr fg, Char data) {
 	switch (data) {
 		case '\n': {																											// Line feed
@@ -589,8 +610,9 @@ Void DispFillProgressBar(Void) {
 }
 
 Void DispDrawProgessBar(Void) {
-	DispDrawRoundedRectangle(DispWidth / 2 - 100, DispHeight - 30, 201, 21, 7, 0xFFFFFF);										// Draw the border
-	DispWriteFormated(DispWidth / 2 - 44, DispHeight - 50, 0x000000, 0xFFFFFF, "Starting up");									// And the "Starting up" text
+	DispDrawRoundedRectangle(DispWidth / 2 - 100, DispHeight - 30, 201, 21, 7, 0xFFFFFF);										// Draw the progress bar border
+	DispWriteFormated(DispWidth / 2 - 56, 7, 0x000000, 0xFFFFFF, "Starting up...");												// And the "Starting..." text
+	DispDrawBitmap(DispBootSplashImage, DispWidth / 2 - 150, DispHeight / 2 - 50);												// Draw the logo
 }
 
 Void DispPreInit(UIntPtr w, UIntPtr h, UIntPtr bpp) {
