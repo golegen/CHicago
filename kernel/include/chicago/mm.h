@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 18:48 BRT
-// Last edited on September 15 of 2018, at 12:47 BRT
+// Last edited on September 21 of 2018, at 20:42 BRT
 
 #ifndef __CHICAGO_MM_H__
 #define __CHICAGO_MM_H__
@@ -55,5 +55,9 @@ UIntPtr MmCloneDirectory(Void);
 Void MmFreeDirectory(UIntPtr dir);
 UIntPtr MmGetCurrentDirectory(Void);
 Void MmSwitchDirectory(UIntPtr dir);
+
+UIntPtr MmAllocUserMemory(UIntPtr size);
+Void MmFreeUserMemory(UIntPtr block);
+UIntPtr MmReallocUserMemory(UIntPtr block, UIntPtr size);
 
 #endif		// __CHICAGO_MM_H__

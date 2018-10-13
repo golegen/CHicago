@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on September 16 of 2018, at 12:37 BRT
+# Last edited on October 12 of 2018, at 23:12 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -17,8 +17,8 @@ ifeq ($(ARCH),x86)
 	ARCH_OBJECTS := start.s.o
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += io/debug.c.o io/ide.c.o io/mbdisp.c.o
-	ARCH_OBJECTS += sys/gdt.c.o sys/idt.c.o sys/pit.c.o sys/process.c.o
-	ARCH_OBJECTS += sys/sc.c.o
+	ARCH_OBJECTS += sys/gdt.c.o sys/idt.c.o sys/keyboard.c.o sys/pit.c.o
+	ARCH_OBJECTS += sys/process.c.o
 	ARCH_OBJECTS += mm/pmm.c.o mm/vmm.c.o
 	
 	LINKER_SCRIPT := link.ld
@@ -43,12 +43,13 @@ else
 endif
 
 OBJECTS := main.c.o
-OBJECTS += ds/list.c.o
+OBJECTS += ds/list.c.o ds/stack.c.o
 OBJECTS += io/device.c.o io/display.c.o io/file.c.o
-OBJECTS += io/dev/framebuffer.c.o io/dev/null.c.o io/dev/zero.c.o
+OBJECTS += io/dev/framebuffer.c.o io/dev/keyboard.c.o io/dev/null.c.o io/dev/zero.c.o
 OBJECTS += io/fs/devfs.c.o io/fs/iso9660.c.o
-OBJECTS += mm/alloc.c.o mm/heap.c.o mm/pmm.c.o mm/virt.c.o
-OBJECTS += sys/process.c.o sys/sc.c.o sys/string.c.o
+OBJECTS += mm/alloc.c.o mm/heap.c.o mm/pmm.c.o mm/ualloc.c.o
+OBJECTS += mm/virt.c.o
+OBJECTS += sys/process.c.o sys/rand.c.o sys/string.c.o
 
 ARCH_OBJECTS := $(addprefix build/arch/$(ARCH)/,$(ARCH_OBJECTS))
 OBJECTS := $(addprefix build/,$(OBJECTS))
@@ -106,7 +107,15 @@ endif
 	$(NOECHO)echo Compiling $<
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 ifeq ($(SUBARCH),)
-	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -std=c11 -Iinclude -Iarch/$(ARCH)/include -ffreestanding -O3 -Wall -Wextra -Wno-implicit-fallthrough $(ARCH_CFLAGS) -c $< -o $@
+ifeq ($(DEBUG),yes)
+	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -DDEBUG -g -std=c11 -Iinclude -Iarch/$(ARCH)/include -ffreestanding -O0 -Wall -Wextra -Wno-implicit-fallthrough -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast $(ARCH_CFLAGS) -c $< -o $@
 else
-	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -std=c11 -Iinclude -Iarch/$(ARCH)/include -I arch/$(ARCH)/subarch/$(SUBARCH)/include -ffreestanding -O3 -Wall -Wextra -Wno-implicit-fallthrough $(ARCH_CFLAGS) -c $< -o $@
+	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -std=c11 -Iinclude -Iarch/$(ARCH)/include -ffreestanding -O3 -Wall -Wextra -Wno-implicit-fallthrough -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast $(ARCH_CFLAGS) -c $< -o $@
+endif
+else
+ifeq ($(DEBUG),yes)
+	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -DDEBUG -g -std=c11 -Iinclude -Iarch/$(ARCH)/include -I arch/$(ARCH)/subarch/$(SUBARCH)/include -ffreestanding -O0 -Wall -Wextra -Wno-implicit-fallthrough -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast $(ARCH_CFLAGS) -c $< -o $@
+else
+	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -std=c11 -Iinclude -Iarch/$(ARCH)/include -I arch/$(ARCH)/subarch/$(SUBARCH)/include -ffreestanding -O3 -Wall -Wextra -Wno-implicit-fallthrough -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast $(ARCH_CFLAGS) -c $< -o $@
+endif
 endif

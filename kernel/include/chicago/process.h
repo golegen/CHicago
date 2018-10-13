@@ -1,11 +1,12 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:42 BRT
-// Last edited on September 15 of 2018, at 23:49 BRT
+// Last edited on October 12 of 2018, at 16:44 BRT
 
 #ifndef __CHICAGO_PROCESS_H__
 #define __CHICAGO_PROCESS_H__
 
+#include <chicago/alloc-int.h>
 #include <chicago/file.h>
 #include <chicago/list.h>
 
@@ -20,16 +21,16 @@
 
 struct ThreadStruct;
 struct ProcessStruct;
+struct ProcessDataStruct;
 struct ThreadDataStruct;
 
-typedef Boolean Lock, *PLock;
+typedef Volatile Boolean Lock, *PLock;
 
 typedef struct ThreadStruct {
 	UIntPtr id;
 	PVoid priv;
 	UIntPtr time;
 	UIntPtr retv;
-	UIntPtr wait_time;
 	struct ThreadStruct *next;
 	struct ThreadStruct *prev;
 	struct ThreadStruct *waitt;
@@ -46,10 +47,12 @@ typedef struct ProcessStruct {
 	Int lastfid;
 	PList threads;
 	PList files;
+	PAllocBlock alloc_base;
+	UIntPtr mem_usage;
 } Process, *PProcess;
 
 typedef struct ThreadDataStruct {
-	UIntPtr placeholder;
+	UIntPtr errno;
 } ThreadData, *PThreadData;
 
 typedef struct {
@@ -60,7 +63,6 @@ typedef struct {
 #ifndef __CHICAGO_PROCESS__
 extern Boolean PsTaskSwitchEnabled;
 extern PThread PsCurrentThread;
-extern PList PsSleepList;
 extern PList PsWaittList;
 extern PList PsWaitpList;
 #endif

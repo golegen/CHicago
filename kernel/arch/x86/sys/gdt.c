@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:22 BRT
-// Last edited on August 06 of 2018, at 15:15 BRT
+// Last edited on September 24 of 2018, at 13:24 BRT
 
 #include <chicago/arch/gdt-int.h>
 
@@ -10,14 +10,7 @@
 UInt8 GDTEntries[6][8];
 TSSEntry GDTTSSEntry;
 
-Void GDTSetGate(UInt8 num, UInt32 base, UInt32 limit, UInt8 type, UInt8 gran) {
-	if (limit > 0xFFFF) {											// Adjust granularity
-		limit = limit >> 12;
-		GDTEntries[num][6] = 0xC0;
-	} else {
-		GDTEntries[num][6] = 0x00;
-	}
-	
+Void GDTSetGate(UInt8 num, UInt32 base, UInt32 limit, UInt8 type, UInt8 gran) {	
 	GDTEntries[num][0] = limit & 0xFF;								// Encode the limit
 	GDTEntries[num][1] = (limit >> 8) & 0xFF;
 	GDTEntries[num][6] = (gran & 0xF0) | ((limit >> 16) & 0x0F);

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:18 BRT
-// Last edited on September 15 of 2018, at 17:53 BRT
+// Last edited on October 12 of 2018, at 20:18 BRT
 
 #ifndef __CHICAGO_FILE_H__
 #define __CHICAGO_FILE_H__
@@ -46,6 +46,7 @@ Void Iso9660Init(Void);
 PList FsTokenizePath(PChar path);
 PChar FsCanonicalizePath(PChar path);
 PChar FsJoinPath(PChar src, PChar incr);
+PChar FsGetRandomPath(PChar prefix);
 Boolean FsReadFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf);
 Boolean FsWriteFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf);
 PFsNode FsOpenFile(PChar path);

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:10 BRT
-// Last edited on July 28 of 2018, at 22:41 BRT
+// Last edited on October 12 of 2018, at 15:40 BRT
 
 #ifndef __CHICAGO_LIST_H__
 #define __CHICAGO_LIST_H__
@@ -21,11 +21,13 @@ typedef struct {
 	PListNode tail;
 	UIntPtr length;
 	Boolean free;
+	Boolean user;
 } List, *PList;
 
-PList ListNew(Boolean free);
+PList ListNew(Boolean free, Boolean user);
 Void ListFree(PList list);
 Boolean ListAdd(PList list, PVoid data);
+Boolean ListAddStart(PList list, PVoid data);
 PVoid ListRemove(PList list, UInt32 idx);
 PVoid ListGet(PList list, UInt32 idx);
 

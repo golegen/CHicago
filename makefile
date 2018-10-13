@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on September 15 of 2018, at 11:56 BRT
+# Last edited on October 12 of 2018, at 16:33 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -85,9 +85,9 @@ endif
 	$(NOECHO)echo '}' >> build/iso/boot/grub/grub.cfg
 	$(NOECHO)echo '' >> build/iso/boot/grub/grub.cfg
 ifeq ($(SUBARCH),)
-	$(NOECHO)grub-mkrescue --directory=/usr/lib/grub/i386-pc --output=build/chicago-$(ARCH).iso build/iso -c boot/boot.cat 2>/dev/null
+	$(NOECHO)grub-mkrescue --directory=/usr/lib/grub/i386-pc --output=build/chicago-$(ARCH).iso build/iso -c boot/boot.cat -iso-level 3 2>/dev/null
 else
-	$(NOECHO)grub-mkrescue --directory=/usr/lib/grub/i386-pc --output=build/chicago-$(ARCH)_$(SUBARCH).iso build/iso -c boot/boot.cat 2>/dev/null
+	$(NOECHO)grub-mkrescue --directory=/usr/lib/grub/i386-pc --output=build/chicago-$(ARCH)_$(SUBARCH).iso build/iso -c boot/boot.cat -iso-level 3 2>/dev/null
 endif
 	$(NOECHO)rm -rf build/iso
 else

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 21:12 BRT
-// Last edited on September 15 of 2018, at 17:20 BRT
+// Last edited on October 13 of 2018, at 10:56 BRT
 
 #include <chicago/debug.h>
 #include <chicago/mm.h>
@@ -335,12 +335,12 @@ Void DispFillRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr c) {
 		y = DispHeight - 1;
 	}
 	
-	if ((x + w) >= DispWidth) {																									// Fix the width and height of our rectangle if they are bigger than the screen dimensions
-		w = (w + x) - DispWidth;
+	if ((x + w) > DispWidth) {																									// Fix the width and height of our rectangle if they are bigger than the screen dimensions
+		w = DispWidth - x;
 	}
 	
-	if ((y + h) >= DispHeight) {
-		h = (y + h) - DispHeight;
+	if ((y + h) > DispHeight) {
+		h = DispHeight - y;
 	}
 	
 	PUInt8 fb = (PUInt8)(DispFrameBuffer + (y * (DispWidth * DispBytesPerPixel)) + (x * DispBytesPerPixel));					// Get a pointer to the framebuffer STARTING AT X, Y POSITION
@@ -470,22 +470,97 @@ Void DispFillRoundedRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPt
 	DispDrawLine(x + w, y + r, x + w, y + h - r, c);																			// And the right one
 }
 
-Void DispDrawCharacter(UIntPtr x, UIntPtr y, UIntPtr bg, UIntPtr fg, Char data) {
-	for (UIntPtr i = 0; i < 16; i++) {																							// 8x8 font!
-		for (IntPtr j = 15; j >= 0; j--) {
-			if (DispFont[(UInt8)data][i] & (1 << j)) {																			// Foreground?
-				DispPutPixel(x + j, y + i, fg);																					// Yes!
-			} else {
-				DispPutPixel(x + j, y + i, bg);																					// Nope
+static Void DispWriteFormatedCharacter(PUIntPtr x, PUIntPtr y, UIntPtr bg, UIntPtr fg, Char data) {
+	switch (data) {
+		case '\n': {																											// Line feed
+			*y += 16;
+			break;
+		}
+		case '\r': {																											// Carriage return
+			*x = 0;
+			break;
+		}
+		case '\t': {																											// Tab
+			*x = (*x + 32) & ~31;
+			break;
+		}
+		default: {																												// Normal character (probably)
+			for (IntPtr i = 0; i < 16; i++) {
+				for (IntPtr j = 15; j >= 0; j--) {
+					if (DispFont[(UInt8)data][i] & (1 << j)) {																	// Foreground?
+						DispPutPixel(*x + j, *y + i, fg);																		// Yes!
+					} else {
+						DispPutPixel(*x + j, *y + i, bg);																		// Nope
+					}
+				}
 			}
+			
+			*x += 8;
+			
+			break;
 		}
 	}
 }
 
-Void DispDrawString(UIntPtr x, UIntPtr y, UIntPtr bg, UIntPtr fg, PChar data) {
-	for (UIntPtr i = 0; i < StrGetLength(data); i++) {																			// *HACKHACKHACK* This function SHOULD HANDLE \r, \n, \t, etc... BUT FOR NOW IT'S ONLY FOR THE PROGRESS BAR FUNCTIONS!
-		DispDrawCharacter(x + (i * 8), y, bg, fg, data[i]);
+static Void DispWriteFormatedString(PUIntPtr x, PUIntPtr y, UIntPtr bg, UIntPtr fg, PChar data) {
+	for (UIntPtr i = 0; i < StrGetLength(data); i++) {
+		DispWriteFormatedCharacter(x, y, bg, fg, data[i]);
 	}
+}
+
+static Void DispWriteFormatedInteger(PUIntPtr x, PUIntPtr y, UIntPtr bg, UIntPtr fg, UIntPtr data, UInt8 base) {
+	if (data == 0) {
+		DispWriteFormatedCharacter(x, y, bg, fg, '0');
+		return;
+	}
+	
+	static Char buf[32] = { 0 };
+	Int i = 30;
+	
+	for (; data && i; i--, data /= base) {
+		buf[i] = "0123456789ABCDEF"[data % base];
+	}
+	
+	DispWriteFormatedString(x, y, bg, fg, &buf[i + 1]);
+}
+
+Void DispWriteFormated(UIntPtr x, UIntPtr y, UIntPtr bg, UIntPtr fg, Const PChar data, ...) {
+	VariadicList va;
+	VariadicStart(va, data);																									// Let's start our va list with the arguments provided by the user (if any)
+	
+	UIntPtr cx = x;
+	UIntPtr cy = y;
+	
+	for (UInt32 i = 0; data[i] != '\0'; i++) {
+		if (data[i] != '%') {																									// It's an % (integer, string, character or other)?
+			DispWriteFormatedCharacter(&cx, &cy, bg, fg, data[i]);																// Nope
+		} else {
+			switch (data[++i]) {																								// Yes! So let's parse it!
+			case 's': {																											// String
+				DispWriteFormatedString(&cx, &cy, bg, fg, (PChar)VariadicArg(va, PChar));
+				break;
+			}
+			case 'c': {																											// Character
+				DispWriteFormatedCharacter(&cx, &cy, bg, fg, (Char)VariadicArg(va, Int));
+				break;
+			}
+			case 'd': {																											// Decimal Number
+				DispWriteFormatedInteger(&cx, &cy, bg, fg, (UIntPtr)VariadicArg(va, UIntPtr), 10);
+				break;
+			}
+			case 'x': {																											// Hexadecimal Number
+				DispWriteFormatedInteger(&cx, &cy, bg, fg, (UIntPtr)VariadicArg(va, UIntPtr), 16);
+				break;
+			}
+			default: {																											// None of the others...
+				DispWriteFormatedCharacter(&cx, &cy, bg, fg, data[i]);
+				break;
+			}
+			}
+		}
+	}
+	
+	VariadicEnd(va);
 }
 
 Void DispIncrementProgessBar(Void) {
@@ -515,7 +590,7 @@ Void DispFillProgressBar(Void) {
 
 Void DispDrawProgessBar(Void) {
 	DispDrawRoundedRectangle(DispWidth / 2 - 100, DispHeight - 30, 201, 21, 7, 0xFFFFFF);										// Draw the border
-	DispDrawString(DispWidth / 2 - 44, DispHeight - 50, 0x000000, 0xFFFFFF, "Starting up");										// And the "Starting up" text
+	DispWriteFormated(DispWidth / 2 - 44, DispHeight - 50, 0x000000, 0xFFFFFF, "Starting up");									// And the "Starting up" text
 }
 
 Void DispPreInit(UIntPtr w, UIntPtr h, UIntPtr bpp) {

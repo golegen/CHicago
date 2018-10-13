@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on September 16 of 2018, at 12:32 BRT
+// Last edited on October 12 of 2018, at 20:15 BRT
 
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/ide.h>
@@ -10,6 +10,7 @@
 #include <chicago/arch/multiboot.h>
 #include <chicago/arch/pit.h>
 #include <chicago/arch/pmm.h>
+#include <chicago/arch/port.h>
 #include <chicago/arch/process.h>
 #include <chicago/arch/serial.h>
 #include <chicago/arch/vmm.h>
@@ -90,6 +91,19 @@ Void ArchPreInitDisplay(Void) {
 		DbgWriteFormated("PANIC! Couldn't init the display\r\n");
 		while (1) ;
 	}
+}
+
+UIntPtr ArchGetSeconds(Void) {
+	UIntPtr sec;																										// Let's use the RTC!
+	
+	PortOutByte(0x70, 0);
+	sec = PortInByte(0x71);
+	
+	if (!(PortInByte(0x0B) & 0x04)) {																					// Convert from BCD?
+		sec = (sec & 0x0F) + ((sec / 16) * 10);																			// Yes
+	}
+	
+	return sec;
 }
 
 Void ArchInit(Void) {

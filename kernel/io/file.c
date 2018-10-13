@@ -1,11 +1,12 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:28 BRT
-// Last edited on September 15 of 2018, at 17:58 BRT
+// Last edited on October 12 of 2018, at 19:06 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
 #include <chicago/file.h>
+#include <chicago/rand.h>
 #include <chicago/string.h>
 
 PList FsMountPointList = Null;
@@ -15,16 +16,17 @@ PList FsTokenizePath(PChar path) {
 	if (path == Null) {																													// Path is Null?
 		return Null;																													// Yes...
 	} else if ((StrGetLength(path) == 0) || ((StrGetLength(path) == 1) && (path[0] == '\\'))) {											// Root directory?
-		return ListNew(True);																											// Yes, so just return an empty list
+		return ListNew(True, False);																									// Yes, so just return an empty list
 	}
 	
-	PList list = ListNew(True);																											// Create the tok list
+	PChar clone = StrDuplicate(path);
+	PList list = ListNew(True, False);																									// Create the tok list
 	
-	if (list == Null) {																													// Failed to alloc it?
+	if (list == Null || clone == Null) {																								// Failed to alloc it?
 		return Null;																													// Yes, so we can't do anything :(
 	}
 	
-	PChar tok = StrTokenize(path, "\\");																								// Let's tokenize it!
+	PChar tok = StrTokenize(clone, "\\");																								// Let's tokenize it!
 	
 	while (tok != Null) {
 		if ((StrGetLength(tok) == 2) && (StrCompare(tok, ".."))) {																		// Parent directory (..)?
@@ -38,6 +40,8 @@ PList FsTokenizePath(PChar path) {
 		tok = StrTokenize(Null, "\\");
 	}
 	
+	MemFree((UIntPtr)clone);
+	
 	return list;
 }
 
@@ -48,7 +52,7 @@ PChar FsCanonicalizePath(PChar path) {
 		return Null;																													// No, but we don't support relative paths in this function :(
 	}
 	
-	PList list = ListNew(True);																											// Create the tok list
+	PList list = ListNew(True, False);																									// Create the tok list
 	
 	if (list == Null) {																													// Failed to alloc space for it?
 		return Null;																													// :(
@@ -136,6 +140,35 @@ PChar FsJoinPath(PChar src, PChar incr) {
 	MemFree((UIntPtr)path);																												// Free our temp path
 	
 	return final;																														// And return
+}
+
+PChar FsGetRandomPath(PChar prefix) {
+	PChar name = (PChar)MemAllocate(9);																									// Random names are 8-characters long
+	
+	while (name != Null) {																												// Let's do it!
+		for (UIntPtr i = 0; i < 8; i++) {																								// Generate 8 "random" hex numbers
+			name[i] = "0123456789ABCDEF"[RandGenerate() % 16];
+			RandSetSeed(RandGenerate());
+		}
+		
+		name[8] = 0;																													// End with zero
+		
+		PChar path = FsJoinPath(prefix, name);																							// Join the prefix and the random name
+		
+		if (path != Null) {																												// Failed?
+			PFsNode file = FsOpenFile(path);																							// No, let's check if it already exists
+			
+			MemFree((UIntPtr)path);																										// And let's free the path
+			
+			if (file == Null) {
+				return name;																											// Yeah, it doesn't exists, so we can return it!
+			}
+			
+			FsCloseFile(file);																											// Close the file, and let's keep on trying!
+		}
+	}
+	
+	return Null;
 }
 
 Boolean FsReadFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
@@ -637,12 +670,12 @@ Void FsDbgListTypes(Void) {
 
 Void FsInitTypes(Void) {
 	DevFsInit();																														// Mount the DevFs
-	Iso9660Init();																													// Add the Iso9660 to the fs type list
+	Iso9660Init();																														// Add the Iso9660 to the fs type list
 }
 
 Void FsInit(Void) {
-	FsMountPointList = ListNew(True);																									// Let's init our mount point list
-	FsTypeList = ListNew(True);																											// And our filesystem type list
+	FsMountPointList = ListNew(True, False);																							// Let's init our mount point list
+	FsTypeList = ListNew(True, False);																									// And our filesystem type list
 	
 	if ((FsMountPointList == Null) || (FsTypeList == Null)) {																			// Failed?
 		DbgWriteFormated("PANIC! Couldn't init mount point or filesystem type list\r\n");

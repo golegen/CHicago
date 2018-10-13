@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on September 15 of 2018, at 17:21 BRT
+// Last edited on September 25 of 2018, at 15:40 BRT
 
 .section .multiboot
 
@@ -112,29 +112,6 @@ CPUIDCheck:
 0:
 	mov $0x01, %eax
 	ret
-
-.global ArchUserJump
-ArchUserJump:
-	mov %esp, %ebp
-	
-	mov $0x23, %ax
-	mov %ax, %ds
-	mov %ax, %es
-	mov %ax, %fs
-	mov %ax, %gs
-	
-	push $0x23
-	push %ebp
-	
-	pushf
-	pop %eax
-	or $0x200, %eax
-	push %eax
-	
-	push $0x1B
-	pushl 4(%ebp)
-	
-	iret
 
 GDTPointerLimit:
 	.word 0																												// GDT limit storage

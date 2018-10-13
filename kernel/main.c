@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on September 16 of 2018, at 12:46 BRT
+// Last edited on October 13 of 2018, at 10:59 BRT
 
 #include <chicago/arch.h>
 #include <chicago/debug.h>
@@ -28,11 +28,11 @@ Void KernelMain(Void) {
 	ArchInitDisplay();																																				// Init the display
 	DbgWriteFormated("[Kernel] Arch display initialized\r\n");
 	
+	ArchInitKeyboard();
+	DbgWriteFormated("[Kernel] Arch keyboard intialized\r\n");
+	
 	DispDrawProgessBar();																																			// Draw the progress bar
 	DbgWriteFormated("[Kernel] The boot progress bar has been shown\r\n");
-	
-	ArchInitSc();																																					// Init the system call interface
-	DbgWriteFormated("[Kernel] Arch system call interface initialized\r\n");
 	
 	ArchInit();																																						// Let's finish it by initalizating the other architecture-dependent bits of the kernel
 	DispIncrementProgessBar();
@@ -53,10 +53,11 @@ Void KernelMain(Void) {
 
 Void KernelMainLate(Void) {
 	PsTaskSwitchEnabled = True;																																		// Enable task switch
+	
 	DbgWriteFormated("[Kernel] Tasking initialized\r\n");
 	
-	DispFillProgressBar();																																			// BOOT PROCESS, FINISHED!
-	DbgWriteFormated("[Kernel] Boot process finished\r\n");
+	DispFillProgressBar();																																			// Kernel initialized :)
+	DbgWriteFormated("[Kernel] Kernel initialized\r\n");
 	
 	while (1) ;
 }

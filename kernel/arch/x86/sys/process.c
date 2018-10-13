@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 28 of 2018, at 01:09 BRT
-// Last edited on August 05 of 2018, at 19:08 BRT
+// Last edited on October 11 of 2018, at 22:23 BRT
 
 #define __CHICAGO_ARCH_PROCESS__
 
@@ -11,6 +11,7 @@
 #include <chicago/arch/idt.h>
 
 #include <chicago/alloc.h>
+#include <chicago/arch.h>
 #include <chicago/debug.h>
 #include <chicago/mm.h>
 #include <chicago/process.h>
@@ -63,18 +64,6 @@ Void PsFreeThreadPrivateData(PVoid priv) {
 Void PsSwitchTaskTimer(PRegisters regs) {
 	if (PsCurrentThread == Null) {																					// We can switch?
 		return;																										// Nope
-	}
-	
-	if (PsSleepList != Null) {																						// This function is called each 1 ms
-		ListForeach(PsSleepList, i) {
-			PThread th = (PThread)i->data;
-			
-			if (th->wait_time == 0) {																				// Wakeup it?
-				PsWakeup(PsSleepList, th);																			// Yes :)
-			} else {
-				th->wait_time--;																					// Nope, just decrease the wait_time counter
-			}
-		}
 	}
 	
 	if (!PsTaskSwitchEnabled) {																						// Task switch enabled?
@@ -167,6 +156,8 @@ Void PsSwitchTask(PVoid priv) {
 		return;																										// Nope
 	}
 	
+	Boolean olde = PsTaskSwitchEnabled;
+	
 	PsTaskSwitchEnabled = False;																					// Disable task switch
 	
 	if (MmGetCurrentDirectory() != MmKernelDirectory) {																// Need to switch to the kernel directory?
@@ -174,10 +165,10 @@ Void PsSwitchTask(PVoid priv) {
 	}
 	
 	if (priv != Null) {																								// Timer?
-		PsTaskSwitchEnabled = True;																					// Yes
+		PsTaskSwitchEnabled = olde;																					// Yes
 		PsSwitchTaskTimer((PRegisters)priv);
 	} else {
-		PsTaskSwitchEnabled = True;																					// Nope, so let's use int num 0x3E
+		PsTaskSwitchEnabled = olde;																					// Nope, so let's use int num 0x3E
 		Asm Volatile("int $0x3E");
 	}
 }

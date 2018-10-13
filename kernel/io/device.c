@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:35 BRT
-// Last edited on September 15 of 2018, at 17:36 BRT
+// Last edited on October 12 of 2018, at 21:15 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -172,7 +172,7 @@ Void FsDbgListDevices(Void) {
 }
 
 Void FsInitDeviceList(Void) {
-	FsDeviceList = ListNew(True);													// Try to init the device list
+	FsDeviceList = ListNew(True, False);											// Try to init the device list
 	
 	if (FsDeviceList == Null) {														// Failed?
 		DbgWriteFormated("PANIC! Couldn't init the device list\r\n");				// Yes, so halt
@@ -183,5 +183,6 @@ Void FsInitDeviceList(Void) {
 Void FsInitDevices(Void) {
 	NullDeviceInit();																// Add the Null device
 	ZeroDeviceInit();																// Add the Zero device
+	KeyboardDeviceInit();															// Add the Keyboard device
 	FrameBufferDeviceInit();														// Add the FrameBuffer device
 }

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on September 15 of 2018, at 12:48 BRT
-// Last edited on September 15 of 2018, at 12:50 BRT
+// Last edited on October 12 of 2018, at 16:13 BRT
 
 #ifndef __CHICAGO_VIRT_H__
 #define __CHICAGO_VIRT_H__
@@ -18,5 +18,6 @@ UIntPtr VirtAllocAddress(UIntPtr addr, UIntPtr size, UInt32 flags);
 Boolean VirtFreeAddress(UIntPtr addr, UIntPtr size);
 UInt32 VirtQueryProtection(UIntPtr addr);
 Boolean VirtChangeProtection(UIntPtr addr, UIntPtr size, UInt32 flags);
+UIntPtr VirtGetUsage(Void);
 
 #endif		// __CHICAGO_VIRT_H__

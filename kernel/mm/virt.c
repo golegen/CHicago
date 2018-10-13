@@ -1,9 +1,10 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on September 15 of 2018, at 12:46 BRT
-// Last edited on September 15 of 2018, at 19:25 BRT
+// Last edited on October 12 of 2018, at 16:13 BRT
 
 #include <chicago/mm.h>
+#include <chicago/process.h>
 #include <chicago/virt.h>
 
 UInt32 VirtConvertFlags(UInt32 flags) {
@@ -110,6 +111,10 @@ UIntPtr VirtAllocAddress(UIntPtr addr, UIntPtr size, UInt32 flags) {
 		}
 	}
 	
+	if (PsCurrentThread != Null && PsCurrentProcess != Null) {
+		PsCurrentProcess->mem_usage += size;
+	}
+	
 	return addr;																		// :)
 }
 
@@ -131,6 +136,10 @@ Boolean VirtFreeAddress(UIntPtr addr, UIntPtr size) {
 		
 		MmDereferencePage(MmGetPhys(i));												// Free/dereference the physical page
 		MmUnmap(i);																		// And unmap
+	}
+	
+	if (PsCurrentThread != Null && PsCurrentProcess != Null) {
+		PsCurrentProcess->mem_usage -= size;
 	}
 	
 	return True;
@@ -166,4 +175,12 @@ Boolean VirtChangeProtection(UIntPtr addr, UIntPtr size, UInt32 flags) {
 	}
 	
 	return True;
+}
+
+UIntPtr VirtGetUsage(Void) {
+	if (PsCurrentThread != Null && PsCurrentProcess != Null) {
+		return PsCurrentProcess->mem_usage;
+	} else {
+		return 0;
+	}
 }
