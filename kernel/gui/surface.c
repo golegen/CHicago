@@ -1,0 +1,161 @@
+// File author is Ítalo Lima Marconato Matias
+//
+// Created on October 14 of 2018, at 18:26 BRT
+// Last edited on October 14 of 2018, at 18:28 BRT
+
+#include <chicago/display.h>
+#include <chicago/gui/surface.h>
+#include <chicago/mm.h>
+
+PGuiSurface GuiCreateSurface(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h) {
+	if (w == 0 || h == 0) {																			// We can't have 0-sized surfaces!
+		return Null;
+	}
+	
+	PGuiSurface surface = (PGuiSurface)MmAllocUserMemory(sizeof(GuiSurface));						// Alloc the memory for the struct
+	
+	if (surface != Null) {																			// Failed?
+		surface->x = x;																				// No, so let's fill the data!
+		surface->y = y;
+		surface->width = w;
+		surface->height = h;
+	}
+	
+	return surface;
+}
+
+Void GuiPutPixel(PGuiSurface surface, UIntPtr x, UIntPtr y, UIntPtr c) {
+	if (surface == Null || ((UIntPtr)surface) >= MM_USER_END) {										// Valid pointer?
+		return;																						// No >:(
+	}
+	
+	if (x >= surface->width) {																		// Fix the x and the y if they are bigger than the surface dimensions
+		x = surface->width - 1;
+	}
+	
+	if (y >= surface->height) {
+		y = surface->height - 1;
+	}
+	
+	DispPutPixel(surface->x + x, surface->y + y, c);												// Use the DispPutPixel function
+}
+
+Void GuiDrawLine(PGuiSurface surface, UIntPtr x0, UIntPtr y0, UIntPtr x1, UIntPtr y1, UIntPtr c) {
+	if (surface == Null || ((UIntPtr)surface) >= MM_USER_END) {										// Valid pointer?
+		return;																						// No >:(
+	}
+	
+	if (x0 >= surface->width) {																		// Fix the x and the y if they are bigger than the surface dimensions
+		x0 = surface->width - 1;
+	}
+	
+	if (y0 >= surface->height) {
+		y0 = surface->height - 1;
+	}
+	
+	if (x1 >= surface->width) {
+		x1 = surface->width - 1;
+	}
+	
+	if (y1 >= surface->height) {
+		y1 = surface->height - 1;
+	}
+	
+	DispDrawLine(surface->x + x0, surface->y + y0, surface->x + x1, surface->y + y1, c);			// Use the DispDrawLine function
+}
+
+Void GuiDrawRectangle(PGuiSurface surface, UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr c) {
+	if (surface == Null || ((UIntPtr)surface) >= MM_USER_END) {										// Valid pointer?
+		return;																						// No >:(
+	}
+	
+	if (x >= surface->width) {																		// Fix the x and the y if they are bigger than the surface dimensions
+		x = surface->width - 1;
+	}
+	
+	if (y >= surface->height) {
+		y = surface->height - 1;
+	}
+	
+	if ((x + w) > surface->width) {																	// Fix the width and the height if they are bigger than the surface dimensions
+		w = surface->width - x;
+	}
+	
+	if ((y + h) > surface->height) {
+		h = surface->height - y;
+	}
+	
+	DispDrawRectangle(surface->x + x, surface->y + y, w, h, c);										// Use the DispDrawRectangle function
+}
+
+Void GuiFillRectangle(PGuiSurface surface, UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr c) {
+	if (surface == Null || ((UIntPtr)surface) >= MM_USER_END) {										// Valid pointer?
+		return;																						// No >:(
+	}
+	
+	if (x >= surface->width) {																		// Fix the x and the y if they are bigger than the surface dimensions
+		x = surface->width - 1;
+	}
+	
+	if (y >= surface->height) {
+		y = surface->height - 1;
+	}
+	
+	if ((x + w) > surface->width) {																	// Fix the width and the height if they are bigger than the surface dimensions
+		w = surface->width - x;
+	}
+	
+	if ((y + h) > surface->height) {
+		h = surface->height - y;
+	}
+	
+	DispFillRectangle(surface->x + x, surface->y + y, w, h, c);										// Use the DispFillRectangle function
+}
+
+Void GuiDrawRoundedRectangle(PGuiSurface surface, UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr r, UIntPtr c) {
+	if (surface == Null || ((UIntPtr)surface) >= MM_USER_END) {										// Valid pointer?
+		return;																						// No >:(
+	}
+	
+	if (x >= surface->width) {																		// Fix the x and the y if they are bigger than the surface dimensions
+		x = surface->width - 1;
+	}
+	
+	if (y >= surface->height) {
+		y = surface->height - 1;
+	}
+	
+	if ((x + w) > surface->width) {																	// Fix the width and the height if they are bigger than the surface dimensions
+		w = surface->width - x;
+	}
+	
+	if ((y + h) > surface->height) {
+		h = surface->height - y;
+	}
+	
+	DispDrawRoundedRectangle(surface->x + x, surface->y + y, w, h, r, c);							// Use the DispDrawRoundedRectangle function
+}
+
+Void GuiFillRoundedRectangle(PGuiSurface surface, UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr r, UIntPtr c) {
+	if (surface == Null || ((UIntPtr)surface) >= MM_USER_END) {										// Valid pointer?
+		return;																						// No >:(
+	}
+	
+	if (x >= surface->width) {																		// Fix the x and the y if they are bigger than the surface dimensions
+		x = surface->width - 1;
+	}
+	
+	if (y >= surface->height) {
+		y = surface->height - 1;
+	}
+	
+	if ((x + w) > surface->width) {																	// Fix the width and the height if they are bigger than the surface dimensions
+		w = surface->width - x;
+	}
+	
+	if ((y + h) > surface->height) {
+		h = surface->height - y;
+	}
+	
+	DispFillRoundedRectangle(surface->x + x, surface->y + y, w, h, r, c);							// Use the DispFillRoundedRectangle function
+}

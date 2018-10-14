@@ -1,12 +1,14 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on October 13 of 2018, at 20:09 BRT
+// Last edited on October 14 of 2018, at 18:47 BRT
 
 #include <chicago/arch.h>
 #include <chicago/debug.h>
 #include <chicago/display.h>
 #include <chicago/file.h>
+#include <chicago/gui.h>
+#include <chicago/mm.h>
 #include <chicago/process.h>
 #include <chicago/version.h>
 
@@ -53,11 +55,13 @@ Void KernelMain(Void) {
 
 Void KernelMainLate(Void) {
 	PsTaskSwitchEnabled = True;																																		// Enable task switch
-	
 	DbgWriteFormated("[Kernel] Tasking initialized\r\n");
 	
 	DispFillProgressBar();																																			// Kernel initialized :)
 	DbgWriteFormated("[Kernel] Kernel initialized\r\n");
+	
+	GuiInit();
+	DbgWriteFormated("[Gui] Gui subsystem initialized\r\n");
 	
 	while (1) ;
 }

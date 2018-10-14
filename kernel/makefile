@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on October 13 of 2018, at 20:07 BRT
+# Last edited on October 14 of 2018, at 18:32 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -47,6 +47,7 @@ endif
 
 OBJECTS := main.c.o
 OBJECTS += ds/list.c.o ds/stack.c.o
+OBJECTS += gui/render.c.o gui/surface.c.o gui/window.c.o
 OBJECTS += io/device.c.o io/display.c.o io/file.c.o
 OBJECTS += io/dev/framebuffer.c.o io/dev/keyboard.c.o io/dev/null.c.o io/dev/zero.c.o
 OBJECTS += io/fs/devfs.c.o io/fs/iso9660.c.o
@@ -77,7 +78,7 @@ clean:
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
-	$(NOECHO)rm -f $(ARCH_OBJECTS) $(OBJECTS) $(CRTI) $(CRTN) $(KERNEL)
+	$(NOECHO)rm -f $(ARCH_OBJECTS) $(OBJECTS) $(OTHER_OBJECTS) $(KERNEL)
 
 clean-all:
 ifeq ($(UNSUPPORTED_ARCH),true)

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:15 BRT
-// Last edited on August 11 of 2018, at 16:55 BRT
+// Last edited on October 14 of 2018, at 18:45 BRT
 
 #ifndef __CHICAGO_TYPES_H__
 #define __CHICAGO_TYPES_H__
@@ -77,5 +77,8 @@ typedef Char Boolean, *PBoolean;
 #define Null ((PVoid)0)
 
 #define Const const
+
+#define TextifyMacro1(n) #n
+#define TextifyMacro(n) TextifyMacro1(n)
 
 #endif		// __CHICAGO_TYPES_H__
