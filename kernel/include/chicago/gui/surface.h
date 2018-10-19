@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 14 of 2018, at 15:48 BRT
-// Last edited on October 14 of 2018, at 18:25 BRT
+// Last edited on October 17 of 2018, at 19:30 BRT
 
 #ifndef __CHICAGO_GUI_SURFACE_H__
 #define __CHICAGO_GUI_SURFACE_H__
@@ -22,5 +22,7 @@ Void GuiDrawRectangle(PGuiSurface surface, UIntPtr x, UIntPtr y, UIntPtr w, UInt
 Void GuiFillRectangle(PGuiSurface surface, UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr c);
 Void GuiDrawRoundedRectangle(PGuiSurface surface, UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr r, UIntPtr c);
 Void GuiFillRoundedRectangle(PGuiSurface surface, UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr r, UIntPtr c);
+Void GuiWriteCharacter(PGuiSurface surface, UIntPtr x, UIntPtr y, UIntPtr c, IntPtr scale, Char data);
+Void GuiWriteString(PGuiSurface surface, UIntPtr x, UIntPtr y, UIntPtr c, IntPtr scale, PChar data);
 
 #endif		// __CHICAGO_GUI_SURFACE_H__

@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on October 12 of 2018, at 16:33 BRT
+# Last edited on October 15 of 2018, at 10:48 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -33,7 +33,7 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 
-clean:
+clean: arch-clean
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
@@ -44,6 +44,7 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel clean-all
+	$(NOECHO)rm -rf build
 
 remake:
 ifeq ($(UNSUPPORTED_ARCH),true)
@@ -59,9 +60,17 @@ endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel all
 
 ifeq ($(UNSUPPORTED_ARCH),true)
+arch-clean:
+	$(error Unsupported architecture $(ARCH))
 finish:
 	$(error Unsupported architecture $(ARCH))
 else ifeq ($(ARCH),x86)
+arch-clean:
+ifeq ($(SUBARCH),)
+	$(NOECHO)rm build/chicago-$(ARCH).iso
+else
+	$(NOECHO)rm Generating build/chicago-$(ARCH)_$(SUBARCH).iso
+endif
 finish:
 ifeq ($(SUBARCH),)
 	$(NOECHO)echo Generating build/chicago-$(ARCH).iso
@@ -91,5 +100,6 @@ else
 endif
 	$(NOECHO)rm -rf build/iso
 else
+arch-clean:
 finish:
 endif

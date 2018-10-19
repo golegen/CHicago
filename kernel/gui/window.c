@@ -1,10 +1,11 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 14 of 2018, at 18:27 BRT
-// Last edited on October 14 of 2018, at 18:28 BRT
+// Last edited on October 18 of 2018, at 18:02 BRT
 
 #include <chicago/gui/window.h>
 #include <chicago/mm.h>
+#include <chicago/string.h>
 
 static Boolean GuiGetWidget(PGuiWindow window, PGuiWidget widget, PUIntPtr out) {
 	if (window == Null || widget == Null || ((UIntPtr)window) >= MM_USER_END || ((UIntPtr)widget) >= MM_USER_END) {			// Valid pointer?
@@ -28,10 +29,16 @@ static Boolean GuiGetWidget(PGuiWindow window, PGuiWidget widget, PUIntPtr out) 
 	return False;																											// End of the list, we haven't found...
 }
 
-PGuiWindow GuiCreateWindow(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h) {
+PGuiWindow GuiCreateWindow(PChar title, UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h) {
 	PGuiWindow window = (PGuiWindow)MmAllocUserMemory(sizeof(GuiWindow));													// Let's try to allocate space for the window struct
 	
 	if (window != Null) {																									// Failed?
+		window->title = title != Null ? (PChar)MmAllocUserMemory(StrGetLength(title) + 1) : Null;							// Let's try to set the title
+		
+		if (window->title != Null) {																						// We can do it?
+			StrCopy(window->title, title);																					// Yes!
+		}
+		
 		window->widgets.head = Null;																						// No, so let's fill the informations!
 		window->widgets.tail = Null;
 		window->widgets.length = 0;
@@ -63,6 +70,10 @@ Void GuiFreeWindow(PGuiWindow window) {
 		}
 		
 		MmFreeUserMemory((UIntPtr)widget);																					// Free the widget struct itself
+	}
+	
+	if (window->title != Null) {																							// Free the title?
+		MmFreeUserMemory((UIntPtr)window->title);																			// Yes
 	}
 	
 	MmFreeUserMemory((UIntPtr)window);																						// Free the window struct itself

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 21:12 BRT
-// Last edited on October 13 of 2018, at 20:31 BRT
+// Last edited on October 17 of 2018, at 14:54 BRT
 
 #define __CHICAGO_DISPLAY__
 
@@ -11,9 +11,9 @@
 #include <chicago/string.h>
 
 UIntPtr DispFrameBuffer = 0;
+UIntPtr DispBackBuffer = 0;
 UIntPtr DispWidth = 0;
 UIntPtr DispHeight = 0;
-UIntPtr DispBytesPerPixel = 0;
 UInt32 DispProgressBar = 0;
 
 UInt8 DispFont[128][16] = {
@@ -159,11 +159,11 @@ UIntPtr DispGetHeight(Void) {
 	return DispHeight;
 }
 
-UIntPtr DispGetBytesPerPixel(Void) {
-	return DispBytesPerPixel;
-}
-
-Void DispExtractRGB(UIntPtr c, PUInt8 r, PUInt8 g, PUInt8 b) {
+Void DispExtractARGB(UIntPtr c, PUInt8 a, PUInt8 r, PUInt8 g, PUInt8 b) {
+	if (a != Null) {
+		*a = (UInt8)((c >> 24) & 0xFF);
+	}
+	
 	if (r != Null) {
 		*r = (UInt8)((c >> 16) & 0xFF);
 	}
@@ -177,6 +177,10 @@ Void DispExtractRGB(UIntPtr c, PUInt8 r, PUInt8 g, PUInt8 b) {
 	}
 }
 
+Void DispRefresh(Void) {
+	StrCopyMemory((PUInt8)DispFrameBuffer, (PUInt8)DispBackBuffer, DispWidth * DispHeight * 4);
+}
+
 Void DispPutPixel(UIntPtr x, UIntPtr y, UIntPtr c) {
 	if (x >= DispWidth) {																										// Fix the x and the y if they are bigger than the screen dimensions
 		x = DispWidth - 1;
@@ -186,30 +190,22 @@ Void DispPutPixel(UIntPtr x, UIntPtr y, UIntPtr c) {
 		y = DispHeight - 1;
 	}
 	
-	PUInt8 fb = (PUInt8)(DispFrameBuffer + (y * (DispWidth * DispBytesPerPixel)) + (x * DispBytesPerPixel));					// Get a pointer to the framebuffer STARTING AT X, Y POSITION
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	PUInt8 fb = (PUInt8)(DispBackBuffer + (y * (DispWidth * 4)) + (x * 4));														// Big endian... get a pointer to the framebuffer STARTING AT X, Y POSITION
+	UInt8 a;
+	UInt8 r;
+	UInt8 g;
+	UInt8 b;
 	
-	if (DispBytesPerPixel == 3) {																								// 3 bytes per pixel (True Color)?
-		UInt8 r;																												// Yes
-		UInt8 g;
-		UInt8 b;
+	DispExtractARGB(c, &a, &r, &g, &b);																							// Extract the ARGB values
 		
-		DispExtractRGB(c, &r, &g, &b);																							// Extract the RGB values
-		
-		*fb++ = b;																												// And write them!
-		*fb++ = g;
-		*fb++ = r;
-	} else if (DispBytesPerPixel == 4) {																						// 4 bytes per pixel (True Color + Alpha Blending)?
-		UInt8 r;																												// Yes
-		UInt8 g;
-		UInt8 b;
-		
-		DispExtractRGB(c, &r, &g, &b);																							// Extract the RGB values
-		
-		*fb++ = b;																												// And write them!
-		*fb++ = g;
-		*fb++ = r;
-		*fb++ = 0xFF;																											// *HACKHACKHACK*
-	}
+	*fb++ = b;																													// And write them!
+	*fb++ = g;
+	*fb++ = r;
+	*fb++ = a;
+#else
+	*((PUIntPtr)(DispBackBuffer + (y * (DispWidth * 4)) + (x * 4))) = c;														// Little endian!
+#endif
 }
 
 Void DispDrawLine(UIntPtr x0, UIntPtr y0, UIntPtr x1, UIntPtr y1, UIntPtr c) {
@@ -241,83 +237,54 @@ Void DispDrawLine(UIntPtr x0, UIntPtr y0, UIntPtr x1, UIntPtr y1, UIntPtr c) {
 	dx = sdx * dx + 1;
 	dy = sdy * dy + 1;
 	
-	if (DispBytesPerPixel == 3) {																								// 3 bytes per pixel (True Color)?
-		UInt8 r;																												// Yes
-		UInt8 g;
-		UInt8 b;
-		
-		DispExtractRGB(c, &r, &g, &b);																							// Extract the RGB values
-		
-		if (dx >= dy) {																											// This line is more horizontal?
-			for (x = 0; x < dx; x++) {																							// Yes
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel))) = b;
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel) + 1)) = g;
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel) + 2)) = r;
-				
-				y += dy;
-				
-				if (y >= dx) {
-					y -= dx;
-					py += sdy;
-				}
-				
-				px += sdx;
-			}
-		} else {
-			for (y = 0; y < dy; y++) {																							// No, so is more vertical
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel))) = b;
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel) + 1)) = g;
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel) + 2)) = r;
-				
-				x += dx;
-				
-				if (x >= dy) {
-					x -= dy;
-					px += sdx;
-				}
-				
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	UInt8 a;																													// Big endian...
+	UInt8 r;
+	UInt8 g;
+	UInt8 b;
+	
+	DispExtractARGB(c, &a, &r, &g, &b);																							// Extract the ARGB values
+#endif
+	
+	if (dx >= dy) {																												// This line is more horizontal?
+		for (x = 0; x < dx; x++) {																								// Yes
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = b;
+			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4) + 1)) = g;
+			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4) + 2)) = r;
+			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4) + 3)) = a;
+#else
+			*((PUIntPtr)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = c;
+#endif
+			
+			y += dy;
+			
+			if (y >= dx) {
+				y -= dx;
 				py += sdy;
 			}
+			
+			px += sdx;
 		}
-	} else if (DispBytesPerPixel == 4) {																						// 4 bytes per pixel (True Color + Alpha Blending)?
-		UInt8 r;																												// Yes
-		UInt8 g;
-		UInt8 b;
-		
-		DispExtractRGB(c, &r, &g, &b);																							// Extract the RGB values
-		
-		if (dx >= dy) {																											// This line is more horizontal?
-			for (x = 0; x < dx; x++) {																							// Yes
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel))) = b;
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel) + 1)) = g;
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel) + 2)) = r;
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel) + 3)) = 0xFF;
-				
-				y += dy;
-				
-				if (y >= dx) {
-					y -= dx;
-					py += sdy;
-				}
-				
+	} else {
+		for (y = 0; y < dy; y++) {																								// No, so is more vertical
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = b;
+			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4) + 1)) = g;
+			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4) + 2)) = r;
+			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4) + 3)) = a;
+#else
+			*((PUIntPtr)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = c;
+#endif
+			
+			x += dx;
+			
+			if (x >= dy) {
+				x -= dy;
 				px += sdx;
 			}
-		} else {
-			for (y = 0; y < dy; y++) {																							// No, so is more vertical
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel))) = b;
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel) + 1)) = g;
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel) + 2)) = r;
-				*((PUInt8)(DispFrameBuffer + (py * (DispWidth * DispBytesPerPixel)) + (px * DispBytesPerPixel) + 3)) = 0xFF;
-				
-				x += dx;
-				
-				if (x >= dy) {
-					x -= dy;
-					px += sdx;
-				}
-				
-				py += sdy;
-			}
+			
+			py += sdy;
 		}
 	}
 }
@@ -346,41 +313,35 @@ Void DispFillRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr c) {
 		h = DispHeight - y;
 	}
 	
-	PUInt8 fb = (PUInt8)(DispFrameBuffer + (y * (DispWidth * DispBytesPerPixel)) + (x * DispBytesPerPixel));					// Get a pointer to the framebuffer STARTING AT X, Y POSITION
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	PUInt8 fb = (PUInt8)(DispBackBuffer + (y * (DispWidth * 4)) + (x * 4));														// Big endian... get a pointer to the framebuffer STARTING AT X, Y POSITION
+	UInt8 a;
+	UInt8 r;
+	UInt8 g;
+	UInt8 b;
 	
-	if (DispBytesPerPixel == 3) {																								// 3 bytes per pixel (True Color)?
-		UInt8 r;																												// Yes
-		UInt8 g;
-		UInt8 b;
-		
-		DispExtractRGB(c, &r, &g, &b);																							// Extract the RGB values
-		
-		for (UIntPtr i = 0; i < h; i++) {																						// And fill our rectangle
-			for (UIntPtr j = 0; j < w; j++) {
-				*fb++ = b;
-				*fb++ = g;
-				*fb++ = r;
-			}
-			
-			fb += (DispWidth - w) * DispBytesPerPixel;
+	DispExtractARGB(c, &a, &r, &g, &b);																							// Extract the ARGB values
+#else
+	PUIntPtr fb = (PUIntPtr)(DispBackBuffer + (y * (DispWidth * 4)) + (x * 4));													// Little endian!
+#endif
+	
+	for (UIntPtr i = 0; i < h; i++) {																							// And fill our rectangle
+		for (UIntPtr j = 0; j < w; j++) {
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+			*fb++ = b;
+			*fb++ = g;
+			*fb++ = r;
+			*fb++ = a;
+#else
+			*fb++ = c;
+#endif
 		}
-	} else if (DispBytesPerPixel == 4) {																						// 4 bytes per pixel (True Color + Alpha Blending)?
-		UInt8 r;																												// Yes
-		UInt8 g;
-		UInt8 b;
 		
-		DispExtractRGB(c, &r, &g, &b);																							// Extract the RGB values
-		
-		for (UIntPtr i = 0; i < h; i++) {																						// And fill our rectangle
-			for (UIntPtr j = 0; j < w; j++) {
-				*fb++ = b;
-				*fb++ = g;
-				*fb++ = r;
-				*fb++ = 0xFF;
-			}
-			
-			fb += (DispWidth - w) * DispBytesPerPixel;
-		}
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+		fb += (DispWidth - w) * 4;
+#else
+		fb += DispWidth - w;
+#endif
 	}
 }
 
@@ -601,6 +562,8 @@ Void DispIncrementProgessBar(Void) {
 		DispFillRectangle(DispWidth / 2 - 100 + (DispProgressBar * 2) + 17, DispHeight - 24, 1, 9, 0x0000A8);
 		DispProgressBar += 10;
 	}
+	
+	DispRefresh();
 }
 
 Void DispFillProgressBar(Void) {
@@ -613,27 +576,28 @@ Void DispDrawProgessBar(Void) {
 	DispDrawRoundedRectangle(DispWidth / 2 - 100, DispHeight - 30, 201, 21, 7, 0xFFFFFF);										// Draw the progress bar border
 	DispWriteFormated(DispWidth / 2 - 56, 7, 0x000000, 0xFFFFFF, "Starting up...");												// And the "Starting..." text
 	DispDrawBitmap(DispBootSplashImage, DispWidth / 2 - 150, DispHeight / 2 - 50);												// Draw the logo
+	DispRefresh();
 }
 
 Void DispPreInit(UIntPtr w, UIntPtr h, UIntPtr bpp) {
-	if ((bpp != 3) && (bpp != 4)) {																								// For now, we only support True Color (... a lot of colors, 3 bytes per pixel) and True Color + ALPHA BLENDING! (... same as the True Color, but with one extra byte)
+	if (bpp != 4) {																												// For now, we only support 32 bpp
 		DbgWriteFormated("PANIC! Couldn't init the display\r\n");
 		while (1) ;
 	}
 
 	DispFrameBuffer = MmBootAlloc(w * h * bpp, True);																			// Alloc some virt space for the frame buffer
+	DispBackBuffer = MmBootAlloc(w * h * bpp, True);
 	DispWidth = w;
 	DispHeight = h;
-	DispBytesPerPixel = bpp;
 }
 
 Void DispInit(UIntPtr fb) {
-	for (UIntPtr i = 0; i < DispWidth * DispHeight * DispBytesPerPixel; i += MM_PAGE_SIZE) {									// Let's map the frame buffer to the virtual memory!
+	for (UIntPtr i = 0; i < DispWidth * DispHeight * 4; i += MM_PAGE_SIZE) {													// Let's map the frame buffer to the virtual memory!
 		if (!MmMap(DispFrameBuffer + i, fb + i, MM_MAP_KDEF)) {
 			DbgWriteFormated("PANIC! Couldn't init the display\r\n");
 			while (1) ;
 		}
 	}
 	
-	StrSetMemory((PVoid)DispFrameBuffer, 0, DispWidth * DispHeight * DispBytesPerPixel);										// Clear the screen
+	StrSetMemory((PVoid)DispFrameBuffer, 0, DispWidth * DispHeight * 4);														// Clear the screen
 }

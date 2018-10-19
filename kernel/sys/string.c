@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 15 of 2018, at 19:05 BRT
-// Last edited on July 28 of 2018, at 22:40 BRT
+// Last edited on October 16 of 2018, at 10:45 BRT
 
 #include <chicago/alloc.h>
 
@@ -10,20 +10,8 @@ PVoid StrCopyMemory(PVoid dest, PVoid src, UIntPtr count) {
 		return dest;																// Yes
 	}
 	
-	UIntPtr n = (count + 7) / 8;													// For memory copy we can use the Duff's Device (Loop unroll)!
-	PUInt8 mp1 = dest;
-	PUInt8 mp2 = src;
-	
-	switch (count % 8) {
-		case 0: do { *mp1++ = *mp2++;
-		case 7:      *mp1++ = *mp2++;
-		case 6:      *mp1++ = *mp2++;
-		case 5:      *mp1++ = *mp2++;
-		case 4:      *mp1++ = *mp2++;
-		case 3:      *mp1++ = *mp2++;
-		case 2:      *mp1++ = *mp2++;
-		case 1:      *mp1++ = *mp2++;
-		        } while (--n > 0);
+	for (UIntPtr i = 0; i < count; i++) {											// GCC should optimize this for us :)
+		((PUInt8)dest)[i] = ((PUInt8)src)[i];
 	}
 	
 	return dest;
@@ -34,19 +22,8 @@ PVoid StrSetMemory(PVoid dest, UInt8 val, UIntPtr count) {
 		return dest;																// Yes
 	}
 	
-	UIntPtr n = (count + 7) / 8;													// In this function we're also going to use Duff's Device
-	PUInt8 mp1 = dest;
-	
-	switch (count % 8) {
-		case 0: do { *mp1++ = val;
-		case 7:      *mp1++ = val;
-		case 6:      *mp1++ = val;
-		case 5:      *mp1++ = val;
-		case 4:      *mp1++ = val;
-		case 3:      *mp1++ = val;
-		case 2:      *mp1++ = val;
-		case 1:      *mp1++ = val;
-		        } while (--n > 0);
+	for (UIntPtr i = 0; i < count; i++) {											// GCC should optimize this for us :)
+		((PUInt8)dest)[i] = val;
 	}
 	
 	return dest;
@@ -57,20 +34,13 @@ Boolean StrCompareMemory(PVoid m1, PVoid m2, UIntPtr count) {
 		return False;																// Yes
 	}
 	
-	UIntPtr n = (count + 7) / 8;													// Somehow, we're going to use Duff's Device (i have to stop using it for everything)
 	PUInt8 mp1 = m1;
 	PUInt8 mp2 = m2;
 	
-	switch (count % 8) {
-		case 0: do { if (*mp1++ != *mp2++) return False;
-		case 7:      if (*mp1++ != *mp2++) return False;
-		case 6:      if (*mp1++ != *mp2++) return False;
-		case 5:      if (*mp1++ != *mp2++) return False;
-		case 4:      if (*mp1++ != *mp2++) return False;
-		case 3:      if (*mp1++ != *mp2++) return False;
-		case 2:      if (*mp1++ != *mp2++) return False;
-		case 1:      if (*mp1++ != *mp2++) return False;
-		        } while (--n > 0);
+	for (UIntPtr i = 0; i < count; i++) {											// GCC should optimize this for us :)
+		if (*mp1++ != *mp2++) {
+			return False;
+		}
 	}
 	
 	return True;
@@ -81,18 +51,11 @@ UIntPtr StrGetLength(PChar str) {
 		return 0;																	// Yes
 	}
 	
-	UIntPtr n = 0;																	// This time, we're not going to use Duff's Device, WE'RE GOING TO USE... loop unroll... it's almost the same thing so...
+	UIntPtr n = 0;
 	
-	while (1) {
-		if (*(str + n++) == 0) { return n - 1; }
-		if (*(str + n++) == 0) { return n - 1; }
-		if (*(str + n++) == 0) { return n - 1; }
-		if (*(str + n++) == 0) { return n - 1; }
-		if (*(str + n++) == 0) { return n - 1; }
-		if (*(str + n++) == 0) { return n - 1; }
-		if (*(str + n++) == 0) { return n - 1; }
-		if (*(str + n++) == 0) { return n - 1; }
-	}
+	for (; str[n] != 0; n++) ;														// Again, GCC should optimize this for us (if possible)
+	
+	return n;
 }
 
 Boolean StrCompare(PChar dest, PChar src) {

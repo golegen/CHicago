@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 12 of 2018, at 23:10 BRT
-// Last edited on October 13 of 2018, at 12:48 BRT
+// Last edited on October 15 of 2018, at 13:33 BRT
 
 #include <chicago/arch/idt.h>
 #include <chicago/arch/port.h>
@@ -13,8 +13,8 @@ static Void KeyboardHandler(PRegisters regs) {
 	
 	UInt8 data = PortInByte(0x60);																										// Read the key
 	
-	if (KeyboardDeviceWaitingKey() && (data == 0xAA || data == 0xB6 || data == 0xB8 || data == 0x9D || (!(data & 0x80)))) {				// We need it?
-		KeyboardDeviceWrite(data);																										// Yes!
+	if (RawKeyboardDeviceWaitingKey() && (data == 0xAA || data == 0xB6 || data == 0xB8 || data == 0x9D || (!(data & 0x80)))) {			// We need it?
+		RawKeyboardDeviceWrite(data);																										// Yes!
 	}
 }
 
