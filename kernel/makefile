@@ -1,14 +1,14 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on October 15 of 2018, at 13:34 BRT
+# Last edited on October 19 of 2018, at 13:08 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
 DEBUG ?= false
 
 ifeq ($(ARCH),x86)
-	PREFIX ?= i686-chicago-
+	PREFIX ?= i686-elf-
 	
 	ifneq ($(SUBARCH),)
 		UNSUPPORTED_ARCH := true
