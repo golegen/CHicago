@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:59 BRT
-// Last edited on October 12 of 2018, at 16:10 BRT
+// Last edited on October 19 of 2018, at 21:44 BRT
 
 #define __CHICAGO_PROCESS__
 
@@ -121,20 +121,25 @@ PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir) {
 	
 	UIntPtr old = MmGetCurrentDirectory();																										// Save our cur page dir
 	
-	if (old != MmGetCurrentDirectory()) {
+	if (old != proc->dir) {
 		MmSwitchDirectory(proc->dir);																											// Switch to the new proc page dir
 	}
 	
 	th->thdata = (PThreadData)VirtAllocAddress(0, sizeof(ThreadData), VIRT_FLAGS_HIGHEST | VIRT_PROT_READ | VIRT_PROT_WRITE);
 	
-	if (th->thdata == Null) {
-		MmSwitchDirectory(old);																													// Yes....
+	if (th->thdata == Null) {																													// Failed?
+		if (old != MmGetCurrentDirectory()) {																									// Yes....
+			MmSwitchDirectory(old);
+		}
+		
 		MmFreeDirectory(proc->dir);
 		PsFreeThreadPrivateData(th->priv);
 		ListFree(proc->files);
 		ListFree(proc->threads);
 		MemFree((UIntPtr)proc->name);
 		MemFree((UIntPtr)proc);
+		
+		return Null;
 	}
 	
 	th->thdata->errno = 0;
@@ -142,6 +147,7 @@ PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir) {
 	if (old != MmGetCurrentDirectory()) {
 		MmSwitchDirectory(old);																													// Switch back to the old page dir
 	}
+	
 	return proc;
 }
 

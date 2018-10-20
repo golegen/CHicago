@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on October 19 of 2018, at 13:08 BRT
+# Last edited on October 19 of 2018, at 21:41 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -17,6 +17,7 @@ ifeq ($(ARCH),x86)
 	ARCH_OBJECTS := start.s.o
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += io/debug.c.o io/ide.c.o io/keyboard.c.o io/mbdisp.c.o
+	ARCH_OBJECTS += io/mouse.c.o
 	ARCH_OBJECTS += sys/gdt.c.o sys/idt.c.o sys/pit.c.o
 	ARCH_OBJECTS += sys/process.c.o
 	ARCH_OBJECTS += mm/pmm.c.o mm/vmm.c.o
@@ -49,7 +50,8 @@ OBJECTS := main.c.o
 OBJECTS += ds/list.c.o ds/stack.c.o
 OBJECTS += gui/render.c.o gui/surface.c.o gui/window.c.o
 OBJECTS += io/device.c.o io/display.c.o io/file.c.o
-OBJECTS += io/dev/framebuffer.c.o io/dev/rawkeyboard.c.o io/dev/null.c.o io/dev/zero.c.o
+OBJECTS += io/dev/framebuffer.c.o io/dev/rawkeyboard.c.o io/dev/rawmouse.c.o io/dev/null.c.o
+OBJECTS += io/dev/zero.c.o
 OBJECTS += io/fs/devfs.c.o io/fs/iso9660.c.o
 OBJECTS += mm/alloc.c.o mm/heap.c.o mm/pmm.c.o mm/ualloc.c.o
 OBJECTS += mm/virt.c.o

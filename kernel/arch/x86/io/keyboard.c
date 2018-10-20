@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 12 of 2018, at 23:10 BRT
-// Last edited on October 15 of 2018, at 13:33 BRT
+// Last edited on October 19 of 2018, at 18:22 BRT
 
 #include <chicago/arch/idt.h>
 #include <chicago/arch/port.h>
@@ -13,11 +13,11 @@ static Void KeyboardHandler(PRegisters regs) {
 	
 	UInt8 data = PortInByte(0x60);																										// Read the key
 	
-	if (RawKeyboardDeviceWaitingKey() && (data == 0xAA || data == 0xB6 || data == 0xB8 || data == 0x9D || (!(data & 0x80)))) {			// We need it?
-		RawKeyboardDeviceWrite(data);																										// Yes!
+	if (data == 0xAA || data == 0xB6 || data == 0xB8 || data == 0x9D || (!(data & 0x80))) {												// We need it?
+		RawKeyboardDeviceWrite(data);																									// Yes!
 	}
 }
 
 Void ArchInitKeyboard(Void) {
-	IDTRegisterIRQHandler(1, KeyboardHandler);																							// Register the Keyboard IRQ handler
+	IDTRegisterIRQHandler(1, KeyboardHandler);																							// Register the keyboard IRQ handler
 }

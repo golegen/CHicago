@@ -1,0 +1,8 @@
+************************************* INFO ABOUT BUILDING ***********************************************
+
+You need:
+	i686-elf toolchain
+	grub2
+
+Go to the root directory and type: make
+You should have the bootable iso inside of the build folder.

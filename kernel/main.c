@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on October 19 of 2018, at 12:28 BRT
+// Last edited on October 19 of 2018, at 21:14 BRT
 
 #include <chicago/arch.h>
 #include <chicago/debug.h>
@@ -11,6 +11,7 @@
 #include <chicago/mm.h>
 #include <chicago/process.h>
 #include <chicago/version.h>
+#include <chicago/virt.h>
 
 Void KernelMain(Void) {
 	ArchInitDebug();																										// Init the architecture-dependent debugging method
@@ -30,7 +31,10 @@ Void KernelMain(Void) {
 	ArchInitDisplay();																										// Init the display
 	DbgWriteFormated("[Kernel] Arch display initialized\r\n");
 	
-	ArchInitKeyboard();
+	ArchInitMouse();																										// Init the mouse
+	DbgWriteFormated("[Kernel] Arch mouse initialized\r\n");
+	
+	ArchInitKeyboard();																										// Init the keyboard
 	DbgWriteFormated("[Kernel] Arch keyboard intialized\r\n");
 	
 	DispDrawProgessBar();																									// Draw the progress bar

@@ -1,90 +1,38 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 12 of 2018, at 15:35 BRT
-// Last edited on October 13 of 2018, at 00:00 BRT
+// Last edited on October 19 of 2018, at 18:24 BRT
 
-#include <chicago/alloc.h>
 #include <chicago/stack.h>
-#include <chicago/mm.h>
-
-static PVoid StackAllocMemory(UIntPtr size, Boolean user) {
-	if (user) {
-		return (PVoid)MmAllocUserMemory(size);
-	} else {
-		return (PVoid)MemAllocate(size);
-	}
-}
-
-static Void StackFreeMemory(PVoid data, Boolean user) {
-	if (user) {
-		MmFreeUserMemory((UIntPtr)data);
-	} else {
-		MemFree((UIntPtr)data);
-	}
-}
 
 PStack StackNew(Boolean user) {
-	PStack out = StackAllocMemory(sizeof(Stack), user);									// Let's allocate the space for the stack data 
-	
-	if (out == Null) {																	// Failed?
-		return Null;																	// Yes...
-	}
-	
-	out->last = Null;																	// "Zero" all the fields
-	out->length = 0;
-	out->user = user;
-	
-	return out;
+	return ListNew(False, user);								// Redirect to ListNew
 }
 
 Void StackFree(PStack stack) {
-	PStackNode cur;
-	
-	while (stack->last != Null) {														// Let's pop all the entries!
-		cur = stack->last;																// Save the current one
-		stack->last = cur->prev;														// Pop
-		StackFreeMemory(cur, stack->user);												// And free!
-	}
-	
-	StackFreeMemory(stack, stack->user);												// Free the stack struct
+	ListFree(stack);											// Redirect to ListFree
 }
 
 Boolean StackPush(PStack stack, PVoid data) {
-	PStackNode node = StackAllocMemory(sizeof(StackNode), stack->user);					// Let's allocate a new stack node!
-	
-	if (node == Null) {																	// Failed?
-		return False;																	// Yes, return False
+	if (stack != Null && stack->length == 1024) {				// Stack limit = 1024
+		StackPopStart(stack);
 	}
 	
-	node->data = data;
-	
-	if (stack->length == 0) {															// First entry?
-		stack->last = node;																// Yes!
-		node->prev = Null;
-	} else {
-		node->prev = stack->last;														// No
-		stack->last = node;
+	return ListAdd(stack, data);								// Redirect to ListAdd
+}
+
+Boolean StackPushStart(PStack stack, PVoid data) {
+	if (stack != Null && stack->length == 1024) {				// Stack limit = 1024
+		StackPopStart(stack);
 	}
 	
-	stack->length++;
-	
-	return True;
+	return ListAddStart(stack, data);							// Redirect to ListAddStart
 }
 
 PVoid StackPop(PStack stack) {
-	if (stack == Null || stack->length == 0) {											// We have anything to pop?
-		return Null;																	// Nope
-	}
-	
-	PStackNode cur = stack->last;														// Save the current one
-	PVoid data = cur->data;																// (the data)
-	
-	stack->last = cur->prev;															// Pop
-	stack->length--;
-	
-	StackFreeMemory(cur, stack->user);													// And free!
-	
-	return data;
+	return ListRemove(stack, stack->length - 1);				// Redirect to ListRemove
 }
 
-
+PVoid StackPopStart(PStack stack) {
+	return ListRemove(stack, 0);								// Redirect to ListRemove
+}

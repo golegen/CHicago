@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:35 BRT
-// Last edited on October 15 of 2018, at 13:34 BRT
+// Last edited on October 19 of 2018, at 16:49 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -183,6 +183,7 @@ Void FsInitDeviceList(Void) {
 Void FsInitDevices(Void) {
 	NullDeviceInit();																// Add the Null device
 	ZeroDeviceInit();																// Add the Zero device
+	RawMouseDeviceInit();															// Add the RawMouse device
 	RawKeyboardDeviceInit();														// Add the RawKeyboard device
 	FrameBufferDeviceInit();														// Add the FrameBuffer device
 }

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 12 of 2018, at 21:08 BRT
-// Last edited on October 13 of 2018, at 13:33 BRT
+// Last edited on October 19 of 2018, at 21:40 BRT
 
 #include <chicago/debug.h>
 #include <chicago/device.h>
@@ -10,7 +10,6 @@
 
 Stack RawKeyboardDeviceStack;
 Lock RawKeyboardDeviceStackLock = False;
-Volatile Boolean RawKeyboardDeviceNeedKey = False;
 
 static Boolean RawKeyboardDeviceReadInt(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	(Void)dev; (Void)off;
@@ -30,7 +29,6 @@ Void RawKeyboardDeviceRead(UIntPtr len, PUInt8 buf) {
 	}
 	
 	while (RawKeyboardDeviceStack.length < len) {											// Let's fill the stack with the chars that we need
-		RawKeyboardDeviceNeedKey = True;
 		PsSwitchTask(Null);
 	}
 	
@@ -43,17 +41,15 @@ Void RawKeyboardDeviceRead(UIntPtr len, PUInt8 buf) {
 	PsUnlock(&RawKeyboardDeviceStackLock);													// Unlock!
 }
 
-Boolean RawKeyboardDeviceWaitingKey(Void) {
-	return RawKeyboardDeviceNeedKey;
-}
-
 Void RawKeyboardDeviceInit(Void) {
-	RawKeyboardDeviceStack.last = Null;														// Init the keyboard stack
+	RawKeyboardDeviceStack.head = Null;														// Init the keyboard stack
+	RawKeyboardDeviceStack.tail = Null;
 	RawKeyboardDeviceStack.length = 0;
+	RawKeyboardDeviceStack.free = False;
 	RawKeyboardDeviceStack.user = False;
 	
 	if (!FsAddDevice("RawKeyboard", Null, RawKeyboardDeviceReadInt, Null, Null)) {			// Try to add the keyboard device
-		DbgWriteFormated("PANIC! Failed to add the RawKeyboard device\r\n");					// Failed...
+		DbgWriteFormated("PANIC! Failed to add the RawKeyboard device\r\n");				// Failed...
 		while (1) ;
 	}
 }
