@@ -1,17 +1,15 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on October 19 of 2018, at 21:14 BRT
+// Last edited on October 20 of 2018, at 15:29 BRT
 
 #include <chicago/arch.h>
+#include <chicago/console.h>
 #include <chicago/debug.h>
 #include <chicago/display.h>
 #include <chicago/file.h>
-#include <chicago/gui.h>
-#include <chicago/mm.h>
 #include <chicago/process.h>
 #include <chicago/version.h>
-#include <chicago/virt.h>
 
 Void KernelMain(Void) {
 	ArchInitDebug();																										// Init the architecture-dependent debugging method
@@ -64,10 +62,10 @@ Void KernelMainLate(Void) {
 	DispFillProgressBar();																									// Kernel initialized :)
 	DbgWriteFormated("[Kernel] Kernel initialized\r\n");
 	
-	GuiInit();
-	DbgWriteFormated("[Gui] Gui subsystem initialized\r\n");
-	
-	GuiAddWindow(GuiCreateWindow("Test", 5, 5, 200, 200));																	// Show a test window
+	ConClearScreen();																										// Clear the screen
+	ConWriteFormated("CHicago Operating System for %s\r\n", CHICAGO_ARCH);													// Print some system informations
+	ConWriteFormated("Codename '%s'\r\n", CHICAGO_CODENAME);
+	ConWriteFormated("%s\r\n", CHICAGO_VSTR);
 	
 	while (1) ;
 }

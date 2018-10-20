@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 21:12 BRT
-// Last edited on October 17 of 2018, at 14:54 BRT
+// Last edited on October 20 of 2018, at 13:00 BRT
 
 #define __CHICAGO_DISPLAY__
 
@@ -181,6 +181,45 @@ Void DispRefresh(Void) {
 	StrCopyMemory((PUInt8)DispFrameBuffer, (PUInt8)DispBackBuffer, DispWidth * DispHeight * 4);
 }
 
+Void DispClearScreen(UIntPtr c) {
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	UInt8 a;																													// Big endian...
+	UInt8 a;
+	UInt8 r;
+	UInt8 g;
+	UInt8 b;
+	
+	DispExtractARGB(c, &a, &r, &g, &b);																							// Extract the ARGB values
+	
+	c = a | (r << 8) | (g << 16) | (b << 24);																					// Convert to little endian
+#endif
+	
+	StrSetMemory32((PUInt32)DispBackBuffer, c, DispWidth * DispHeight);															// Fill the screen with the color c
+}
+
+Void DispScrollScreen(IntPtr scale, UIntPtr c) {
+	if (scale == 0) {																											// Valid scale?
+		return;																													// Nope
+	}
+	
+	UIntPtr lsz = DispWidth * (scale * 16);
+	
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	UInt8 a;																													// Big endian...
+	UInt8 a;
+	UInt8 r;
+	UInt8 g;
+	UInt8 b;
+	
+	DispExtractARGB(c, &a, &r, &g, &b);																							// Extract the ARGB values
+	
+	c = a | (r << 8) | (g << 16) | (b << 24);																					// Convert to little endian
+#endif
+	
+	StrCopyMemory32((PUInt32)DispBackBuffer, (PUInt32)(DispBackBuffer + (lsz * 4)), DispWidth * DispHeight - lsz);				// Scroll the screen UP
+	StrSetMemory32((PUInt32)(DispBackBuffer + (DispWidth * DispHeight * 4) - (lsz * 4)), c, lsz);								// Clear the last line
+}
+
 Void DispPutPixel(UIntPtr x, UIntPtr y, UIntPtr c) {
 	if (x >= DispWidth) {																										// Fix the x and the y if they are bigger than the screen dimensions
 		x = DispWidth - 1;
@@ -191,21 +230,18 @@ Void DispPutPixel(UIntPtr x, UIntPtr y, UIntPtr c) {
 	}
 	
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-	PUInt8 fb = (PUInt8)(DispBackBuffer + (y * (DispWidth * 4)) + (x * 4));														// Big endian... get a pointer to the framebuffer STARTING AT X, Y POSITION
+	UInt8 a;																													// Big endian...
 	UInt8 a;
 	UInt8 r;
 	UInt8 g;
 	UInt8 b;
 	
 	DispExtractARGB(c, &a, &r, &g, &b);																							// Extract the ARGB values
-		
-	*fb++ = b;																													// And write them!
-	*fb++ = g;
-	*fb++ = r;
-	*fb++ = a;
-#else
-	*((PUIntPtr)(DispBackBuffer + (y * (DispWidth * 4)) + (x * 4))) = c;														// Little endian!
+	
+	c = a | (r << 8) | (g << 16) | (b << 24);																					// Convert to little endian
 #endif
+	
+	*((PUIntPtr)(DispBackBuffer + (y * (DispWidth * 4)) + (x * 4))) = c;														// Write the pixel!
 }
 
 Void DispDrawLine(UIntPtr x0, UIntPtr y0, UIntPtr x1, UIntPtr y1, UIntPtr c) {
@@ -239,23 +275,19 @@ Void DispDrawLine(UIntPtr x0, UIntPtr y0, UIntPtr x1, UIntPtr y1, UIntPtr c) {
 	
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 	UInt8 a;																													// Big endian...
+	UInt8 a;
 	UInt8 r;
 	UInt8 g;
 	UInt8 b;
 	
 	DispExtractARGB(c, &a, &r, &g, &b);																							// Extract the ARGB values
+	
+	c = a | (r << 8) | (g << 16) | (b << 24);																					// Convert to little endian
 #endif
 	
 	if (dx >= dy) {																												// This line is more horizontal?
 		for (x = 0; x < dx; x++) {																								// Yes
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = b;
-			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4) + 1)) = g;
-			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4) + 2)) = r;
-			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4) + 3)) = a;
-#else
-			*((PUIntPtr)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = c;
-#endif
+			*((PUInt32)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = c;
 			
 			y += dy;
 			
@@ -268,14 +300,7 @@ Void DispDrawLine(UIntPtr x0, UIntPtr y0, UIntPtr x1, UIntPtr y1, UIntPtr c) {
 		}
 	} else {
 		for (y = 0; y < dy; y++) {																								// No, so is more vertical
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = b;
-			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4) + 1)) = g;
-			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4) + 2)) = r;
-			*((PUInt8)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4) + 3)) = a;
-#else
-			*((PUIntPtr)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = c;
-#endif
+			*((PUInt32)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = c;
 			
 			x += dx;
 			
@@ -313,35 +338,23 @@ Void DispFillRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr c) {
 		h = DispHeight - y;
 	}
 	
+	PUInt32 fb = (PUInt32)(DispBackBuffer + (y * (DispWidth * 4)) + (x * 4));
+	
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-	PUInt8 fb = (PUInt8)(DispBackBuffer + (y * (DispWidth * 4)) + (x * 4));														// Big endian... get a pointer to the framebuffer STARTING AT X, Y POSITION
+	UInt8 a;																													// Big endian...
 	UInt8 a;
 	UInt8 r;
 	UInt8 g;
 	UInt8 b;
 	
 	DispExtractARGB(c, &a, &r, &g, &b);																							// Extract the ARGB values
-#else
-	PUIntPtr fb = (PUIntPtr)(DispBackBuffer + (y * (DispWidth * 4)) + (x * 4));													// Little endian!
+	
+	c = a | (r << 8) | (g << 16) | (b << 24);																					// Convert to little endian
 #endif
 	
 	for (UIntPtr i = 0; i < h; i++) {																							// And fill our rectangle
-		for (UIntPtr j = 0; j < w; j++) {
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-			*fb++ = b;
-			*fb++ = g;
-			*fb++ = r;
-			*fb++ = a;
-#else
-			*fb++ = c;
-#endif
-		}
-		
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-		fb += (DispWidth - w) * 4;
-#else
-		fb += DispWidth - w;
-#endif
+		StrSetMemory32(fb, c, w);
+		fb += DispWidth;
 	}
 }
 
@@ -599,5 +612,6 @@ Void DispInit(UIntPtr fb) {
 		}
 	}
 	
-	StrSetMemory((PVoid)DispFrameBuffer, 0, DispWidth * DispHeight * 4);														// Clear the screen
+	DispClearScreen(0xFF000000);																								// Clear the screen
+	DispRefresh();
 }

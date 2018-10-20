@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 15 of 2018, at 19:05 BRT
-// Last edited on October 16 of 2018, at 10:45 BRT
+// Last edited on October 20 of 2018, at 12:33 BRT
 
 #include <chicago/alloc.h>
 
@@ -17,6 +17,18 @@ PVoid StrCopyMemory(PVoid dest, PVoid src, UIntPtr count) {
 	return dest;
 }
 
+PVoid StrCopyMemory32(PVoid dest, PVoid src, UIntPtr count) {
+	if ((dest == Null) || (src == Null) || (count == 0) || (src == dest)) {			// Destination is an Null pointer? Source is an Null pointer? Zero-sized copy? Destination is Source?
+		return dest;																// Yes
+	}
+	
+	for (UIntPtr i = 0; i < count; i++) {											// GCC should optimize this for us :)
+		((PUInt32)dest)[i] = ((PUInt32)src)[i];
+	}
+	
+	return dest;
+}
+
 PVoid StrSetMemory(PVoid dest, UInt8 val, UIntPtr count) {
 	if ((dest == Null) || (count == 0)) {											// Destination is an Null pointer? Zero-sized set?
 		return dest;																// Yes
@@ -24,6 +36,18 @@ PVoid StrSetMemory(PVoid dest, UInt8 val, UIntPtr count) {
 	
 	for (UIntPtr i = 0; i < count; i++) {											// GCC should optimize this for us :)
 		((PUInt8)dest)[i] = val;
+	}
+	
+	return dest;
+}
+
+PVoid StrSetMemory32(PVoid dest, UInt32 val, UIntPtr count) {
+	if ((dest == Null) || (count == 0)) {											// Destination is an Null pointer? Zero-sized set?
+		return dest;																// Yes
+	}
+	
+	for (UIntPtr i = 0; i < count; i++) {											// GCC should optimize this for us :)
+		((PUInt32)dest)[i] = val;
 	}
 	
 	return dest;

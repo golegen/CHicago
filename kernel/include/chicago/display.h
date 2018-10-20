@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 21:17 BRT
-// Last edited on October 15 of 2018, at 12:45 BRT
+// Last edited on October 20 of 2018, at 13:00 BRT
 
 #ifndef __CHICAGO_DISPLAY_H__
 #define __CHICAGO_DISPLAY_H__
@@ -42,8 +42,10 @@ extern UInt8 _binary_splash_bmp_start;
 UIntPtr DispGetFrameBuffer(Void);
 UIntPtr DispGetWidth(Void);
 UIntPtr DispGetHeight(Void);
-Void DispExtractARGB(UIntPtr c, PUInt8 r, PUInt8 g, PUInt8 b, PUInt8 a);
+Void DispExtractARGB(UIntPtr c, PUInt8 a, PUInt8 r, PUInt8 g, PUInt8 b);
 Void DispRefresh(Void);
+Void DispClearScreen(UIntPtr c);
+Void DispScrollScreen(IntPtr scale, UIntPtr c);
 Void DispPutPixel(UIntPtr x, UIntPtr y, UIntPtr c);
 Void DispDrawLine(UIntPtr x0, UIntPtr y0, UIntPtr x1, UIntPtr y1, UIntPtr c);
 Void DispDrawRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr c);

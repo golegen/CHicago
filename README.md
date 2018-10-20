@@ -1,6 +1,6 @@
-# CHicago OS
+# CHicago
 
-## Build your own CHicago OS iso
+## Build your own CHicago iso
 
 You need:
 	i686-elf toolchain
@@ -40,7 +40,7 @@ make remake VERBOSE=true
 
 ### GRUB xorriso
 
-CHicago OS use GRUB and GRUB tools to make bootable iso.
+CHicago use GRUB and GRUB tools to make bootable iso.
 If you have any of these errors during build:
 
 ```
