@@ -8,7 +8,7 @@ VERBOSE ?= false
 DEBUG ?= false
 
 ifeq ($(ARCH),x86)
-	PREFIX ?= i686-chicago-
+	PREFIX ?= i686-elf-
 else ifeq ($(ARCH),arm)
 	PREFIX ?= arm-none-eabi-
 	SUBARCH ?= vexpress
