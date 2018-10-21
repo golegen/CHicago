@@ -1,7 +1,7 @@
 ﻿// File author is Ítalo Lima Marconato Matias
 //
 // Created on October 20 of 2018, at 23:19 BRT
-// Last edited on October 20 of 2018, at 23:44 BRT
+// Last edited on October 21 of 2018, at 12:17 BRT
 
 using System;
 using Bliss.Assembler.Nodes;

@@ -1,0 +1,6 @@
+lds 1
+ldu 2
+add
+lds 3
+mul
+print

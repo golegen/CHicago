@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on October 20 of 2018, at 15:43 BRT
+# Last edited on October 21 of 2018, at 18:37 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -54,7 +54,7 @@ OBJECTS += io/dev/zero.c.o
 OBJECTS += io/fs/devfs.c.o io/fs/iso9660.c.o
 OBJECTS += mm/alloc.c.o mm/heap.c.o mm/pmm.c.o mm/ualloc.c.o
 OBJECTS += mm/virt.c.o
-OBJECTS += sys/process.c.o sys/rand.c.o sys/string.c.o
+OBJECTS += sys/process.c.o sys/rand.c.o sys/string.c.o sys/vm.c.o
 
 OTHER_OBJECTS := splash.bmp
 

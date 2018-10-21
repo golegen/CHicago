@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on October 21 of 2018, at 00:09 BRT
-# Last edited on October 21 of 2018, at 00:13 BRT
+# Last edited on October 21 of 2018, at 11:56 BRT
 
 VERBOSE ?= false
 OUTPUT := build/blasm.exe
@@ -20,7 +20,7 @@ clean-all:
 
 remake: clean all
 
-$(OUTPUT):
+$(OUTPUT): Nodes/*.cs Properties/*.cs blasm.csproj *.cs
 	$(NOECHO)echo Linking $@
 	$(NOECHO)msbuild /nologo /noconlog
 	$(NOECHO)rm -rf obj

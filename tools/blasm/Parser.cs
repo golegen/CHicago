@@ -1,7 +1,7 @@
 ﻿// File author is Ítalo Lima Marconato Matias
 //
 // Created on October 20 of 2018, at 16:50 BRT
-// Last edited on October 20 of 2018, at 17:50 BRT
+// Last edited on October 21 of 2018, at 12:22 BRT
 
 using System.Collections.Generic;
 using Bliss.Assembler.Nodes;
@@ -31,7 +31,7 @@ namespace Bliss.Assembler
                 Node node = StatementNode.Parse(this);
 
                 if (node != null)                                                                                                                   // We can add this node?
-                    block.Children.Add(StatementNode.Parse(this));                                                                                  // Yes!
+                    block.Children.Add(node); 						                                                                                // Yes!
             }
 
             return block;
@@ -103,6 +103,8 @@ namespace Bliss.Assembler
             if (ret != null)                                                                                                                        // End of file?
                 Utils.Error($"{ret.Filename}:{ret.Line}", $"expected {type}, got {ret.Type}");                                                      // No
 
+            ret = PeekToken(-1);
+
             Utils.Error($"{ret.Filename}:{ret.Line}", $"expected {type}, got end of file");                                                         // Yes
 
             return null;
@@ -119,6 +121,8 @@ namespace Bliss.Assembler
 
             if (ret != null)                                                                                                                        // End of file?
                 Utils.Error($"{ret.Filename}:{ret.Line}", $"expected {type} with value '{value}', got {ret.Type} with value '{ret.Value}");         // No
+
+            ret = PeekToken(-1);
 
             Utils.Error($"{ret.Filename}:{ret.Line}", $"expected {type} with value '{value}', got end of file");                                    // Yes
 

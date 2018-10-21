@@ -1,7 +1,7 @@
 ﻿// File author is Ítalo Lima Marconato Matias
 //
 // Created on October 20 of 2018, at 17:45 BRT
-// Last edited on October 20 of 2018, at 18:28 BRT
+// Last edited on October 21 of 2018, at 12:20 BRT
 
 namespace Bliss.Assembler.Nodes
 {
@@ -21,7 +21,7 @@ namespace Bliss.Assembler.Nodes
             Token opc = parser.ExpectToken(TokenType.Identifier);                                                       // Read the opcode name
             Node instr = new InstructionNode(opc.Filename, opc.Line, (string)opc.Value);                                // Create the node
 
-            if (parser.AcceptToken(TokenType.EOL) || parser.AcceptToken(TokenType.Semicolon))                           // End of line/Semicolon?
+            if (parser.AcceptToken(TokenType.EOL) || parser.AcceptToken(TokenType.Semicolon) || parser.EndOfStream)     // End of line/Semicolon/End of file?
                 return instr;                                                                                           // Yes, return!
 
             while (true)
