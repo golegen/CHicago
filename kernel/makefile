@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on October 20 of 2018, at 15:21 BRT
+# Last edited on October 20 of 2018, at 15:43 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -48,7 +48,6 @@ endif
 
 OBJECTS := main.c.o
 OBJECTS += ds/list.c.o ds/stack.c.o
-OBJECTS += gui/render.c.o gui/surface.c.o gui/window.c.o
 OBJECTS += io/console.c.o io/device.c.o io/display.c.o io/file.c.o
 OBJECTS += io/dev/framebuffer.c.o io/dev/rawkeyboard.c.o io/dev/rawmouse.c.o io/dev/null.c.o
 OBJECTS += io/dev/zero.c.o

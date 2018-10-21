@@ -5,6 +5,7 @@
 You need:
 	i686-elf toolchain
 	grub2
+	mono
 
 Go to the root directory and type:
 
@@ -12,7 +13,7 @@ Go to the root directory and type:
 make
 ```
 
-You should have the bootable iso inside of the build folder.
+You should have the bootable iso inside of the build folder and the blasm tool inside of tools/blasm/build (blasm.exe, you can run it with mono).
 
 ## Troubleshooting
 

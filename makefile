@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on October 15 of 2018, at 10:48 BRT
+# Last edited on October 21 of 2018, at 00:17 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -26,9 +26,9 @@ ifneq ($(VERBOSE),true)
 NOECHO := @
 endif
 
-.PHONY: $(KERNEL)
+.PHONY: $(KERNEL) tools
 
-all: $(KERNEL) finish
+all: $(KERNEL) tools finish
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
@@ -38,12 +38,14 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel clean
+	$(NOECHO)VERBOSE=$(VERBOSE) make -C tools clean
 
 clean-all:
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel clean-all
+	$(NOECHO)VERBOSE=$(VERBOSE) make -C tools clean-all
 	$(NOECHO)rm -rf build
 
 remake:
@@ -51,6 +53,7 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel remake
+	$(NOECHO)VERBOSE=$(VERBOSE) make -C tools remake
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make finish
 
 $(KERNEL):
@@ -58,6 +61,9 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel all
+
+tools:
+	$(NOECHO)VERBOSE=$(VERBOSE) make -C tools all
 
 ifeq ($(UNSUPPORTED_ARCH),true)
 arch-clean:
