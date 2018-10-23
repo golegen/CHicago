@@ -4,8 +4,9 @@
 
 You need:
 	i686-elf toolchain
-	grub2
+	xorriso
 	mono
+	make
 
 Go to the root directory and type:
 
@@ -39,13 +40,7 @@ Or:
 make remake VERBOSE=true
 ```
 
-### GRUB xorriso
+### Xorriso
 
-CHicago use GRUB and GRUB tools to make bootable iso.
-If you have any of these errors during build:
-
-```
-Your xorriso doesn't support ‘--grub2-boot-info’. Some features are disabled. Please use xorriso 1.2.9 or later
-```
-
-Make sure you have xorriso package installed in your distro.
+CHicago use xorriso to make bootable iso.
+If you have any errors in the last section of the build (when generating the iso image), make sure you have xorriso package installed in your distro.

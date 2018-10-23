@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on October 21 of 2018, at 11:45 BRT
+# Last edited on October 23 of 2018, at 14:48 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -17,8 +17,12 @@ else
 endif
 
 ifeq ($(SUBARCH),)
+	CDBOOT := boot/bootsect/build/cdboot-$(ARCH)
+	BOOTMGR := boot/bootmgr/build/bootmgr-$(ARCH)
 	KERNEL := kernel/build/chkrnl-$(ARCH)
 else
+	CDBOOT := boot/bootsect/build/cdboot-$(ARCH)_$(SUBARCH)
+	BOOTMGR := boot/bootmgr/build/bootmgr-$(ARCH)_$(SUBARCH)
 	KERNEL := kernel/build/chkrnl-$(ARCH)_$(SUBARCH)
 endif
 
@@ -26,9 +30,9 @@ ifneq ($(VERBOSE),true)
 NOECHO := @
 endif
 
-.PHONY: $(KERNEL) tools test
+.PHONY: boot kernel tools test
 
-all: $(KERNEL) tools test finish
+all: boot kernel tools test finish
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
@@ -37,6 +41,7 @@ clean: arch-clean
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
+	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C boot clean
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel clean
 	$(NOECHO)VERBOSE=$(VERBOSE) make -C tools clean
 	$(NOECHO)VERBOSE=$(VERBOSE) make -C test clean
@@ -45,6 +50,7 @@ clean-all:
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
+	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C boot clean-all
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel clean-all
 	$(NOECHO)VERBOSE=$(VERBOSE) make -C tools clean-all
 	$(NOECHO)VERBOSE=$(VERBOSE) make -C test clean-all
@@ -54,12 +60,19 @@ remake:
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
+	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C boot remake
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel remake
 	$(NOECHO)VERBOSE=$(VERBOSE) make -C tools remake
 	$(NOECHO)VERBOSE=$(VERBOSE) make -C test remake
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make finish
 
-$(KERNEL):
+boot:
+ifeq ($(UNSUPPORTED_ARCH),true)
+	$(error Unsupported architecture $(ARCH))
+endif
+	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C boot all
+
+kernel:
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
@@ -91,25 +104,15 @@ else
 endif
 	$(NOECHO)if [ ! -d build ]; then mkdir -p build; fi
 	$(NOECHO)if [ -d build/iso ]; then rm -rf build/iso; fi
-	$(NOECHO)mkdir -p build/iso/boot/grub
+	$(NOECHO)mkdir -p build/iso/Boot
+	$(NOECHO)cp $(CDBOOT) build/iso/Boot/bootsect.bin
+	$(NOECHO)cp $(BOOTMGR) build/iso/Boot/bootmgr.bin
+	$(NOECHO)cp $(KERNEL) build/iso/Boot/chkrnl.elf
 	$(NOECHO)cp test/build/test.bliss build/iso/test.bliss
-	$(NOECHO)cp $(KERNEL) build/iso/boot/chkrnl.che
-	$(NOECHO)echo 'set timeout=30' > build/iso/boot/grub/grub.cfg
-	$(NOECHO)echo 'set default=0' >> build/iso/boot/grub/grub.cfg
-	$(NOECHO)echo '' >> build/iso/boot/grub/grub.cfg
-	$(NOECHO)echo 'menuentry "Boot from CHicago Install CD" {' >> build/iso/boot/grub/grub.cfg
-	$(NOECHO)echo '    multiboot /boot/chkrnl.che' >> build/iso/boot/grub/grub.cfg
-	$(NOECHO)echo '    boot' >> build/iso/boot/grub/grub.cfg
-	$(NOECHO)echo '}' >> build/iso/boot/grub/grub.cfg
-	$(NOECHO)echo '' >> build/iso/boot/grub/grub.cfg
-	$(NOECHO)echo 'menuentry "Boot from Hard Disk" {' >> build/iso/boot/grub/grub.cfg
-	$(NOECHO)echo '    chainloader (hd0)+1' >> build/iso/boot/grub/grub.cfg
-	$(NOECHO)echo '}' >> build/iso/boot/grub/grub.cfg
-	$(NOECHO)echo '' >> build/iso/boot/grub/grub.cfg
 ifeq ($(SUBARCH),)
-	$(NOECHO)grub-mkrescue --directory=/usr/lib/grub/i386-pc --output=build/chicago-$(ARCH).iso build/iso -c boot/boot.cat -iso-level 3 2>/dev/null
+	$(NOECHO)xorriso -as mkisofs -R -c Boot/boot.cat -b Boot/bootsect.bin -U -no-emul-boot -o build/chicago-$(ARCH).iso build/iso 2>/dev/null
 else
-	$(NOECHO)grub-mkrescue --directory=/usr/lib/grub/i386-pc --output=build/chicago-$(ARCH)_$(SUBARCH).iso build/iso -c boot/boot.cat -iso-level 3 2>/dev/null
+	$(NOECHO)xorriso -as mkisofs -R -c Boot/boot.cat -b Boot/bootsect.bin -U -no-emul-boot -o build/chicago-$(ARCH)_$(SUBARCH).iso build/iso 2>/dev/null
 endif
 	$(NOECHO)rm -rf build/iso
 else
