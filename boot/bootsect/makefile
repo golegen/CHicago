@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on October 22 of 2018, at 13:39 BRT
-# Last edited on October 22 of 2018, at 13:47 BRT
+# Last edited on October 23 of 2018, at 17:22 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -9,9 +9,6 @@ DEBUG ?= false
 
 ifeq ($(ARCH),x86)
 	PREFIX ?= i686-elf-
-	
-	USE_NASM := true
-	NASM_FORMAT := elf
 	
 	ifneq ($(SUBARCH),)
 		UNSUPPORTED_ARCH := true
@@ -64,9 +61,5 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)echo Compiling $<
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-ifeq ($(USE_NASM),true)
-	$(NOECHO)nasm -f$(NASM_FORMAT) $< -o $@.o
-else
 	$(NOECHO)$(PREFIX)as $(ARCH_AFLAGS) $< -o $@.o
-endif
 	$(NOECHO)$(PREFIX)ld -T$(LINKER_SCRIPT) -o $@ $@.o

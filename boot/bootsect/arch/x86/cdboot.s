@@ -1,204 +1,217 @@
-; File author is Ítalo Lima Marconato Matias
-;
-; Created on October 22 of 2018, at 13:36 BRT
-; Last edited on October 23 of 2018, at 14:51 BRT
+// File author is Ítalo Lima Marconato Matias
+//
+// Created on October 22 of 2018, at 13:36 BRT
+// Last edited on October 23 of 2018, at 19:28 BRT
 
-bits 16
+.code16
 
-global BootEntry
+.global BootEntry
 BootEntry:
 	cli
 	
-	xor ax, ax							; Setup segments
-	mov ds, ax
-	mov es, ax
-	mov ax, 0x9000
-	mov ss, ax
-	mov sp, 0xFFFF
+	xor %ax, %ax												// Setup segments
+	mov %ax, %ds
+	mov %ax, %es
+	mov $0x9000, %ax
+	mov %ax, %ss
+	mov $0xFFFF, %sp
 	
 	sti
 	
-	mov byte [BootDrive], dl			; Save dl
-.FindRootDirectory:
-	mov bx, 0x10						; Start with sector 0x10
-	mov cx, 1							; Just one sector at time
-	mov di, 0x500						; Read into 0x500
-.ReadVolume:
-	call ReadSectors					; Read the sector
+	movb %dl, (BootDrive)										// Save the boot drive
 	
-	mov al, [es:di]						; Get type
-	cmp al, 0x01						; Found?
-	je .Found							; Yes!
-	cmp al, 0xFF						; Terminator?
-	je .NotFound						; Yes...
+	call LoadRootDirectory										// Load the root directory
 	
-	inc bx								; Move on to next sector
-	jmp .ReadVolume
-.Found:
-	mov bx, [es:di + 156 + 2]			; Get root directory sector
-.ProcessSector0:
-	mov cx, 1							; Just one sector at time
-	mov di, 0x500						; Read into 0x500
-	call ReadSectors					; Load the current dir sector into buffer
-.ProcessDirEntry0:
-	xor ax, ax							; Terminator?
-	mov al, [es:di]
-	cmp al, 0
-	je .FolderNotFound					; Yes, so error out
+	mov $BootFolder, %si										// Load the Boot folder
+	mov $0x01, %al												// It's a folder
+	mov $0x04, %ah
+	call LoadFile
 	
-	test byte [es:di + 25], 0x02		; The entry is a directory?
-	jz .NextDirEntry0					; No, so skip to the next
+	mov $BootmgrFile, %si										// Load the bootmgr.bin file
+	xor %al, %al												// It's a file
+	mov $0x0B, %ah
+	call LoadFile
 	
-	cmp byte [es:di + 32], 4			; Same filename length?
-	jne .NextDirEntry0					; No, so skip to the next
-	
-	push di								; Right folder?
-	mov cx, 4
-	mov si, FolderName
-	add di, 33
-	cld
-	rep cmpsb
-	pop di
-	je .FolderFound
-.NextDirEntry0:
-	add di, ax							; No, go to the next directory entry
-	cmp di, 0xD00
-	jb .ProcessDirEntry0
-.NextSector:
-	inc bx								; Advance to the next directory sector
-	jmp .ProcessSector0
-.FolderFound:
-	mov bx, [es:di + 2]					; Found! Get the starting sector
-	mov cx, [es:di + 10]				; Get size
-	add cx, 2047						; Convert to sectors
-	shr cx, 11
-	call ReadSectors					; Read the directory to memory!
-.ProcessSector1:
-	mov cx, 1							; Just one sector at time
-	mov di, 0x500						; Read into 0x500
-	call ReadSectors					; Load the current dir sector into buffer
-.ProcessDirEntry1:
-	xor ax, ax							; Terminator?
-	mov al, [es:di]
-	cmp al, 0
-	je .FileNotFound					; Yes, so error out
-	
-	test byte [es:di + 25], 0x02		; The entry is a file?
-	jnz .NextDirEntry1					; No, so skip to the next
-	
-	cmp byte [es:di + 32], 11			; Same filename length?
-	jne .NextDirEntry1					; No, so skip to the next
-	
-	push di								; Right file?
-	mov cx, 11
-	mov si, FileName
-	add di, 33
-	cld
-	rep cmpsb
-	pop di
-	je .LoaderFound
-.NextDirEntry1:
-	add di, ax							; No, go to next directory entry
-	cmp di, 0xD00
-	jb .ProcessDirEntry1
-.NextSector1:
-	inc bx								; Advance to next directory sector
-	jmp .ProcessSector1
-.LoaderFound:
-	mov bx, [es:di + 2]					; Found! Get the starting sector
-	mov cx, [es:di + 10]				; Get size
-	add cx, 2047						; Convert to sectors
-	shr cx, 11
-	mov ax, 0x50						; Initialize es:di
-	mov es, ax
-	xor di, di
-	call ReadSectors					; Read loader to memory
-	
-	mov dl, [BootDrive]					; Pop back the boot drive to dl
-	jmp 0x00:0x500						; Jump to loader
-.Halt:
+	ljmp $0x00, $0x500											// Long jump to it!
+1:
 	hlt
-	jmp .Halt
+	jmp 1b
 
-.NotFound:
-	mov si, RootDirErrMsg				; Print err to screen
-	call ConWriteString
-	call AnyKeyRestart
-.FolderNotFound:
-	mov si, FolderNotFoundMsg
-	call ConWriteString
-	call AnyKeyRestart
-.FileNotFound:
-	mov si, FileNotFoundMsg				; Print err to screen
-	call ConWriteString
-	call AnyKeyRestart
+LoadRootDirectory:
+	mov $0x10, %bx												// Start at the sector 0x10
+	mov $0x01, %cx												// Just one sector at time
+	mov $0x500, %di												// Load to 0x500
+1:
+	call ReadSectors											// Read the sector
+	
+	mov %es:(%di), %al											// Get type
+	cmp $0x01, %al												// Found?
+	je 2f														// Yes!
+	cmp $0xFF, %al												// Terminator?
+	je 3f														// Yes...
+	
+	inc %bx														// Move to the next sector
+	jmp 1b
+2:
+	mov %es:158(%di), %bx										// Return the root directory sector in BX
+	ret
+3:
+	mov $RootDirErrMsg, %si
+	call WriteString
+	call Reboot
 
-ConWriteString:
-	pusha
-	mov ah, 0x0E						; 0x0E is int 0x10 print character
-	xor bx, bx							; Both bl and bh should be 0
-.Write:
-	lodsb								; Get next character
-	or al, al							; Is a termination (0)?
-	jz .Return							; Yes, so return
-	int 0x10							; No, so write it
-	jmp .Write
-.Return:
+FolderFlag: .byte 0
+FileNameLength: .byte 0
+FileName: .word 0
+ReturnValue: .word 0
+LoadFile:
+	pusha														// Save all the registers
+	movb %al, (FolderFlag)										// Save the folder flag
+	movb %ah, (FileNameLength)									// Save the file name length
+	movw %si, (FileName)										// Save the file name
+1:
+	mov $0x01, %cx												// Just one sector at time
+	mov $0x500, %di												// Load to 0x500
+	call ReadSectors											// Load the current dir sector into buffer
+2:
+	xor %ax, %ax												// Terminator?
+	mov %es:(%di), %al
+	cmp $0, %al
+	je 11f														// Yes, error out...
+	
+	cmpb $0x01, (FolderFlag)									// We're searching for a folder?
+	je 3f
+	
+	testb $0x02, %es:25(%di)									// It's a file?
+	jnz 5f														// No...
+	
+	jmp 4f
+3:
+	testb $0x02, %es:25(%di)									// It's a folder?
+	jz 5f														// No...
+4:
+	mov (FileNameLength), %cl									// Same filename length?
+	cmpb %cl, %es:32(%di)
+	jne 5f														// No...
+	
+	push %di													// Let's compare the names!
+	add $33, %di
+	cld
+	rep cmpsb
+	pop %di
+	je 7f														// Equals?
+5:
+	add %ax, %di												// No...
+	cmp $0xD00, %di
+	jb 2b														// Go to next sector?
+6:
+	inc %bx														// Yes
+	jmp 1b
+7:
+	cmpb $0x01, (FolderFlag)									// FOUND! It's a folder?
+	jne 8f
+	
+	movw %es:2(%di), %ax										// Yes, let's return the folder start sector at BX
+	mov %ax, (ReturnValue)
+	jmp 10f
+8:
+	mov %es:2(%di), %bx											// No, so let's load the file
+	mov %es:10(%di), %cx
+	add $2047, %cx
+	shr $11, %cx
+	mov $0x50, %ax
+	mov %ax, %es
+	xor %di, %di
+	call ReadSectors
+10:
 	popa
+	movw (ReturnValue), %bx
+	ret
+11:
+	mov $NotFoundMsg, %si
+	call WriteString
+	
+	mov (FileName), %si
+	call WriteString
+	
+	cmpb $0x01, (FolderFlag)
+	je 12f
+	
+	mov $FileMsg, %si
+	call WriteString
+	jmp 13f
+12:
+	mov $FolderMsg, %si
+	call WriteString
+13:
+	call Reboot
+
+ReadSectors:
+	pusha														// Save all the registers
+	
+	movb (BootDrive), %dl										// Restore the boot drive to DL
+	lea DAPBuffer, %si											// Load DS:SI with DAP buffer address
+	
+	movw %cx, 2(%si)											// Fill the DAP buffer
+	movw %di, 4(%si)
+	movw %es, 6(%si)
+	movw %bx, 8(%si)
+	
+	mov $0x4200, %ax											// (Try to) use the extended read sectors function
+	int $0x13
+	
+	jc 1f														// Failed?
+	
+	popa														// No, so just return
+	ret
+1:
+	mov $BiosErrMsg, %si										// Yes...
+	call WriteString
+	call Reboot
+
+WriteString:
+	pusha														// Save all the registers
+	mov $0x0E, %ah												// 0x0E is the print character function
+	xor %bx, %bx												// Both BL and BH should be 0
+1:
+	lodsb														// Get the next character
+	or %al, %al													// Termination (0)?
+	jz 2f														// Yes, return
+	int $0x10													// No, write it
+	jmp 1b
+2:
+	popa														// Restore all the registers
 	ret
 
-AnyKeyRestart:
-	mov si, AnyKeyMsg					; Print any key message
-	call ConWriteString
-	int 0x16							; Wait for keypress
-Restart:
-	int 0x19
-.Hang:
+Reboot:
+	mov $AnyKeyMsg, %si											// Print the "any key" message
+	call WriteString
+	xor %ah, %ah												// 0x00 is the wait keystroke function
+	int $0x16
+	mov $NewLineMsg, %si										// New line (for qemu, as the other emulators/virtual machines/real computers don't need this)
+	call WriteString
+	call WriteString
+	int $0x19													// Restart
+1:
 	hlt
-	jmp .Hang
-
-ReadSectors:							; Read sectors function for ISO9660
-	pusha
-	
-	mov dl, byte [BootDrive]			; Restore boot drive to dl
-	
-	mov word [DAPBuffer + 2], cx		; Fill the DAP buffer
-	mov word [DAPBuffer + 4], di
-	mov word [DAPBuffer + 6], es
-	mov word [DAPBuffer + 8], bx
-	
-	lea si, [DAPBuffer]					; Load ds:si with DAP buffer's address
-	
-	mov ax, 0x4200						; Now use BIOS extended read sectors
-	int 0x13
-	
-	jc .Error							; Error?
-	
-	popa								; Nope, so return
-	ret
-.Error:
-	mov si, BIOSErrMsg					; Yes...
-	call ConWriteString
-	call AnyKeyRestart
+	jmp 1b
 
 DAPBuffer:
-	db 16								; DAP size = 16
-	db 0								; Reserved
-	dw 1								; Sector count
-	dw 0								; Destination offset
-	dw 0								; Destination segment
-	dq 0								; Sector LBA
+	.byte 0x10													// DAP size
+	.byte 0x00													// Reserved
+	.word 0x01													// Sector count
+	.word 0x00													// Destination offset
+	.word 0x00													// Destination segment
+	.quad 0x00													// Sector LBA
 
-BootDrive:
-	db 0
+BootDrive: .byte 0
 
-BIOSErrMsg: db "BIOS error!", 0x0D, 0x0A, 0
-RootDirErrMsg: db "Could not find root directory", 0x0D, 0x0A, 0
-FolderNotFoundMsg: db "Could not find the Boot folder", 0x0D, 0x0A, 0
-FileNotFoundMsg: db "Could not find the chboot.bin file", 0x0D, 0x0A, 0
-AnyKeyMsg: db "Press any key to restart", 0x0D, 0x0A, 0
-FolderName: db "Boot"
-FileName: db "bootmgr.bin"
-
-times 510 - ($ - $$) db 0
-dw 0xAA55
+BiosErrMsg: .asciz "BIOS Error\r\n"
+RootDirErrMsg: .asciz "Couldn't find the root directory\r\n"
+NotFoundMsg: .asciz "Couldn't find the "
+FolderMsg: .asciz " folder\r\n"
+FileMsg: .asciz " file\r\n"
+BootFolder: .asciz "Boot"
+BootmgrFile: .asciz "bootmgr.bin"
+AnyKeyMsg: .asciz "Press any key to restart"
+NewLineMsg: .byte 0x0D, 0x0A, 0

@@ -2,11 +2,7 @@
 
 ## Build your own CHicago iso
 
-You need:
-	i686-elf toolchain
-	xorriso
-	mono
-	make
+You need: i686-elf toolchain, xorriso, mono and make
 
 Go to the root directory and type:
 
@@ -39,8 +35,3 @@ Or:
 ```
 make remake VERBOSE=true
 ```
-
-### Xorriso
-
-CHicago use xorriso to make bootable iso.
-If you have any errors in the last section of the build (when generating the iso image), make sure you have xorriso package installed in your distro.
