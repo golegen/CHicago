@@ -1,9 +1,9 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 15 of 2018, at 19:05 BRT
-// Last edited on October 23 of 2018, at 15:26 BRT
+// Last edited on October 24 of 2018, at 14:20 BRT
 
-#include <chicago/types.h>
+#include <chicago/alloc.h>
 
 PVoid StrCopyMemory(PVoid dest, PVoid src, UIntPtr count) {
 	if ((dest == Null) || (src == Null) || (count == 0) || (src == dest)) {			// Destination is an Null pointer? Source is an Null pointer? Zero-sized copy? Destination is Source?
@@ -101,4 +101,68 @@ Void StrConcatenate(PChar dest, PChar src) {
 	
 	end += StrGetLength(src);														// And put an 0 (NUL) at the end
 	*end = '\0';
+}
+
+PChar StrDuplicate(PChar str) {
+	PChar ret = (PChar)MemAllocate(StrGetLength(str) + 1);
+	
+	if (ret == Null) {
+		return Null;
+	}
+	
+	return StrCopy(ret, str);
+}
+
+PChar StrTokenize(PChar str, PChar delim) {
+	static PChar temp = Null;
+	
+	if (str != Null) {																// First call?
+		if (temp != Null) {															// Free the current temp?
+			MemFree((UIntPtr)temp);													// Yup
+		}
+		
+		temp = StrDuplicate(str);													// Yes, try to set the copy the str to temp
+		
+		if (temp == Null) {															// Failed?
+			return Null;															// Yes
+		}
+	} else if (temp == Null) {														// Not the first call but temp is Null?
+		return Null;																// Yes, so return Null
+	} else {
+		str = temp;
+	}
+	
+	UIntPtr chars = 0;
+	UIntPtr flag = 0;
+	
+	while (*temp) {
+		for (PChar d = delim; *d != '\0'; d++) {
+			if (*temp == *d) {														// Found delim in the string?
+				if (chars == 0) {													// First character in the string?
+					flag = 1;														// Yes, there may be other after it, so go to the next one
+					str++;
+				} else {
+					temp++;															// No, so we can return
+					str[chars] = '\0';
+					
+					return str;
+				}
+			}
+		}
+		
+		if (flag == 0) {															// Found delim?
+			chars++;																// No, so increase chars
+		}
+		
+		temp++;
+		flag = 0;
+	}
+	
+	temp = Null;
+	str[chars] = '\0';
+	str = StrDuplicate(str);														// *HACKHACKHACK*
+	
+	MemFree((UIntPtr)temp);
+	
+	return str;
 }

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 23 of 2018, at 15:45 BRT
-// Last edited on October 23 of 2018, at 16:14 BRT
+// Last edited on October 24 of 2018, at 18:28 BRT
 
 #include <chicago/arch/port.h>
 
@@ -93,8 +93,8 @@ Void ConWriteCharacter(Char data) {
 	}
 	
 	if (ConCursorY >= 25) {														// Scroll up?
-		StrCopyMemory(ConBuffer, ConBuffer + 80, 1920);							// Yes
-		StrSetMemory(ConBuffer + 1920, ' ' | (ConColor << 8), 80);
+		StrCopyMemory16(ConBuffer, ConBuffer + 80, 1920);						// Yes
+		StrSetMemory16(ConBuffer + 1920, ' ' | (ConColor << 8), 80);
 		ConCursorY = 24;
 	}
 	

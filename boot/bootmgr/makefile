@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on October 22 of 2018, at 15:35 BRT
-# Last edited on October 23 of 2018, at 16:10 BRT
+# Last edited on October 25 of 2018, at 14:25 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -15,7 +15,9 @@ ifeq ($(ARCH),x86)
 	endif
 	
 	ARCH_OBJECTS := start.s.o
-	ARCH_OBJECTS += io/console.c.o
+	ARCH_OBJECTS += arch.c.o
+	ARCH_OBJECTS += io/console.c.o io/ide.c.o
+	ARCH_OBJECTS += sys/idt.c.o
 	
 	LINKER_SCRIPT := link.ld
 else
@@ -23,8 +25,11 @@ else
 endif
 
 OBJECTS := main.c.o
-OBJECTS += io/console.c.o
-OBJECTS += sys/string.c.o
+OBJECTS += ds/list.c.o
+OBJECTS += io/console.c.o io/device.c.o io/file.c.o io/fs/devfs.c.o
+OBJECTS += io/fs/iso9660.c.o
+OBJECTS += mm/alloc.c.o mm/heap.c.o
+OBJECTS += sys/config.c.o sys/string.c.o
 
 ARCH_OBJECTS := $(addprefix build/arch/$(ARCH)/,$(ARCH_OBJECTS))
 OBJECTS := $(addprefix build/,$(OBJECTS))

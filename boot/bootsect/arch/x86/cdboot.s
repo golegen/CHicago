@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 22 of 2018, at 13:36 BRT
-// Last edited on October 23 of 2018, at 19:28 BRT
+// Last edited on October 24 of 2018, at 18:47 BRT
 
 .code16
 
@@ -32,15 +32,15 @@ BootEntry:
 	mov $0x0B, %ah
 	call LoadFile
 	
-	ljmp $0x00, $0x500											// Long jump to it!
+	ljmp $0x00, $0x7E00											// Long jump to it!
 1:
 	hlt
 	jmp 1b
 
 LoadRootDirectory:
-	mov $0x10, %bx												// Start at the sector 0x10
-	mov $0x01, %cx												// Just one sector at time
-	mov $0x500, %di												// Load to 0x500
+	mov $0x10, %ebx												// Start at the sector 0x10
+	mov $0x01, %ecx												// Just one sector at time
+	mov $0x7E00, %di											// Load to 0x7E00
 1:
 	call ReadSectors											// Read the sector
 	
@@ -50,10 +50,10 @@ LoadRootDirectory:
 	cmp $0xFF, %al												// Terminator?
 	je 3f														// Yes...
 	
-	inc %bx														// Move to the next sector
+	inc %ebx													// Move to the next sector
 	jmp 1b
 2:
-	mov %es:158(%di), %bx										// Return the root directory sector in BX
+	movl %es:158(%di), %ebx										// Return the root directory sector in BX
 	ret
 3:
 	mov $RootDirErrMsg, %si
@@ -63,15 +63,15 @@ LoadRootDirectory:
 FolderFlag: .byte 0
 FileNameLength: .byte 0
 FileName: .word 0
-ReturnValue: .word 0
+ReturnValue: .int 0
 LoadFile:
 	pusha														// Save all the registers
 	movb %al, (FolderFlag)										// Save the folder flag
 	movb %ah, (FileNameLength)									// Save the file name length
 	movw %si, (FileName)										// Save the file name
 1:
-	mov $0x01, %cx												// Just one sector at time
-	mov $0x500, %di												// Load to 0x500
+	mov $0x01, %ecx												// Just one sector at time
+	mov $0x7E00, %di											// Load to 0x7E00
 	call ReadSectors											// Load the current dir sector into buffer
 2:
 	xor %ax, %ax												// Terminator?
@@ -102,30 +102,30 @@ LoadFile:
 	je 7f														// Equals?
 5:
 	add %ax, %di												// No...
-	cmp $0xD00, %di
+	cmp $0x8600, %di
 	jb 2b														// Go to next sector?
 6:
-	inc %bx														// Yes
+	inc %ebx													// Yes
 	jmp 1b
 7:
 	cmpb $0x01, (FolderFlag)									// FOUND! It's a folder?
 	jne 8f
 	
-	movw %es:2(%di), %ax										// Yes, let's return the folder start sector at BX
-	mov %ax, (ReturnValue)
+	movl %es:2(%di), %ax										// Yes, let's return the folder start sector at BX
+	movl %eax, (ReturnValue)
 	jmp 10f
 8:
-	mov %es:2(%di), %bx											// No, so let's load the file
-	mov %es:10(%di), %cx
-	add $2047, %cx
-	shr $11, %cx
-	mov $0x50, %ax
+	movl %es:2(%di), %ebx										// No, so let's load the file
+	movl %es:10(%di), %ecx
+	add $2047, %ecx
+	shr $11, %ecx
+	mov $0x7E0, %ax
 	mov %ax, %es
 	xor %di, %di
 	call ReadSectors
 10:
 	popa
-	movw (ReturnValue), %bx
+	movl (ReturnValue), %ebx
 	ret
 11:
 	mov $NotFoundMsg, %si
@@ -152,10 +152,10 @@ ReadSectors:
 	movb (BootDrive), %dl										// Restore the boot drive to DL
 	lea DAPBuffer, %si											// Load DS:SI with DAP buffer address
 	
-	movw %cx, 2(%si)											// Fill the DAP buffer
+	movl %ecx, 2(%si)											// Fill the DAP buffer
 	movw %di, 4(%si)
 	movw %es, 6(%si)
-	movw %bx, 8(%si)
+	movl %ebx, 8(%si)
 	
 	mov $0x4200, %ax											// (Try to) use the extended read sectors function
 	int $0x13

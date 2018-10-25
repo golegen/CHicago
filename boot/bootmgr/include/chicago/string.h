@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 15 of 2018, at 20:03 BRT
-// Last edited on October 23 of 2018, at 15:25 BRT
+// Last edited on October 24 of 2018, at 14:20 BRT
 
 #ifndef __CHICAGO_STRING_H__
 #define __CHICAGO_STRING_H__
@@ -17,5 +17,7 @@ UIntPtr StrGetLength(PChar str);
 Boolean StrCompare(PChar dest, PChar src);
 PChar StrCopy(PChar dest, PChar src);
 Void StrConcatenate(PChar dest, PChar src);
+PChar StrTokenize(PChar str, PChar delim);
+PChar StrDuplicate(PChar str);
 
 #endif		// __CHICAGO_STRING_H__
