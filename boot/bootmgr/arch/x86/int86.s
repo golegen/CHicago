@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 26 of 2018, at 18:36 BRT
-// Last edited on October 26 of 2018, at 19:14 BRT
+// Last edited on October 26 of 2018, at 19:39 BRT
 
 .code32
 
@@ -45,7 +45,7 @@ Int86:
 	mov %ax, %es
 	mov %ax, %ss
 	
-	popa								// Get the input from the 16-bits stack
+	popal								// Get the input from the 16-bits stack
 	sti									// Restore the interrupts
 	
 	push %ax							// We're going to use AX
@@ -57,7 +57,7 @@ Int86:
 3:	.byte 0x00
 	
 	cli									// Disable the interrupts
-	pusha								// Write the output to the 16-bits stack
+	pushal								// Write the output to the 16-bits stack
 	
 	mov %cr0, %eax
 	or $1, %eax							// Set the pmode bit in the CR0
