@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on October 22 of 2018, at 15:35 BRT
-# Last edited on October 25 of 2018, at 15:18 BRT
+# Last edited on October 25 of 2018, at 18:49 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -14,7 +14,7 @@ ifeq ($(ARCH),x86)
 		UNSUPPORTED_ARCH := true
 	endif
 	
-	ARCH_OBJECTS := start.s.o
+	ARCH_OBJECTS := start.s.o int86.s.o
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += io/console.c.o io/ide.c.o io/keyboard.c.o
 	ARCH_OBJECTS += sys/idt.c.o

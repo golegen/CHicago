@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 22 of 2018, at 13:36 BRT
-// Last edited on October 24 of 2018, at 18:47 BRT
+// Last edited on October 26 of 2018, at 18:47 BRT
 
 .code16
 
@@ -111,7 +111,7 @@ LoadFile:
 	cmpb $0x01, (FolderFlag)									// FOUND! It's a folder?
 	jne 8f
 	
-	movl %es:2(%di), %ax										// Yes, let's return the folder start sector at BX
+	movl %es:2(%di), %eax										// Yes, let's return the folder start sector at BX
 	movl %eax, (ReturnValue)
 	jmp 10f
 8:

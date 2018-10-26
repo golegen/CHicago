@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on October 25 of 2018, at 15:18 BRT
+# Last edited on October 26 of 2018, at 18:27 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -109,10 +109,7 @@ endif
 	$(NOECHO)cp $(BOOTMGR) build/iso/Boot/bootmgr.bin
 	$(NOECHO)cp $(KERNEL) build/iso/Boot/chkrnl.elf
 	$(NOECHO)cp test/build/test.bliss build/iso/test.bliss
-	$(NOECHO)echo 'default="Boot from CHicago Install CD"' > build/iso/Boot/bootmgr.conf
-	$(NOECHO)echo '' >> build/iso/Boot/bootmgr.conf
 	$(NOECHO)echo '"Boot from CHicago Install CD"=BootDevice,chicago' >> build/iso/Boot/bootmgr.conf
-	$(NOECHO)echo '"Boot from Hard Disk"=\Devices\HardDisk0,chainload' >> build/iso/Boot/bootmgr.conf
 ifeq ($(SUBARCH),)
 	$(NOECHO)xorriso -as mkisofs -R -c Boot/boot.cat -b Boot/bootsect.bin -U -no-emul-boot -o build/chicago-$(ARCH).iso build/iso 2>/dev/null
 else
