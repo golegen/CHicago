@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 22 of 2018, at 15:31 BRT
-// Last edited on October 26 of 2018, at 20:20 BRT
+// Last edited on October 26 of 2018, at 22:03 BRT
 
 .code16
 
@@ -39,6 +39,15 @@ LoaderEntry:
 	call LoaderMain						// Call the loader main function
 2:
 	jmp 2b								// Infinite loop
+
+.global ArchJumpInt
+ArchJumpInt:
+	mov 20(%esp), %esi					// Load the display data
+	mov 16(%esp), %edx					// Load the memory map count
+	mov 12(%esp), %ecx					// Load the memory map
+	mov 8(%esp), %ebx					// Load the boot device
+	mov 4(%esp), %eax					// Load the destination address
+	jmp *%eax							// Jump!
 
 IDTPointerLimit:
 	.word 0								// IDT limit storage

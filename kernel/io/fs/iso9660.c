@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 17 of 2018, at 16:10 BRT
-// Last edited on September 16 of 2018, at 16:59 BRT
+// Last edited on October 26 of 2018, at 22:56 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/file.h>
@@ -118,7 +118,7 @@ PChar Iso9660ReadDirectoryEntry(PFsNode dir, UIntPtr entry) {
 			if (idx == entry) {																						// It's an normal, visible, file/directory! Is the one that we want?
 				PChar ret = Null;																					// YES!
 				
-				if ((dent->flags & 0x02) != 0x02) {																	// Let's alloc space for the name (and for fixing it)
+				if (dent->name[dent->name_length - 2] == ';' && dent->name[dent->name_length - 1] == '1') {			// Let's alloc space for the name (and for fixing it)
 					ret = (PChar)MemAllocate(dent->name_length - 1);
 				} else {
 					ret = (PChar)MemAllocate(dent->name_length + 1);
@@ -129,8 +129,8 @@ PChar Iso9660ReadDirectoryEntry(PFsNode dir, UIntPtr entry) {
 					return Null;
 				}
 				
-				if ((dent->flags & 0x02) != 0x02) {																	// File?
-					StrCopyMemory(ret, (PVoid)(&dent->name), dent->name_length - 2);								// Yes, so it's going to end with ;1, let's remove those 2 unwanted chars
+				if (dent->name[dent->name_length - 2] == ';' && dent->name[dent->name_length - 1] == '1') {			// Fix the name?
+					StrCopyMemory(ret, (PVoid)(&dent->name), dent->name_length - 2);								// Yes
 					ret[dent->name_length - 2] = '\0';
 				} else {
 					StrCopyMemory(ret, (PVoid)(&dent->name), dent->name_length);									// No, so we only need to put the 0 (NUL) at the end of the string!
@@ -205,7 +205,7 @@ PFsNode Iso9660FindInDirectory(PFsNode dir, PChar name) {
 		if ((dent->flags & 0x01) != 0x01) {																			// Hidden file/directory?
 			PChar dename = Null;																					// It's an normal, visible, file/directory! Let's discover if it's the one that we want
 			
-			if ((dent->flags & 0x02) != 0x02) {																		// Let's do the same fix that we did in the ReadDirectoryEntry function
+			if (dent->name[dent->name_length - 2] == ';' && dent->name[dent->name_length - 1] == '1') {				// Let's do the same fix that we did in the ReadDirectoryEntry function
 				dename = (PChar)MemAllocate(dent->name_length - 1);
 			} else {
 				dename = (PChar)MemAllocate(dent->name_length + 1);
@@ -216,7 +216,7 @@ PFsNode Iso9660FindInDirectory(PFsNode dir, PChar name) {
 				return Null;
 			}
 			
-			if ((dent->flags & 0x02) != 0x02) {
+			if (dent->name[dent->name_length - 2] == ';' && dent->name[dent->name_length - 1] == '1') {
 				StrCopyMemory(dename, (PVoid)(&dent->name), dent->name_length - 2);
 				dename[dent->name_length - 2] = '\0';
 			} else {

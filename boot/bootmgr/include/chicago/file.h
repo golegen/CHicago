@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:18 BRT
-// Last edited on October 24 of 2018, at 14:43 BRT
+// Last edited on October 26 of 2018, at 22:17 BRT
 
 #ifndef __CHICAGO_FILE_H__
 #define __CHICAGO_FILE_H__
@@ -59,6 +59,7 @@ Boolean FsAddMountPoint(PChar path, PChar type, PFsNode root);
 Boolean FsRemoveMountPoint(PChar path);
 Boolean FsAddType(PChar name, Boolean (*probe)(PFsNode), PFsMountPoint (*mount)(PFsNode, PChar), Boolean (*umount)(PFsMountPoint));
 Boolean FsRemoveType(PChar name);
+Void FsMountBootDevice(Void);
 Void FsInit(Void);
 
 #endif		// __CHICAGO_FILE_H__

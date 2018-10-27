@@ -1,16 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on October 20 of 2018, at 15:34 BRT
-
-.section .multiboot
-
-.align 4																												// Multiboot header
-.long 0x1BADB002
-.long (1 << 0) | (1 << 1) | (1 << 2)
-.long -(0x1BADB002 + ((1 << 0) | (1 << 1) | (1 << 2)))
-.long 0, 0, 0, 0, 0, 0
-.long 800, 600, 32
+// Last edited on October 26 of 2018, at 22:49 BRT
 
 .section .text
 
@@ -18,6 +9,25 @@
 .global KernelEntry
 KernelEntry:
 	cli																													// Clear interrupts
+	
+	add $0xC0000000, %ebx																								// Fix the bootmgr data
+	add $0xC0000000, %ecx
+	
+	mov %ebx, (BootmgrBootDev - 0xC0000000)																				// Save the bootmgr data!
+	mov %ecx, (BootmgrMemMap - 0xC0000000)
+	mov %edx, (BootmgrMemMapCount - 0xC0000000)
+	
+	mov (%esi), %eax
+	mov %eax, (BootmgrDispWidth - 0xC0000000)
+	
+	mov 4(%esi), %eax
+	mov %eax, (BootmgrDispHeight - 0xC0000000)
+	
+	mov 8(%esi), %eax
+	mov %eax, (BootmgrDispBpp - 0xC0000000)
+	
+	mov 12(%esi), %eax
+	mov %eax, (BootmgrDispPhysAddr - 0xC0000000)
 	
 	movl $(KernelPageTable1 - 0xC0000000), %edi																			// Let's map the first 4MB
 	movl $0, %esi
@@ -84,11 +94,6 @@ KernelEntry:
 	invlpg 0
 	
 	movl $KernelStack, %esp																								// Setup kernel stack
-	
-	add $0xC0000000, %ebx																								// Fix the multiboot header pointer (we still need to fix the structure, but let's do it in C)
-	
-	mov %eax, (MultibootHeaderMagic)
-	mov %ebx, (MultibootHeaderPointer)
 	
 	call KernelMain																										// Go to main kernel function
 8:
@@ -474,12 +479,26 @@ ISRCommonStub:
 
 .section .data
 
-.global MultibootHeaderMagic
-.global MultibootHeaderPointer
-MultibootHeaderMagic:
-	.int 0
-MultibootHeaderPointer:
-	.int 0
+.global BootmgrBootDev
+BootmgrBootDev: .int 0
+
+.global BootmgrMemMap
+BootmgrMemMap: .int 0
+
+.global BootmgrMemMapCount
+BootmgrMemMapCount: .int 0
+
+.global BootmgrDispWidth
+BootmgrDispWidth: .int 0
+
+.global BootmgrDispHeight
+BootmgrDispHeight: .int 0
+
+.global BootmgrDispBpp
+BootmgrDispBpp: .int 0
+
+.global BootmgrDispPhysAddr
+BootmgrDispPhysAddr: .int 0
 
 .section .bss
 

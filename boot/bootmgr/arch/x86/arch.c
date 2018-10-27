@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 24 of 2018, at 13:58 BRT
-// Last edited on October 26 of 2018, at 21:30 BRT
+// Last edited on October 26 of 2018, at 22:14 BRT
 
 #include <chicago/arch/ide.h>
 #include <chicago/arch/idt.h>
@@ -21,7 +21,7 @@ Int32 ArchGetMemoryMap(Void) {
 	UInt32 curr = 0;
 	Int32 count = 0;
 	UInt32 stack = 0x500;
-	PSMAPEntry buffer = (PSMAPEntry)0x1000;
+	PSMAPEntry buffer = (PSMAPEntry)0x3000;
 	PInt86Registers regs = (PInt86Registers)stack;
 	
 	do {
@@ -117,6 +117,28 @@ Boolean ArchSetVesaMode(UInt16 width, UInt16 height, UInt8 bpp, PUInt32 data) {
 	}
 	
 	return True;
+}
+
+IntPtr ArchJump(UIntPtr dest, PChar bootdev) {
+	if (dest == 0 || bootdev == Null) {															// Valid dest and boot device?
+		return -1;																				// Nope
+	}
+	
+	Int32 mmapc = ArchGetMemoryMap();															// Get the memory map
+	
+	if (mmapc == -1) {
+		return -1;																				// Failed
+	}
+	
+	UInt32 data[4];
+	
+	if (!ArchSetVesaMode(800, 600, 32, data)) {													// Set the VESA mode to 800x600x32
+		return -2;																				// Failed
+	}
+	
+	ArchJumpInt(dest, bootdev, 0x3000, mmapc, data);											// Jump!
+	
+	return -1;																					// ... Returned?
 }
 
 Void ArchInit(Void) {

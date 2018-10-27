@@ -1,11 +1,11 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 31 of 2018, at 18:45 BRT
-// Last edited on September 14 of 2018, at 16:04 BRT
+// Last edited on October 26 of 2018, at 22:34 BRT
 
 #define __CHICAGO_PMM__
 
-#include <chicago/arch/multiboot.h>
+#include <chicago/arch/bootmgr.h>
 #include <chicago/arch/pmm.h>
 
 #include <chicago/debug.h>
@@ -27,11 +27,11 @@ UIntPtr MmBootAlloc(UIntPtr size, Boolean align) {
 }
 
 UIntPtr PMMCountMemory(Void) {
-	PMultibootMemoryMap mmap = (PMultibootMemoryMap)MultibootHeaderPointer->mmap_address;								// Here we're going to use the memory map for getting the memory size because mem_lower and mem_upper are obsolete
+	PBootmgrMemoryMap mmap = BootmgrMemMap;																				// Here we're going to use the memory map for getting the memory size
 	UInt32 mmapi = 0;
 	UInt32 memsize = 0;
 	
-	while ((UIntPtr)mmap < MultibootHeaderPointer->mmap_address + MultibootHeaderPointer->mmap_length) {
+	while (mmapi < BootmgrMemMapCount) {
 		if (mmap->type > 4) {																							// Valid?
 			mmap->type = 2;																								// Nope, so let's set as reserved
 		} else if ((mmapi > 0) && (mmap->base_low == 0)) {																// End (before expected)?
@@ -50,7 +50,7 @@ UIntPtr PMMCountMemory(Void) {
 }
 
 Void PMMInit(Void) {
-	MmMaxPages = PMMCountMemory() / MM_PAGE_SIZE;																		// Get memory size BASED ON THE MEMORY MAP ENTRIES (mem_lower and mem_upper are obsolete)
+	MmMaxPages = PMMCountMemory() / MM_PAGE_SIZE;																		// Get memory size based on the memory map entries
 	MmUsedPages = MmMaxPages;																							// We're going to free the avaliable pages later
 	MmPageStack = (PUIntPtr)MmBootAlloc(MmMaxPages * sizeof(UIntPtr), False);											// Alloc the page frame allocator stack using the initial boot allocator
 	MmPageReferences = (PUIntPtr)MmBootAlloc(MmMaxPages * sizeof(UIntPtr), False);										// Also alloc the page frame reference map
@@ -61,12 +61,12 @@ Void PMMInit(Void) {
 		KernelRealEnd += MM_PAGE_SIZE - (KernelRealEnd % MM_PAGE_SIZE);
 	}
 	
-	PMultibootMemoryMap mmap = (PMultibootMemoryMap)MultibootHeaderPointer->mmap_address;
+	PBootmgrMemoryMap mmap = BootmgrMemMap;
 	UIntPtr mmapi = 0;
 	UIntPtr kstart = ((UIntPtr)(&KernelStart)) - 0xC0000000;
 	UIntPtr kend = KernelRealEnd - 0xC0000000;
 	
-	while ((UIntPtr)mmap < MultibootHeaderPointer->mmap_address + MultibootHeaderPointer->mmap_length) {
+	while (mmapi < BootmgrMemMapCount) {
 		if (mmap->type > 4) {																							// Valid?
 			mmap->type = 2;																								// Nope, so let's set as reserved
 		} else if ((mmapi > 0) && (mmap->base_low == 0)) {																// End (before expected)?

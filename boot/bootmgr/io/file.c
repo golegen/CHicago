@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:28 BRT
-// Last edited on October 24 of 2018, at 14:54 BRT
+// Last edited on October 26 of 2018, at 22:16 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/console.h>
@@ -586,18 +586,8 @@ Void FsInitTypes(Void) {
 	Iso9660Init();																														// Add the Iso9660 to the fs type list
 }
 
-Void FsInit(Void) {
-	FsMountPointList = ListNew(True);																									// Let's init our mount point list
-	FsTypeList = ListNew(True);																											// And our filesystem type list
-	
-	if ((FsMountPointList == Null) || (FsTypeList == Null)) {																			// Failed?
-		ConWriteFormated("PANIC! Couldn't init mount point or filesystem type list\r\n");
-		return;
-	}
-	
-	FsInitTypes();																														// Init all the supported fs types
-	
-	PChar bdpath = FsJoinPath("\\Devices", FsGetBootDevice());																			// Let's mount the boot device
+Void FsMountBootDevice(Void) {
+	PChar bdpath = FsJoinPath("\\Devices", FsGetBootDevice());																			// Let's mount the boot device!
 	
 	if (bdpath == Null) {
 		ConWriteFormated("PANIC! Couldn't mount the boot device\r\n");
@@ -610,4 +600,17 @@ Void FsInit(Void) {
 	}
 	
 	MemFree((UIntPtr)bdpath);
+}
+
+Void FsInit(Void) {
+	FsMountPointList = ListNew(True);																									// Let's init our mount point list
+	FsTypeList = ListNew(True);																											// And our filesystem type list
+	
+	if ((FsMountPointList == Null) || (FsTypeList == Null)) {																			// Failed?
+		ConWriteFormated("PANIC! Couldn't init mount point or filesystem type list\r\n");
+		return;
+	}
+	
+	FsInitTypes();																														// Init all the supported fs types
+	FsMountBootDevice();																												// Mount the boot device
 }

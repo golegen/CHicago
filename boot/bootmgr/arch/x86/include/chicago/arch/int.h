@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 26 of 2018, at 18:45 BRT
-// Last edited on October 26 of 2018, at 20:40 BRT
+// Last edited on October 26 of 2018, at 21:57 BRT
 
 #ifndef __CHICAGO_ARCH_INT_H__
 #define __CHICAGO_ARCH_INT_H__
@@ -65,6 +65,7 @@ typedef struct {
 	UInt16 res2;
 } Packed VBEModeInfoBlock, *PVBEModeInfoBlock;
 
+Void ArchJumpInt(UInt32 dest, PChar bootdev, UInt32 mmap, UInt32 mmapc, PUInt32 data);
 Void Int86(UInt32 num, UInt32 stack);
 
 #endif		// __CHICAGO_ARCH_INT_H__

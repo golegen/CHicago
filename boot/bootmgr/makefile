@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on October 22 of 2018, at 15:35 BRT
-# Last edited on October 25 of 2018, at 18:49 BRT
+# Last edited on October 26 of 2018, at 22:05 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -13,6 +13,8 @@ ifeq ($(ARCH),x86)
 	ifneq ($(SUBARCH),)
 		UNSUPPORTED_ARCH := true
 	endif
+	
+	ARCH_CFLAGS := -DELF_MACHINE=3 -DELF_BASE=0xC0000000
 	
 	ARCH_OBJECTS := start.s.o int86.s.o
 	ARCH_OBJECTS += arch.c.o
