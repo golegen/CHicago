@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 26 of 2018, at 18:36 BRT
-// Last edited on October 26 of 2018, at 19:39 BRT
+// Last edited on October 26 of 2018, at 21:03 BRT
 
 .code32
 
@@ -12,14 +12,15 @@ Int86RealModeIDT: .word 0x3FF, 0, 0
 
 .global Int86
 Int86:
+	pusha								// Save the registers
 	mov %esp, (Int86SaveStack)			// Save the 32-bits stack
 	
 	push %eax							// We're going to use the EAX
-	mov 8(%esp), %eax					// Get the INT num
+	mov 40(%esp), %eax					// Get the INT num
 	movb %al, (Int86Num)				// Write it to the temp var
 	pop %eax
 	
-	mov 8(%esp), %esp					// Load the 16-bits stack
+	mov 40(%esp), %esp					// Load the 16-bits stack
 	
 	cli									// Disable the interrupts
 	
@@ -75,4 +76,5 @@ Int86:
 	lidt (Int86SaveIDT)					// Load the 32-bits IDT
 	
 	sti									// Re-enable the interrupts
+	popa								// Restore the registers
 	ret
