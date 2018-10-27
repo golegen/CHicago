@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:59 BRT
-// Last edited on October 19 of 2018, at 21:44 BRT
+// Last edited on October 27 of 2018, at 15:50 BRT
 
 #define __CHICAGO_PROCESS__
 
@@ -156,32 +156,11 @@ PThread PsCreateThread(UIntPtr entry) {
 		return Null;
 	}
 	
-	PsLockTaskSwitch(old);																														// LOCK!
-	
 	PThread th = PsCreateThreadInt(PsCurrentProcess, entry);																					// Use our PsCreateThreadInt function
 	
 	if (th == Null) {
-		PsUnlockTaskSwitch(old);																												// Failed...
-		return Null;
+		return Null;																															// Failed...
 	}
-	
-	PsFMapBack(old, th, MM_MAP_KDEF, {																											// Map the thread struct into the parent page directory (oldd), as we're currently in the kernel directory
-		PsFreeThreadPrivateData(th->priv);																										// Failed
-		MemFree((UIntPtr)th);
-		PsUnlockTaskSwitch(old);
-		
-		return Null;
-	});
-	
-	PsFMapBack(old, th->priv, MM_MAP_KDEF, {																									// Map the priv
-		PsFreeThreadPrivateData(th->priv);																										// Failed
-		MemFree((UIntPtr)th);
-		PsUnlockTaskSwitch(old);
-		
-		return Null;
-	});
-	
-	PsUnlockTaskSwitch(old);																													// Unlock
 	
 	th->thdata = (PThreadData)VirtAllocAddress(0, sizeof(ThreadData), VIRT_FLAGS_HIGHEST | VIRT_PROT_READ | VIRT_PROT_WRITE);					// Alloc the thread data struct
 	
@@ -200,18 +179,7 @@ PThread PsCreateThread(UIntPtr entry) {
 }
 
 PProcess PsCreateProcess(PChar name, UIntPtr entry) {
-	PsLockTaskSwitch(old);																														// Lock
-	
-	PProcess proc = PsCreateProcessInt(name, entry, 0);																							// Use our PsCreateProcessInt function
-	
-	if (proc == Null) {
-		PsUnlockTaskSwitch(old);																												// Failed
-		return Null;
-	}
-	
-	PsUnlockTaskSwitch(old);																													// Unlock
-	
-	return proc;
+	return PsCreateProcessInt(name, entry, 0);																									// Use our PsCreateProcessInt function
 }
 
 Void PsAddThread(PThread th) {
@@ -271,18 +239,13 @@ PThread PsGetThread(UIntPtr tid) {
 		return Null;
 	}
 	
-	PsLockTaskSwitch(old);																														// Lock
-	
 	ListForeach(PsCurrentProcess->threads, i) {																									// Let's search!
 		PThread th = (PThread)i->data;
 		
 		if (th->id == tid) {																													// Match?
-			PsUnlockTaskSwitch(old);																											// Yes :)
-			return th;
+			return th;																															// Yes :)
 		}
 	}
-	
-	PsUnlockTaskSwitch(old);																													// ...
 	
 	return Null;
 }
@@ -292,18 +255,13 @@ PProcess PsGetProcess(UIntPtr pid) {
 		return Null;
 	}
 	
-	PsLockTaskSwitch(old);																														// Lock
-	
 	ListForeach(PsProcessList, i) {																												// Let's search!
 		PProcess proc = (PProcess)i->data;
 		
 		if (proc->id == pid) {																													// Match?
-			PsUnlockTaskSwitch(old);																											// Yes :)
-			return proc;
+			return proc;																														// Yes :)
 		}
 	}
-	
-	PsUnlockTaskSwitch(old);																													// ...
 	
 	return Null;
 }
@@ -315,17 +273,11 @@ Void PsSleep(UIntPtr ms) {
 	} else if (PsCurrentThread == PsCurrentThread->next) {																						// We can add this thread to the sleep list?
 		TimerSleep(ms);																															// Nope, just TimerSleep
 		return;
-	}
-	
-	PsLockTaskSwitch(old);																														// Lock
-	
-	if (ms == 0) {																																// ms == 0?
-		PsUnlockTaskSwitch(old);																												// Yes, just PsSwitchTask
-		PsSwitchTask(Null);
+	} else if (ms == 0) {																														// ms == 0?
+		PsSwitchTask(Null);																														// Yes...
 		return;
 	}
 	
-	PsUnlockTaskSwitch(old);
 	TimerSleepProcess(ms);																														// Use this function
 }
 
@@ -336,11 +288,8 @@ UIntPtr PsWaitThread(PThread th) {
 		return 1;																																// Nope
 	}
 	
-	PsLockTaskSwitch(old);																														// Lock
-	
 	if (!ListAdd(PsWaittList, PsCurrentThread)) {																								// Try to add this thread to the wait list
-		PsUnlockTaskSwitch(old);																												// Failed, but we're not going to give up!
-		return PsWaitThread(th);
+		return PsWaitThread(th);																												// Failed, but let's keep on trying!
 	}
 	
 	PsCurrentThread->waitt = th;
@@ -359,11 +308,8 @@ UIntPtr PsWaitProcess(PProcess proc) {
 		return 1;																																// Nope
 	}
 	
-	PsLockTaskSwitch(old);																														// Lock
-	
 	if (!ListAdd(PsWaitpList, PsCurrentThread)) {																								// Try to add this thread to the wait list
-		PsUnlockTaskSwitch(old);																												// Failed, but we're not going to give up
-		return PsWaitProcess(proc);
+		return PsWaitProcess(proc);																												// Failed, but let's keep on trying!
 	}
 	
 	PsCurrentThread->waitp = proc;
@@ -497,6 +443,10 @@ Void PsExitProcess(UIntPtr ret) {
 	
 	PsLockTaskSwitch(old);																														// Lock
 	
+	if (MmGetCurrentDirectory() != MmKernelDirectory) {																							// Switch into the kernel directory
+		MmSwitchDirectory(MmKernelDirectory);
+	}
+	
 	ListForeach(PsCurrentProcess->files, i) {
 		PProcessFile pf = (PProcessFile)i->data;
 		FsCloseFile(pf->file);
@@ -571,13 +521,15 @@ Void PsExitProcess(UIntPtr ret) {
 		}
 	}
 	
-	MmFreeDirectory(PsCurrentProcess->dir);																										// Free our page directory
+	if (PsCurrentProcess->dir != MmKernelDirectory) {																							// Kernel directory?
+		MmFreeDirectory(PsCurrentProcess->dir);																									// No, so free it!
+	}
 	ListFree(PsCurrentProcess->files);
 	ListFree(PsCurrentProcess->threads);																										// Free our thread list
 	MemFree((UIntPtr)PsCurrentProcess->name);																									// Free the name
 	MemFree((UIntPtr)PsCurrentProcess);																											// And the current process itself
 	
-	PsTaskSwitchEnabled = olde;																													// DON'T SWITCH BACK TO THE OLD PAGE DIRECTORY!
+	PsUnlockTaskSwitch(old);																													// Unlock
 	PsSwitchTask(Null);																															// Switch to the next process
 	
 	while (1) ;

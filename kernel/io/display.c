@@ -1,10 +1,11 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 21:12 BRT
-// Last edited on October 20 of 2018, at 13:00 BRT
+// Last edited on October 27 of 2018, at 15:49 BRT
 
 #define __CHICAGO_DISPLAY__
 
+#include <chicago/alloc.h>
 #include <chicago/debug.h>
 #include <chicago/display.h>
 #include <chicago/mm.h>
@@ -592,19 +593,22 @@ Void DispDrawProgessBar(Void) {
 	DispRefresh();
 }
 
-Void DispPreInit(UIntPtr w, UIntPtr h, UIntPtr bpp) {
+Void DispInit(UIntPtr w, UIntPtr h, UIntPtr bpp, UIntPtr fb) {
 	if (bpp != 4) {																												// For now, we only support 32 bpp
 		DbgWriteFormated("PANIC! Couldn't init the display\r\n");
 		while (1) ;
 	}
-
-	DispFrameBuffer = MmBootAlloc(w * h * bpp, True);																			// Alloc some virt space for the frame buffer
-	DispBackBuffer = MmBootAlloc(w * h * bpp, True);
+	
+	DispFrameBuffer = MemAllocate(w * h * bpp);																					// Alloc some virt space for the frame buffer
+	DispBackBuffer = MemAllocate(w * h * bpp);
 	DispWidth = w;
 	DispHeight = h;
-}
-
-Void DispInit(UIntPtr fb) {
+	
+	if (DispFrameBuffer == 0 || DispBackBuffer == 0) {
+		DbgWriteFormated("PANIC! Couldn't init the display\r\n");																// Failed...
+		while (1) ;
+	}
+	
 	for (UIntPtr i = 0; i < DispWidth * DispHeight * 4; i += MM_PAGE_SIZE) {													// Let's map the frame buffer to the virtual memory!
 		if (!MmMap(DispFrameBuffer + i, fb + i, MM_MAP_KDEF)) {
 			DbgWriteFormated("PANIC! Couldn't init the display\r\n");

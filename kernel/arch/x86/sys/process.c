@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 28 of 2018, at 01:09 BRT
-// Last edited on October 19 of 2018, at 21:46 BRT
+// Last edited on October 27 of 2018, at 15:30 BRT
 
 #define __CHICAGO_ARCH_PROCESS__
 
@@ -156,20 +156,10 @@ Void PsSwitchTask(PVoid priv) {
 		return;																										// Nope
 	}
 	
-	Boolean olde = PsTaskSwitchEnabled;
-	
-	PsTaskSwitchEnabled = False;																					// Disable task switch
-	
-	if (MmGetCurrentDirectory() != MmKernelDirectory) {																// Need to switch to the kernel directory?
-		MmSwitchDirectory(MmKernelDirectory);																		// Yes
-	}
-	
 	if (priv != Null) {																								// Timer?
-		PsTaskSwitchEnabled = olde;																					// Yes
-		PsSwitchTaskTimer((PRegisters)priv);
+		PsSwitchTaskTimer((PRegisters)priv);																		// Yes!
 	} else {
-		PsTaskSwitchEnabled = olde;																					// Nope, so let's use int num 0x3E
-		Asm Volatile("int $0x3E");
+		Asm Volatile("int $0x3E");																					// Nope, so let's use int 0x3E
 	}
 }
 

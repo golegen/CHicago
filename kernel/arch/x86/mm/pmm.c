@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 31 of 2018, at 18:45 BRT
-// Last edited on October 26 of 2018, at 22:34 BRT
+// Last edited on October 27 of 2018, at 15:54 BRT
 
 #define __CHICAGO_PMM__
 
@@ -11,7 +11,7 @@
 #include <chicago/debug.h>
 #include <chicago/mm.h>
 
-UIntPtr MmBootAllocPointer = 0xC0400000;
+UIntPtr MmBootAllocPointer = (UIntPtr)&KernelEnd;
 UIntPtr KernelRealEnd = 0;
 
 UIntPtr MmBootAlloc(UIntPtr size, Boolean align) {

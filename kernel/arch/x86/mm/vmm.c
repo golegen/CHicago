@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 19:19 BRT
-// Last edited on September 17 of 2018, at 19:22 BRT
+// Last edited on October 27 of 2018, at 15:52 BRT
 
 #include <chicago/arch/pmm.h>
 #include <chicago/arch/vmm.h>
@@ -192,7 +192,7 @@ Boolean MmMap(UIntPtr virt, UIntPtr phys, UInt32 flags) {
 			MmSetPDE(MmCurrentDirectory, virt, block, 0x07);																// No, so put the pde as present, writeable and set the user bit
 		}
 		
-		Asm Volatile("invlpg (%0)" :: "b"(((UIntPtr)(&MmGetPTE(MmCurrentTables, virt))) & 0xFFFFF000) : "memory");			// Map it (already mapped but we need to update the pde)
+		Asm Volatile("invlpg (%0)" :: "b"(((UIntPtr)(&MmGetPTE(MmCurrentTables, virt))) & 0xFFFFF000) : "memory");			// Update the TLB
 		StrSetMemory((PVoid)(((UIntPtr)(&MmGetPTE(MmCurrentTables, virt))) & 0xFFFFF000), 0, 4096);							// Clear the page table
 	}
 	

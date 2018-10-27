@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on October 26 of 2018, at 22:43 BRT
+# Last edited on October 27 of 2018, at 15:46 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -16,8 +16,7 @@ ifeq ($(ARCH),x86)
 	
 	ARCH_OBJECTS := start.s.o
 	ARCH_OBJECTS += arch.c.o
-	ARCH_OBJECTS += io/bootmgrdisp.c.o io/debug.c.o io/ide.c.o io/keyboard.c.o
-	ARCH_OBJECTS += io/mouse.c.o
+	ARCH_OBJECTS += io/debug.c.o io/ide.c.o io/keyboard.c.o io/mouse.c.o
 	ARCH_OBJECTS += sys/gdt.c.o sys/idt.c.o sys/pit.c.o
 	ARCH_OBJECTS += sys/process.c.o
 	ARCH_OBJECTS += mm/pmm.c.o mm/vmm.c.o
@@ -32,7 +31,8 @@ endif
 
 OBJECTS := main.c.o
 OBJECTS += ds/list.c.o ds/stack.c.o
-OBJECTS += io/console.c.o io/device.c.o io/display.c.o io/file.c.o
+OBJECTS += io/console.c.o io/device.c.o io/debug.c.o io/display.c.o
+OBJECTS += io/file.c.o
 OBJECTS += io/dev/framebuffer.c.o io/dev/rawkeyboard.c.o io/dev/rawmouse.c.o io/dev/null.c.o
 OBJECTS += io/dev/zero.c.o
 OBJECTS += io/fs/devfs.c.o io/fs/iso9660.c.o

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on October 26 of 2018, at 22:55 BRT
+// Last edited on October 27 of 2018, at 15:51 BRT
 
 #include <chicago/arch.h>
 #include <chicago/console.h>
@@ -21,11 +21,11 @@ Void KernelMain(Void) {
 	ArchInitFPU();																											// Init the architecture-dependent FPU (floating point unit)
 	DbgWriteFormated("[Kernel] Arch FPU initialized\r\n");
 	
-	ArchPreInitDisplay();																									// Pre init the display
-	DbgWriteFormated("[Kernel] Arch display pre-initialized\r\n");
-	
-	ArchInitPMM();																											// Init the physical memory manager (free all the... free? memory regions)
+	ArchInitPMM();																											// Init the physical memory manager
 	DbgWriteFormated("[Kernel] Arch PMM initialized\r\n");
+	
+	ArchInitVMM();																											// Init the virtual memory manager
+	DbgWriteFormated("[Kernel] Arch VMM initialized\r\n");
 	
 	ArchInitDisplay();																										// Init the display
 	DbgWriteFormated("[Kernel] Arch display initialized\r\n");

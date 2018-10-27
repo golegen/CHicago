@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on October 26 of 2018, at 22:49 BRT
+// Last edited on October 27 of 2018, at 15:53 BRT
 
 .section .text
 
@@ -59,26 +59,10 @@ KernelEntry:
 	
 	loop 3b																												// Keep on looping (if we need)
 4:
-	movl $(KernelPageTable3 - 0xC0000000), %edi
-	movl $0x800000, %esi
-5:
-	cmpl $0xC00000, %esi																								// ... And more 4MB
-	jge 6f
-	
-	movl %esi, %edx																										// Set the present and rw bit
-	orl $0x03, %edx
-	movl %edx, (%edi)
-	
-	addl $4096, %esi																									// Size of page is 4096 bytes
-	addl $4, %edi																										// And the size of page table entries is 4 bytes
-	
-	loop 5b																												// Keep on looping (if we need)
-6:
 	movl $(KernelPageTable1 - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 0 * 4								// Let's put the tables in the page directory
 	movl $(KernelPageTable1 - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 768 * 4
 	movl $(KernelPageTable2 - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 769 * 4
-	movl $(KernelPageTable3 - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 770 * 4
-	movl $(MmKernelDirectoryInt - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 1023 * 4
+	movl $(MmKernelDirectoryInt - 0xC0000000 + 0x03), MmKernelDirectoryInt - 0xC0000000 + 1023 * 4						// Recursive directory entry
 	
 	movl $(MmKernelDirectoryInt - 0xC0000000), %ecx																		// Let's load our page directory
 	movl %ecx, %cr3
@@ -509,8 +493,6 @@ MmKernelDirectoryInt:
 KernelPageTable1:
 .skip 4096
 KernelPageTable2:
-.skip 4096
-KernelPageTable3:
 .skip 4096
 
 .align 16

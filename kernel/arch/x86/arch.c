@@ -1,10 +1,9 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on October 26 of 2018, at 22:38 BRT
+// Last edited on October 27 of 2018, at 15:51 BRT
 
 #include <chicago/arch/bootmgr.h>
-#include <chicago/arch/bootmgrdisp.h>
 #include <chicago/arch/gdt.h>
 #include <chicago/arch/ide.h>
 #include <chicago/arch/idt.h>
@@ -17,7 +16,9 @@
 
 #include <chicago/debug.h>
 #include <chicago/device.h>
+#include <chicago/display.h>
 #include <chicago/heap.h>
+#include <chicago/mm.h>
 #include <chicago/string.h>
 
 Void ArchInitFPU(Void) {
@@ -53,16 +54,31 @@ Void ArchInitPMM(Void) {
 	PMMInit();																											// Init the PMM
 }
 
+Void ArchInitVMM(Void) {
+	for (UIntPtr i = 0xC0800000; i < 0xE0800000; i += 0x400000) {														// First, let's pre alloc the page tables for our heap
+		if ((MmGetPDE(MmCurrentDirectory, i) & 0x01) != 0x01) {															// We need to alloc this one?
+			UIntPtr phys = MmReferencePage(0);																			// Yes, try to alloc a new page
+			
+			if (phys == 0) {
+				DbgWriteFormated("PANIC! Couldn't init the PMM\r\n");													// Failed...
+				while (1) ;
+			}
+			
+			MmSetPDE(MmCurrentDirectory, i, phys, 0x03);																// Set the physical address of this PDE
+			Asm Volatile("invlpg (%0)" :: "b"(((UIntPtr)(&MmGetPTE(MmCurrentTables, i))) & 0xFFFFF000) : "memory");		// Update the TLB
+			StrSetMemory((PVoid)(((UIntPtr)(&MmGetPTE(MmCurrentTables, i))) & 0xFFFFF000), 0, 4096);					// Clear the page table
+		}
+	}
+	
+	HeapInit(0xC0800000, 0xE0800000);																					// 512 MiB heap, starts at 0xC0800000 and ends at 0xE0800000
+}
+
 Void ArchInitDebug(Void) {
 	SerialInit(COM1_PORT);																								// Init debugging (using COM1 port)
 }
 
 Void ArchInitDisplay(Void) {
-	BootmgrDisplayInit();																								// Finish the display initialization
-}
-
-Void ArchPreInitDisplay(Void) {
-	BootmgrDisplayPreInit();																							// Pre initialize the display
+	DispInit(BootmgrDispWidth, BootmgrDispHeight, BootmgrDispBpp / 8, BootmgrDispPhysAddr);								// Init the display
 }
 
 UIntPtr ArchGetSeconds(Void) {
@@ -87,9 +103,6 @@ Void ArchInit(Void) {
 	
 	PITInit();																											// Init the PIT
 	DbgWriteFormated("[x86] PIT initialized\r\n");
-	
-	HeapInit(KernelRealEnd, 0xFFC00000);																				// Init the kernel heap (start after all the internal kernel structs and end at the start of the temp addresses)
-	DbgWriteFormated("[x86] VMM initialized\r\n");
 	
 	FsInitDeviceList();																									// Init the x86-only devices (and the device list)
 	IDEInit();

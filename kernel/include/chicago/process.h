@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:42 BRT
-// Last edited on October 19 of 2018, at 21:45 BRT
+// Last edited on October 27 of 2018, at 15:47 BRT
 
 #ifndef __CHICAGO_PROCESS_H__
 #define __CHICAGO_PROCESS_H__
@@ -12,10 +12,8 @@
 
 #define PsCurrentProcess (PsCurrentThread->parent)
 
-#define PsTMapBack(i, v, f, b) if (i ## d != MmKernelDirectory) { UIntPtr phys = MmGetPhys((UIntPtr)v); MmSwitchDirectory(i ## d); if (MmMap((UIntPtr)v, phys, f)) { b } MmSwitchDirectory(MmKernelDirectory); }
-#define PsFMapBack(i, v, f, b) if (i ## d != MmKernelDirectory) { UIntPtr phys = MmGetPhys((UIntPtr)v); MmSwitchDirectory(i ## d); if (!MmMap((UIntPtr)v, phys, f)) { b } MmSwitchDirectory(MmKernelDirectory); }
-#define PsLockTaskSwitch(i) Boolean i ## e = PsTaskSwitchEnabled; UIntPtr i ## d = MmGetCurrentDirectory(); if (i ## e) PsTaskSwitchEnabled = False; if (i ## d != MmKernelDirectory) MmSwitchDirectory(MmKernelDirectory)
-#define PsUnlockTaskSwitch(i) if (i ## e) PsTaskSwitchEnabled = True; if (i ## d != MmKernelDirectory) MmSwitchDirectory(i ## d)
+#define PsLockTaskSwitch(i) Boolean i ## e = PsTaskSwitchEnabled; if (i ## e) PsTaskSwitchEnabled = False;
+#define PsUnlockTaskSwitch(i) if (i ## e) PsTaskSwitchEnabled = True;
 
 #define PS_TIMESLICE 20
 

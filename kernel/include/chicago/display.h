@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 21:17 BRT
-// Last edited on October 20 of 2018, at 13:00 BRT
+// Last edited on October 27 of 2018, at 15:33 BRT
 
 #ifndef __CHICAGO_DISPLAY_H__
 #define __CHICAGO_DISPLAY_H__
@@ -57,7 +57,6 @@ Void DispWriteFormated(UIntPtr x, UIntPtr y, UIntPtr bg, UIntPtr fg, Const PChar
 Void DispIncrementProgessBar(Void);
 Void DispFillProgressBar(Void);
 Void DispDrawProgessBar(Void);
-Void DispPreInit(UIntPtr w, UIntPtr h, UIntPtr bpp);
-Void DispInit(UIntPtr fb);
+Void DispInit(UIntPtr w, UIntPtr h, UIntPtr bpp, UIntPtr fb);
 
 #endif		// __CHICAGO_DISPLAY_H__
