@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on October 21 of 2018, at 18:37 BRT
+# Last edited on October 26 of 2018, at 21:40 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -26,22 +26,6 @@ ifeq ($(ARCH),x86)
 	OBJCOPY_ARCH := i386
 	
 	LINKER_SCRIPT := link.ld
-else ifeq ($(ARCH),arm)
-	PREFIX ?= arm-none-eabi-
-	SUBARCH ?= vexpress
-	
-	ARCH_OBJECTS := start.s.o
-	ARCH_OBJECTS += arch.c.o
-	ARCH_OBJECTS += io/debug.c.o
-	
-	ifeq ($(SUBARCH),vexpress)
-		ARCH_AFLAGS	:= -march=armv7-a -mcpu=cortex-a15 -mfloat-abi=hard -mfpu=neon
-		ARCH_CFLAGS := -march=armv7-a -mtune=cortex-a15 -mfloat-abi=hard -mfpu=neon
-	else
-		UNSUPPORTED_ARCH := true
-	endif
-	
-	LINKER_SCRIPT := subarch/$(SUBARCH)/link.ld
 else
 	UNSUPPORTED_ARCH := true
 endif
