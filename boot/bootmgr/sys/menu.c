@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 25 of 2018, at 14:29 BRT
-// Last edited on October 26 of 2018, at 22:24 BRT
+// Last edited on October 27 of 2018, at 12:55 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/arch.h>
@@ -194,21 +194,31 @@ l:	while (1) {
 			goto l;																							// And go back to the menu loop
 		}
 		
-		FsUmountFile("\\");																					// Umount the root filesystem
-		
-		if (!FsMountFile("\\", opt->device, Null)) {														// Mount the new one!
-			ConClearScreen();																				// Failed...
-			ConWriteFormated("PANIC! Couldn't mount the new root device\r\n");
-			while (1) ;
+		if (MenuCompareStrings(root->name, FsGetBootDevice())) {											// Root device == Boot device?
+			FsCloseFile(root);																				// Yes, so we don't need to mount it!
+			rootdev = True;
+		} else if (!FsMountFile("\\RootDevice", opt->device, Null)) {										// Mount the root device!
+			FsCloseFile(root);																				// Failed...
+			MenuShowMessage("Couldn't mount the root device, please try again", Null);
+			goto l;
 		}
 	}
 	
 	if (MenuCompareStrings(opt->boot_type, "chicago")) {
-		PFsNode file = FsOpenFile("\\Boot\\chkrnl.elf");													// Open the kernel file
+		PFsNode file = Null;																				// Open the kernel file
+		
+		if (rootdev) {
+			file = FsOpenFile("\\Boot\\chkrnl.elf");
+		} else {
+			file = FsOpenFile("\\RootDevice\\Boot\\chkrnl.elf");
+		}
 		
 		if (file == Null) {
-			FsMountBootDevice();																			// Failed...
-			FsCloseFile(root);
+			if (!rootdev) {																					// Failed...
+				FsUmountFile("\\RootDevice");
+				FsCloseFile(root);
+			}
+			
 			MenuShowMessage("Couldn't find the CHicago kernel (Boot\\chkrnl.elf)", Null);
 			goto l;
 		}
@@ -222,8 +232,12 @@ l:	while (1) {
 		}
 		
 		if (!FsReadFile(file, 0, file->length, buffer)) {													// Read the file!
-			FsMountBootDevice();																			// Failed...
-			FsCloseFile(root);
+			if (!rootdev) {																					// Failed...
+				FsUmountFile("\\RootDevice");
+				FsCloseFile(root);
+			}
+			
+			MemFree((UIntPtr)buffer);
 			MenuShowMessage("Couldn't read the CHicago kernel (Boot\\chkrnl.elf)", Null);
 			goto l;
 		}
@@ -233,27 +247,39 @@ l:	while (1) {
 		PELFHeader hdr = (PELFHeader)buffer;
 		
 		if (!StrCompareMemory(hdr->ident, "\177ELF", 4)) {													// ELF file?
-			FsMountBootDevice();																			// No...
+			if (!rootdev) {																					// Failed...
+				FsUmountFile("\\RootDevice");
+				FsCloseFile(root);
+			}
+			
 			MemFree((UIntPtr)buffer);
-			FsCloseFile(root);
 			MenuShowMessage("Invalid CHicago kernel (Boot\\chkrnl.elf)", Null);
 			goto l;
 		} else if (hdr->type != 2) {																		// Executable?
-			FsMountBootDevice();																			// No...
+			if (!rootdev) {																					// Failed...
+				FsUmountFile("\\RootDevice");
+				FsCloseFile(root);
+			}
+			
 			MemFree((UIntPtr)buffer);
-			FsCloseFile(root);
 			MenuShowMessage("Invalid CHicago kernel (Boot\\chkrnl.elf)", Null);
 			goto l;
 		} else if (hdr->machine != ELF_MACHINE) {															// Valid machine?
-			FsMountBootDevice();																			// No...
+			if (!rootdev) {																					// Failed...
+				FsUmountFile("\\RootDevice");
+				FsCloseFile(root);
+			}
+			
 			MemFree((UIntPtr)buffer);
-			FsCloseFile(root);
 			MenuShowMessage("Invalid CHicago kernel (Boot\\chkrnl.elf)", Null);
 			goto l;
 		} else if (hdr->version == 0) {																		// Valid version?
-			FsMountBootDevice();																			// No...
+			if (!rootdev) {																					// Failed...
+				FsUmountFile("\\RootDevice");
+				FsCloseFile(root);
+			}
+			
 			MemFree((UIntPtr)buffer);
-			FsCloseFile(root);
 			MenuShowMessage("Invalid CHicago kernel (Boot\\chkrnl.elf)", Null);
 			goto l;
 		}
@@ -266,21 +292,29 @@ l:	while (1) {
 		}
 		
 		MemFree((UIntPtr)buffer);																			// Free the buffer
-		FsCloseFile(root);																					// Close the root file
 		
 		IntPtr err = ArchJump(hdr->entry - ELF_BASE, rootdev ? FsGetBootDevice() : root->name);				// Try to jump!
 		
 		if (err == -1) {
-			FsMountBootDevice();																			// Failed (-1)
+			if (!rootdev) {																					// Failed (-1)
+				FsUmountFile("\\RootDevice");
+				FsCloseFile(root);
+			}
+			
 			MenuShowMessage("Couldn't jump to the kernel, please try again", Null);							// Show the error message
 			goto l;
 		} else if (err == -2) {
-			FsMountBootDevice();																			// Failed (-2)
+			if (!rootdev) {																					// Failed (-2)
+				FsUmountFile("\\RootDevice");
+				FsCloseFile(root);
+			}
+			
 			MenuShowMessage("Your graphic card doesn't support 800x600x32 mode", Null);
 			goto l;
 		}
 	} else {
 		MenuShowMessage("Invalid boot type", opt->boot_type);												// Invalid boot type, show error message
+		FsCloseFile(root);																					// Close the "root file"
 		goto l;																								// And go back to the menu loop
 	}
 }

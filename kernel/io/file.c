@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:28 BRT
-// Last edited on October 12 of 2018, at 19:06 BRT
+// Last edited on October 27 of 2018, at 12:58 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -506,7 +506,12 @@ PFsType FsGetType(PChar type) {
 Boolean FsAddMountPoint(PChar path, PChar type, PFsNode root) {
 	if ((FsMountPointList == Null) || (path == Null) || (type == Null) || (root == Null)) {												// Null pointer checks
 		return False;
-	} else if (FsGetMountPoint(path, Null) != Null) {																					// This mount point doesn't exists... right?
+	}
+	
+	PChar rpath = Null;
+	FsGetMountPoint(path, &rpath);
+	
+	if (rpath != Null && !StrCompare(rpath, "")) {																						// This mount point doesn't exist right?
 		return False;																													// ...
 	}
 	

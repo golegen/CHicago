@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on October 26 of 2018, at 21:40 BRT
+# Last edited on October 27 of 2018, at 12:57 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -9,9 +9,6 @@ DEBUG ?= false
 
 ifeq ($(ARCH),x86)
 	PREFIX ?= i686-elf-
-else ifeq ($(ARCH),arm)
-	PREFIX ?= arm-none-eabi-
-	SUBARCH ?= vexpress
 else
 	UNSUPPORTED_ARCH := true
 endif
