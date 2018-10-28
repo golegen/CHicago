@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 28 of 2018, at 01:09 BRT
-// Last edited on October 27 of 2018, at 15:30 BRT
+// Last edited on October 27 of 2018, at 22:29 BRT
 
 #define __CHICAGO_ARCH_PROCESS__
 
@@ -14,6 +14,7 @@
 #include <chicago/arch.h>
 #include <chicago/debug.h>
 #include <chicago/mm.h>
+#include <chicago/panic.h>
 #include <chicago/process.h>
 #include <chicago/string.h>
 #include <chicago/timer.h>
@@ -166,7 +167,7 @@ Void PsSwitchTask(PVoid priv) {
 Void PsInitInt(Void) {
 	if ((PsCurrentThread == Null) || (PsCurrentProcess == Null)) {													// Failed to create the initial thread and process?
 		DbgWriteFormated("PANIC! Couldn't init tasking\r\n");														// Yes :(
-		while (1) ;
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
 	IDTRegisterInterruptHandler(0x3E, PsSwitchTaskForce);															// Register the force task switch handler

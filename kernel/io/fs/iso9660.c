@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 17 of 2018, at 16:10 BRT
-// Last edited on October 26 of 2018, at 22:56 BRT
+// Last edited on October 27 of 2018, at 19:51 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/file.h>
@@ -17,6 +17,8 @@ Boolean Iso9660ReadFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
 		return False;
 	} else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {														// We're trying to read raw bytes from an directory?
 		return False;																								// Why?
+	} else if (off >= file->length) {																				// For byte per byte read
+		return False;
 	}
 	
 	PFsNode dev = file->priv;																						// Let's get our base device (it's inside of the priv)

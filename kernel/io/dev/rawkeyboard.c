@@ -1,15 +1,16 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 12 of 2018, at 21:08 BRT
-// Last edited on October 19 of 2018, at 21:40 BRT
+// Last edited on October 27 of 2018, at 22:25 BRT
 
 #include <chicago/debug.h>
 #include <chicago/device.h>
+#include <chicago/panic.h>
 #include <chicago/process.h>
-#include <chicago/stack.h>
+#include <chicago/queue.h>
 
-Stack RawKeyboardDeviceStack;
-Lock RawKeyboardDeviceStackLock = False;
+Queue RawKeyboardDeviceQueue;
+Lock RawKeyboardDeviceQueueLock = False;
 
 static Boolean RawKeyboardDeviceReadInt(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	(Void)dev; (Void)off;
@@ -18,9 +19,14 @@ static Boolean RawKeyboardDeviceReadInt(PDevice dev, UIntPtr off, UIntPtr len, P
 }
 
 Void RawKeyboardDeviceWrite(UInt8 data) {
-	PsLock(&RawKeyboardDeviceStackLock);													// Lock
-	StackPush(&RawKeyboardDeviceStack, (PVoid)data);										// Push to the stack
-	PsUnlock(&RawKeyboardDeviceStackLock);													// Unlock!
+	PsLock(&RawKeyboardDeviceQueueLock);													// Lock
+	
+	while (RawKeyboardDeviceQueue.length >= 1024) {											// Don't let the queue grow too much
+		QueueRemove(&RawKeyboardDeviceQueue);
+	}
+	
+	QueueAdd(&RawKeyboardDeviceQueue, (PVoid)data);											// Add to the queue
+	PsUnlock(&RawKeyboardDeviceQueueLock);													// Unlock!
 }
 
 Void RawKeyboardDeviceRead(UIntPtr len, PUInt8 buf) {
@@ -28,28 +34,28 @@ Void RawKeyboardDeviceRead(UIntPtr len, PUInt8 buf) {
 		return;
 	}
 	
-	while (RawKeyboardDeviceStack.length < len) {											// Let's fill the stack with the chars that we need
+	while (RawKeyboardDeviceQueue.length < len) {											// Let's fill the stack with the chars that we need
 		PsSwitchTask(Null);
 	}
 	
-	PsLock(&RawKeyboardDeviceStackLock);													// Lock
+	PsLock(&RawKeyboardDeviceQueueLock);													// Lock
 	
-	for (UIntPtr i = len; i > 0; i--) {														// Fill the buffer!
-		buf[i - 1] = (UInt8)StackPop(&RawKeyboardDeviceStack);
+	for (UIntPtr i = 0; i < len; i++) {														// Fill the buffer!
+		buf[i] = (UInt8)QueueRemove(&RawKeyboardDeviceQueue);
 	}
 	
-	PsUnlock(&RawKeyboardDeviceStackLock);													// Unlock!
+	PsUnlock(&RawKeyboardDeviceQueueLock);													// Unlock!
 }
 
 Void RawKeyboardDeviceInit(Void) {
-	RawKeyboardDeviceStack.head = Null;														// Init the keyboard stack
-	RawKeyboardDeviceStack.tail = Null;
-	RawKeyboardDeviceStack.length = 0;
-	RawKeyboardDeviceStack.free = False;
-	RawKeyboardDeviceStack.user = False;
+	RawKeyboardDeviceQueue.head = Null;														// Init the keyboard stack
+	RawKeyboardDeviceQueue.tail = Null;
+	RawKeyboardDeviceQueue.length = 0;
+	RawKeyboardDeviceQueue.free = False;
+	RawKeyboardDeviceQueue.user = False;
 	
 	if (!FsAddDevice("RawKeyboard", Null, RawKeyboardDeviceReadInt, Null, Null)) {			// Try to add the keyboard device
 		DbgWriteFormated("PANIC! Failed to add the RawKeyboard device\r\n");				// Failed...
-		while (1) ;
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 }

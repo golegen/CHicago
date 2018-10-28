@@ -1,12 +1,13 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:35 BRT
-// Last edited on October 19 of 2018, at 16:49 BRT
+// Last edited on October 27 of 2018, at 22:21 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
 #include <chicago/device.h>
 #include <chicago/list.h>
+#include <chicago/panic.h>
 #include <chicago/string.h>
 
 PList FsDeviceList = Null;
@@ -176,7 +177,7 @@ Void FsInitDeviceList(Void) {
 	
 	if (FsDeviceList == Null) {														// Failed?
 		DbgWriteFormated("PANIC! Couldn't init the device list\r\n");				// Yes, so halt
-		while (1) ;
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 }
 

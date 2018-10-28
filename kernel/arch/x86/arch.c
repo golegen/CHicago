@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on October 27 of 2018, at 15:51 BRT
+// Last edited on October 27 of 2018, at 22:29 BRT
 
 #include <chicago/arch/bootmgr.h>
 #include <chicago/arch/gdt.h>
@@ -19,6 +19,7 @@
 #include <chicago/display.h>
 #include <chicago/heap.h>
 #include <chicago/mm.h>
+#include <chicago/panic.h>
 #include <chicago/string.h>
 
 Void ArchInitFPU(Void) {
@@ -60,7 +61,7 @@ Void ArchInitVMM(Void) {
 			UIntPtr phys = MmReferencePage(0);																			// Yes, try to alloc a new page
 			
 			if (phys == 0) {
-				DbgWriteFormated("PANIC! Couldn't init the PMM\r\n");													// Failed...
+				DbgWriteFormated("PANIC! Couldn't init the VMM\r\n");													// Failed...
 				while (1) ;
 			}
 			
@@ -111,7 +112,7 @@ Void ArchInit(Void) {
 	
 	if (FsGetBootDevice() == Null) {
 		DbgWriteFormated("PANIC! Couldn't set the boot device\r\n");
-		while (1) ;
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	} else {
 		DbgWriteFormated("[x86] Devices initialized\r\n");
 	}

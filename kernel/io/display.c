@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 21:12 BRT
-// Last edited on October 27 of 2018, at 15:49 BRT
+// Last edited on October 27 of 2018, at 19:49 BRT
 
 #define __CHICAGO_DISPLAY__
 
@@ -599,7 +599,7 @@ Void DispInit(UIntPtr w, UIntPtr h, UIntPtr bpp, UIntPtr fb) {
 		while (1) ;
 	}
 	
-	DispFrameBuffer = MemAllocate(w * h * bpp);																					// Alloc some virt space for the frame buffer
+	DispFrameBuffer = MemAAllocate(w * h * bpp, MM_PAGE_SIZE);																	// Alloc some virt space for the frame buffer
 	DispBackBuffer = MemAllocate(w * h * bpp);
 	DispWidth = w;
 	DispHeight = h;

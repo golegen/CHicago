@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 24 of 2018, at 13:58 BRT
-// Last edited on October 26 of 2018, at 22:14 BRT
+// Last edited on October 27 of 2018, at 22:06 BRT
 
 #include <chicago/arch/ide.h>
 #include <chicago/arch/idt.h>
@@ -132,11 +132,17 @@ IntPtr ArchJump(UIntPtr dest, PChar bootdev) {
 	
 	UInt32 data[4];
 	
-	if (!ArchSetVesaMode(800, 600, 32, data)) {													// Set the VESA mode to 800x600x32
-		return -2;																				// Failed
+	if (ArchSetVesaMode(1366, 768, 32, data)) {													// Set the VESA mode to 1366x768x32
+		goto c;																					// Ok
+	} else if (ArchSetVesaMode(1280, 720, 32, data)) {											// Set the VESA mode to 1280x720x32
+		goto c;																					// Ok!
+	} else if (ArchSetVesaMode(800, 600, 32, data)) {											// Set the VESA mode to 800x600x32
+		goto c;																					// Ok!
+	} else {																					// Couldn't any supported VESA mode...
+		return -2;
 	}
 	
-	ArchJumpInt(dest, bootdev, 0x3000, mmapc, data);											// Jump!
+c:	ArchJumpInt(dest, bootdev, 0x3000, mmapc, data);											// Jump!
 	
 	return -1;																					// ... Returned?
 }

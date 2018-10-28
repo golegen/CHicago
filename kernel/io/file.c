@@ -1,11 +1,12 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:28 BRT
-// Last edited on October 27 of 2018, at 12:58 BRT
+// Last edited on October 27 of 2018, at 22:32 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
 #include <chicago/file.h>
+#include <chicago/panic.h>
 #include <chicago/rand.h>
 #include <chicago/string.h>
 
@@ -684,7 +685,7 @@ Void FsInit(Void) {
 	
 	if ((FsMountPointList == Null) || (FsTypeList == Null)) {																			// Failed?
 		DbgWriteFormated("PANIC! Couldn't init mount point or filesystem type list\r\n");
-		return;
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
 	FsInitTypes();																														// Init all the supported fs types
@@ -693,12 +694,12 @@ Void FsInit(Void) {
 	
 	if (bdpath == Null) {
 		DbgWriteFormated("PANIC! Couldn't mount the boot device\r\n");
-		while (1) ;
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
 	if (!FsMountFile("\\", bdpath, Null)) {
 		DbgWriteFormated("PANIC! Couldn't mount the boot device\r\n");
-		while (1) ;
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
 	MemFree((UIntPtr)bdpath);

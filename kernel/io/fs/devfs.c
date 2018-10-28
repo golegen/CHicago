@@ -1,12 +1,13 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:29 BRT
-// Last edited on September 15 of 2018, at 17:56 BRT
+// Last edited on Octobe r27 of 2018, at 22:25 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
 #include <chicago/device.h>
 #include <chicago/file.h>
+#include <chicago/panic.h>
 #include <chicago/string.h>
 
 Boolean DevFsControlFile(PFsNode file, UIntPtr cmd, PUInt8 ibuf, PUInt8 obuf);
@@ -147,28 +148,28 @@ Void DevFsInit(Void) {
 	
 	if (path == Null) {																			// Failed?
 		DbgWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Yes (halt, as we need DevFs for everything)
-		while (1);
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
 	PChar type = StrDuplicate("DevFs");															// Try to duplicate the type string
 	
 	if (type == Null) {																			// Failed?
 		DbgWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Yes (same as above)
-		while (1);
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
 	PFsNode root = (PFsNode)MemAllocate(sizeof(FsNode));										// Try to alloc some space for the root directory
 	
 	if (root == Null) {																			// Failed?
 		DbgWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Yes (same as above)
-		while (1);
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
 	root->name = StrDuplicate("\\");															// Try to duplicate the root directory string
 	
 	if (root->name == Null) {																	// Failed?
 		DbgWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Yes (same as above)
-		while (1);
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
 	root->priv = Null;
@@ -185,6 +186,6 @@ Void DevFsInit(Void) {
 	
 	if (!FsAddMountPoint(path, type, root)) {													// Try to add this device
 		DbgWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Failed (same as above)
-		while (1);
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 }

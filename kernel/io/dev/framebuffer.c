@@ -1,11 +1,12 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 22:24 BRT
-// Last edited on October 15 of 2018, at 10:59 BRT
+// Last edited on October 27 of 2018, at 22:24 BRT
 
 #include <chicago/debug.h>
 #include <chicago/device.h>
 #include <chicago/display.h>
+#include <chicago/panic.h>
 #include <chicago/string.h>
 
 Boolean FrameBufferDeviceRead(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf) {
@@ -49,6 +50,6 @@ Boolean FrameBufferDeviceControl(PDevice dev, UIntPtr cmd, PUInt8 ibuf, PUInt8 o
 Void FrameBufferDeviceInit(Void) {
 	if (!FsAddDevice("FrameBuffer", Null, FrameBufferDeviceRead, FrameBufferDeviceWrite, FrameBufferDeviceControl)) {		// Let's add ourself
 		DbgWriteFormated("PANIC! Failed to add the FrameBuffer device\r\n");												// Failed
-		while (1) ;
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 }

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 20 of 2018, at 15:20 BRT
-// Last edited on October 20 of 2018, at 15:24 BRT
+// Last edited on October 27 of 2018, at 22:12 BRT
 
 #include <chicago/display.h>
 #include <chicago/process.h>
@@ -11,8 +11,22 @@ IntPtr ConScale = 1;
 Lock ConLock = False;
 UIntPtr ConCursorX = 0;
 UIntPtr ConCursorY = 0;
+Boolean ConRefresh = True;
 UIntPtr ConBackgroundColor = 0xFF000000;
 UIntPtr ConForegroundColor = 0xFFAAAAAA;
+
+Void ConSetRefresh(Boolean s) {
+	PsLock(&ConLock);																												// Lock
+	ConRefresh = s;																													// Set the automatic refresh prop
+	PsUnlock(&ConLock);																												// Unlock
+}
+
+Boolean ConGetRefresh(Void) {
+	PsLock(&ConLock);																												// Lock
+	Boolean s = ConScale;																											// Save the automatic refresh prop
+	PsUnlock(&ConLock);																												// Unlock
+	return s;																														// Return it
+}
 
 Void ConSetScale(IntPtr scale) {
 	PsLock(&ConLock);																												// Lock
@@ -125,7 +139,11 @@ Void ConClearScreen(Void) {
 	PsLock(&ConLock);																												// Lock
 	DispClearScreen(ConBackgroundColor);																							// Clear the screen
 	ConCursorX = ConCursorY = 0;																									// Move the cursor to 0, 0
-	DispRefresh();																													// Refresh the screen
+	
+	if (ConRefresh) {
+		DispRefresh();																												// Refresh the screen
+	}
+	
 	PsUnlock(&ConLock);																												// Unlock
 }
 
@@ -182,7 +200,11 @@ static Void ConWriteCharacterInt(Char data) {
 Void ConWriteCharacter(Char data) {
 	PsLock(&ConLock);																												// Lock
 	ConWriteCharacterInt(data);																										// Write the character
-	DispRefresh();																													// Update the screen
+	
+	if (ConRefresh) {
+		DispRefresh();																												// Refresh the screen
+	}
+	
 	PsUnlock(&ConLock);																												// Unlock
 }
 
@@ -199,7 +221,11 @@ static Void ConWriteStringInt(PChar data) {
 Void ConWriteString(PChar data) {
 	PsLock(&ConLock);																												// Lock
 	ConWriteStringInt(data);																										// Write the string
-	DispRefresh();																													// Update the screen
+	
+	if (ConRefresh) {
+		DispRefresh();																												// Refresh the screen
+	}
+	
 	PsUnlock(&ConLock);																												// Unlock
 }
 
@@ -222,7 +248,11 @@ static Void ConWriteIntegerInt(UIntPtr data, UInt8 base) {
 Void ConWriteInteger(UIntPtr data, UInt8 base) {
 	PsLock(&ConLock);																												// Lock
 	ConWriteIntegerInt(data, base);																									// Write the integer
-	DispRefresh();																													// Update the screen
+	
+	if (ConRefresh) {
+		DispRefresh();																												// Refresh the screen
+	}
+	
 	PsUnlock(&ConLock);																												// Unlock
 }
 
@@ -266,6 +296,10 @@ Void ConWriteFormated(PChar data, ...) {
 	}
 	
 	VariadicEnd(va);
-	DispRefresh();
+	
+	if (ConRefresh) {
+		DispRefresh();																												// Refresh the screen
+	}
+	
 	PsUnlock(&ConLock);																												// Unlock
 }

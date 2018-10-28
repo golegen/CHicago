@@ -1,13 +1,14 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:59 BRT
-// Last edited on October 27 of 2018, at 15:50 BRT
+// Last edited on October 27 of 2018, at 22:28 BRT
 
 #define __CHICAGO_PROCESS__
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
 #include <chicago/mm.h>
+#include <chicago/panic.h>
 #include <chicago/process.h>
 #include <chicago/string.h>
 #include <chicago/timer.h>
@@ -379,7 +380,7 @@ Void PsExitThread(UIntPtr ret) {
 	} else if ((PsCurrentProcess->id == 0) && (PsCurrentThread->id == 0)) {																		// Kernel main thread?
 		PsLockTaskSwitch(old);																													// ...
 		DbgWriteFormated("PANIC! Tried to close the main kernel thread\r\n");
-		while (1) ;
+		Panic(PANIC_KERNEL_UNEXPECTED_ERROR);
 	}
 	
 	PsLockTaskSwitch(old);																														// Lock
@@ -438,7 +439,7 @@ Void PsExitProcess(UIntPtr ret) {
 	} else if (PsCurrentProcess->id == 0) {																										// Kernel process?
 		PsLockTaskSwitch(old);																													// Yes, so PANIC!
 		DbgWriteFormated("PANIC! Tried to close the kernel process\r\n");
-		while (1) ;
+		Panic(PANIC_KERNEL_UNEXPECTED_ERROR);
 	}
 	
 	PsLockTaskSwitch(old);																														// Lock
@@ -540,35 +541,35 @@ Void PsInit(Void) {
 	
 	if (PsProcessList == Null) {
 		DbgWriteFormated("PANIC! Failed to init tasking\r\n");
-		while (1) ;
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
 	PsWaittList = ListNew(False, False);																										// Try to init the waitt list
 	
 	if (PsWaittList == Null) {
 		DbgWriteFormated("PANIC! Failed to init tasking\r\n");
-		while (1) ;
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
 	PsWaitpList = ListNew(False, False);																										// Try to init the waitp list
 	
 	if (PsWaitpList == Null) {
 		DbgWriteFormated("PANIC! Failed to init tasking\r\n");
-		while (1) ;
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
 	PProcess proc = PsCreateProcessInt("System", (UIntPtr)KernelMainLate, MmKernelDirectory);													// Try to create the system process
 	
 	if (proc == Null) {
 		DbgWriteFormated("PANIC! Failed to init tasking\r\n");
-		while (1) ;
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
 	PsCurrentThread = ListGet(proc->threads, 0);																								// And, get the first thread!	
 	
 	if (PsCurrentThread == Null) {
 		DbgWriteFormated("PANIC! Failed to init tasking\r\n");
-		while (1) ;
+		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
 	PsInitInt();																																// Switch to the first thread!

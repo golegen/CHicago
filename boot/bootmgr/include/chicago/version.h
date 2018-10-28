@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on September 15 of 2018, at 13:12 BRT
-// Last edited on October 21 of 2018, at 14:30 BRT
+// Last edited on October 27 of 2018, at 22:37 BRT
 
 #ifndef __CHICAGO_VERSION_H__
 #define __CHICAGO_VERSION_H__
@@ -10,7 +10,7 @@
 
 #define CHICAGO_MAJOR 1
 #define CHICAGO_MINOR 0
-#define CHICAGO_BUILD 24
+#define CHICAGO_BUILD 25
 #define CHICAGO_CODENAME "Cosmos"
 #define CHICAGO_ARCH ARCH
 #define CHICAGO_VSTR "Version " TextifyMacro(CHICAGO_MAJOR) "." TextifyMacro(CHICAGO_MINOR) "." TextifyMacro(CHICAGO_BUILD)

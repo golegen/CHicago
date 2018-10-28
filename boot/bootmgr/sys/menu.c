@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 25 of 2018, at 14:29 BRT
-// Last edited on October 27 of 2018, at 12:55 BRT
+// Last edited on October 27 of 2018, at 20:57 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/arch.h>
@@ -309,7 +309,7 @@ l:	while (1) {
 				FsCloseFile(root);
 			}
 			
-			MenuShowMessage("Your graphic card doesn't support 800x600x32 mode", Null);
+			MenuShowMessage("Your graphic card doesn't support any supported mode", Null);
 			goto l;
 		}
 	} else {

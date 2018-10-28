@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 26 of 2018, at 22:00 BRT
-// Last edited on October 27 of 2018, at 15:58 BRT
+// Last edited on October 27 of 2018, at 22:17 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
@@ -11,6 +11,7 @@
 #include <chicago/arch.h>
 #include <chicago/debug.h>
 #include <chicago/mm.h>
+#include <chicago/panic.h>
 #include <chicago/process.h>
 #include <chicago/string.h>
 
@@ -75,13 +76,13 @@ Void ISRDefaultHandler(PRegisters regs) {
 			
 			if ((MmGetPDE(MmCurrentDirectory, faddr) & 0x01) != 0x01) {								// Present?
 				DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);					// No, so it's a normal page fault
-				while (1) ;
+				ArchPanic(PANIC_MM_READWRITE_TO_NONPRESENT_AREA, regs);
 			} else if ((MmGetPTE(MmCurrentTables, faddr) & 0x01) != 0x01) {							// Same as above
 				DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);
-				while (1) ;
+				ArchPanic(PANIC_MM_READWRITE_TO_NONPRESENT_AREA, regs);
 			} else if ((MmGetPTE(MmCurrentTables, faddr) & 0x200) != 0x200) {						// CoW?
 				DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);					// No, so it's a normal page fault
-				while (1) ;
+				ArchPanic(PANIC_MM_WRITE_TO_READONLY_AREA, regs);
 			}
 			
 			UInt32 oldp = MmGetPTE(MmCurrentTables, faddr) & 0xFFFFF000;							// Get the old physical address
@@ -97,7 +98,7 @@ Void ISRDefaultHandler(PRegisters regs) {
 			
 			if (newp == 0) {																		// Failed?
 				DbgWriteFormated("PANIC! Couldn't alloc page for CoW\r\n", faddr);					// Yes...
-				while (1) ;
+				ArchPanic(PANIC_MM_WRITE_TO_READONLY_AREA, regs);
 			}
 			
 			MmSetPTE(MmCurrentTables, faddr, oldp, oldf | 2);										// Map the old physical address as r/w
@@ -109,7 +110,7 @@ Void ISRDefaultHandler(PRegisters regs) {
 				MmSetPTE(MmCurrentTables, faddr, oldp, oldf);										// Yes
 				Asm Volatile("invlpg (%0)" :: "b"(faddr) : "memory");
 				DbgWriteFormated("PANIC! Couldn't map temp page for CoW\r\n", faddr);
-				while (1) ;
+				ArchPanic(PANIC_MM_WRITE_TO_READONLY_AREA, regs);
 			}
 			
 			StrCopyMemory(tmp, (PVoid)faddr, MM_PAGE_SIZE);											// Let's copy!
@@ -119,13 +120,13 @@ Void ISRDefaultHandler(PRegisters regs) {
 			MmDereferencePage(oldp);																// And decrement the references to the phys page (now we can return!)
 		} else {
 			DbgWriteFormated("PANIC! %s exception\r\n", ExceptionStrings[regs->int_num]);			// No
-			while (1) ;
+			ArchPanic(PANIC_KERNEL_UNEXPECTED_ERROR, regs);
 		}
 	} else if (InterruptHandlers[regs->int_num] != Null) {											// No, we have an handler?
 		InterruptHandlers[regs->int_num](regs);														// Yes!
 	} else {
 		DbgWriteFormated("PANIC! Unhandled interrupt 0x%x\r\n", regs->int_num);						// No
-		while (1) ;
+		ArchPanic(PANIC_KERNEL_UNEXPECTED_ERROR, regs);
 	}
 }
 
