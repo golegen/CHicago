@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:28 BRT
-// Last edited on October 28 of 2018, at 18:59 BRT
+// Last edited on October 29 of 2018, at 16:32 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -511,9 +511,12 @@ Boolean FsAddMountPoint(PChar path, PChar type, PFsNode root) {
 	
 	PChar rpath = Null;
 	FsGetMountPoint(path, &rpath);
-	
-	if (rpath != Null && !StrCompare(rpath, "")) {																						// This mount point doesn't exist right?
+	UIntPtr len = StrGetLength(path);
+	 
+	if (path[len - 1] == '\\' && rpath != Null && !StrCompare(rpath, "")) {																// This mount point doesn't exist right?
 		return False;																													// ...
+	} else if (path[len - 1] != '\\' && rpath != Null && StrCompare(path, "")) {														// Same check
+		return False;
 	}
 	
 	PFsMountPoint mp = (PFsMountPoint)MemAllocate(sizeof(FsMountPoint));																// Let's try to allocate space for the struct
@@ -541,11 +544,14 @@ Boolean FsRemoveMountPoint(PChar path) {
 	
 	PChar rpath = Null;
 	PFsMountPoint mp = FsGetMountPoint(path, &rpath);																					// Let's try to find the mount point
+	UIntPtr len = StrGetLength(path);
 	
 	if ((mp == Null) || (rpath == Null)) {																								// Found it?
 		return False;																													// No....
-	} else if (!StrCompare(rpath, "")) {																								// The user tried to remove the mount point using the name of an file/folder that was inside of it?
+	} else if (path[len - 1] == '\\' && !StrCompare(rpath, "")) {																		// The user tried to remove the mount point using the name of an file/folder that was inside of it?
 		return False;																													// Yes...
+	} else if (path[len - 1] != '\\' && StrCompare(rpath, "")) {																		// Same check
+		return False;
 	}
 	
 	UIntPtr idx = 0;

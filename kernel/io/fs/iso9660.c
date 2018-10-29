@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 17 of 2018, at 16:10 BRT
-// Last edited on October 28 of 2018, at 21:23 BRT
+// Last edited on October 29 of 2018, at 18:09 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/file.h>
@@ -132,10 +132,10 @@ PChar Iso9660ReadDirectoryEntry(PFsNode dir, UIntPtr entry) {
 				}
 				
 				if (dent->name[dent->name_length - 2] == ';' && dent->name[dent->name_length - 1] == '1') {			// Fix the name?
-					StrCopyMemory(ret, (PVoid)(&dent->name), dent->name_length - 2);								// Yes
+					StrCopyMemory(ret, dent->name, dent->name_length - 2);											// Yes
 					ret[dent->name_length - 2] = '\0';
 				} else {
-					StrCopyMemory(ret, (PVoid)(&dent->name), dent->name_length);									// No, so we only need to put the 0 (NUL) at the end of the string!
+					StrCopyMemory(ret, dent->name, dent->name_length);												// No, so we only need to put the 0 (NUL) at the end of the string!
 					ret[dent->name_length] = '\0';
 				}
 				
@@ -219,10 +219,10 @@ PFsNode Iso9660FindInDirectory(PFsNode dir, PChar name) {
 			}
 			
 			if (dent->name[dent->name_length - 2] == ';' && dent->name[dent->name_length - 1] == '1') {
-				StrCopyMemory(dename, (PVoid)(&dent->name), dent->name_length - 2);
+				StrCopyMemory(dename, dent->name, dent->name_length - 2);
 				dename[dent->name_length - 2] = '\0';
 			} else {
-				StrCopyMemory(dename, (PVoid)(&dent->name), dent->name_length);
+				StrCopyMemory(dename, dent->name, dent->name_length);
 				dename[dent->name_length] = '\0';
 			}
 			

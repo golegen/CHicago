@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on October 22 of 2018, at 15:35 BRT
-# Last edited on October 26 of 2018, at 22:05 BRT
+# Last edited on October 29 of 2018, at 19:39 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -29,7 +29,7 @@ endif
 OBJECTS := main.c.o
 OBJECTS += ds/list.c.o
 OBJECTS += io/console.c.o io/device.c.o io/file.c.o io/fs/devfs.c.o
-OBJECTS += io/fs/iso9660.c.o
+OBJECTS += io/fs/chfs.c.o io/fs/iso9660.c.o
 OBJECTS += mm/alloc.c.o mm/heap.c.o
 OBJECTS += sys/config.c.o sys/menu.c.o sys/string.c.o
 

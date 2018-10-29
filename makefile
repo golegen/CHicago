@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on October 27 of 2018, at 12:57 BRT
+# Last edited on October 29 of 2018, at 16:19 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -101,7 +101,7 @@ else
 endif
 	$(NOECHO)if [ ! -d build ]; then mkdir -p build; fi
 	$(NOECHO)if [ -d build/iso ]; then rm -rf build/iso; fi
-	$(NOECHO)mkdir -p build/iso/Boot
+	$(NOECHO)mkdir -p build/iso/{Boot,MountPoint}
 	$(NOECHO)cp $(CDBOOT) build/iso/Boot/bootsect.bin
 	$(NOECHO)cp $(BOOTMGR) build/iso/Boot/bootmgr.bin
 	$(NOECHO)cp $(KERNEL) build/iso/Boot/chkrnl.elf

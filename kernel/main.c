@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on October 28 of 2018, at 21:22 BRT
+// Last edited on October 29 of 2018, at 19:36 BRT
 
 #include <chicago/arch.h>
 #include <chicago/console.h>
@@ -10,7 +10,6 @@
 #include <chicago/file.h>
 #include <chicago/process.h>
 #include <chicago/version.h>
-#include <chicago/vm.h>
 
 Void KernelMain(Void) {
 	ArchInitDebug();																										// Init the architecture-dependent debugging method
@@ -67,14 +66,6 @@ Void KernelMainLate(Void) {
 	ConWriteFormated("CHicago Operating System for %s\r\n", CHICAGO_ARCH);													// Print some system informations
 	ConWriteFormated("Codename '%s'\r\n", CHICAGO_CODENAME);
 	ConWriteFormated("%s\r\n\r\n", CHICAGO_VSTR);
-	
-	PVmModule module = VmLoadModule("\\test.bliss");																		// Try to load the module
-	
-	if (module == Null) {																									// Failed?
-		ConWriteFormated("Couldn't load the '\\test.bliss' module\r\n");													// Yes, probably the file doesn't exists...
-	} else {
-		VmRunModule(module);																								// Run!
-	}
 	
 	while (1) ;
 }
