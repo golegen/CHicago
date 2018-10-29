@@ -23,7 +23,9 @@
     <Compile Include="Nodes\CodeBlock.cs" />
     <Compile Include="Nodes\StatementNode.cs" />
     <Compile Include="Nodes\NumberNode.cs" />
+    <Compile Include="Nodes\IdentifierNode.cs" />
     <Compile Include="Nodes\InstructionNode.cs" />
+    <Compile Include="Nodes\LabelNode.cs" />
     <Compile Include="Instruction.cs" />
     <Compile Include="Module.cs" />
     <Compile Include="CodeGenerator.cs" />

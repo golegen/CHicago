@@ -1,6 +1,6 @@
 lds 1
-ldu 2
+:loop
+lds 1
 add
-lds 3
-mul
 print
+br loop

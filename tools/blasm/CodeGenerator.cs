@@ -1,7 +1,7 @@
 ﻿// File author is Ítalo Lima Marconato Matias
 //
 // Created on October 20 of 2018, at 23:19 BRT
-// Last edited on October 21 of 2018, at 12:17 BRT
+// Last edited on October 28 of 2018, at 01:31 BRT
 
 using System;
 using Bliss.Assembler.Nodes;
@@ -28,6 +28,13 @@ namespace Bliss.Assembler
         {
             if (node is CodeBlock)                                                                                                  // Block of code?
                 VisitSubnodes(module, node);                                                                                        // Yes, visit the subnodes
+            else if (node is LabelNode label)                                                                                       // Label?
+            {
+                if (module.Labels.ContainsKey(label.Name))                                                                          // Yes, let's check if it isn't an redefinition
+                    Utils.Error($"{label.Filename}:{label.Line}", "redefinition of", label.Name);
+
+                module.Labels.Add(label.Name, module.Body.Count);                                                                   // And add it!
+            }
             else if (node is InstructionNode instr)                                                                                 // Instruction?
             {
                 switch (instr.Opcode.ToLower())                                                                                     // Let's validate the opcode
@@ -42,6 +49,8 @@ namespace Bliss.Assembler
                     case "and":
                     case "or":
                     case "xor":
+                    case "pop":
+                    case "ret":
                     case "print":                                                                                                   // Instructions without any arguments
                         {
                             if (instr.Children.Count != 0)                                                                          // Valid amount of arguments (0)?
@@ -111,6 +120,52 @@ namespace Bliss.Assembler
                             else if (num.IsFloat)                                                                                   // Float value?
                                 module.Body.Add(new Instruction(Opcode.ldf, num.FloatValue));                                       // Yes :)
 
+                            break;
+                        }
+                    case "br":
+                        {
+                            if (instr.Children.Count != 1)                                                                          // Valid amount of arguments (1)?
+                                Utils.Error($"{instr.Filename}:{instr.Line}", "expected 1 arguments");                              // No...
+
+                            if (instr.Children[0] is NumberNode)                                                                    // Valid argument?
+                            {
+                                NumberNode num = (NumberNode)instr.Children[0];                                                     // Yes (number)
+                                
+                                if (num.IsSigned)                                                                                   // Signed value?
+                                    module.Body.Add(new Instruction(Opcode.br, (uint)num.SignedValue));                             // Yes, convert to unsigned value
+                                else if (num.IsUnsigned)                                                                            // Unsigned value?
+                                    module.Body.Add(new Instruction(Opcode.br, num.UnsignedValue));                                 // Yes :)
+                                else if (num.IsFloat)                                                                               // Float value?
+                                    module.Body.Add(new Instruction(Opcode.br, (uint)num.FloatValue));                              // Yes, convert to unsigned integer value
+                            }
+                            else if (instr.Children[0] is IdentifierNode)
+                                module.Body.Add(new Instruction(Opcode.br, ((IdentifierNode)instr.Children[0]).Value));             // Yes (identifier)
+                            else
+                                Utils.Error($"{instr.Filename}:{instr.Line}", "invalid argument");                                  // No...
+                            
+                            break;
+                        }
+                    case "call":
+                        {
+                            if (instr.Children.Count != 1)                                                                          // Valid amount of arguments (1)?
+                                Utils.Error($"{instr.Filename}:{instr.Line}", "expected 1 arguments");                              // No...
+
+                            if (instr.Children[0] is NumberNode)                                                                    // Valid argument?
+                            {
+                                NumberNode num = (NumberNode)instr.Children[0];                                                     // Yes (number)
+                                
+                                if (num.IsSigned)                                                                                   // Signed value?
+                                    module.Body.Add(new Instruction(Opcode.call, (uint)num.SignedValue));                           // Yes, convert to unsigned value
+                                else if (num.IsUnsigned)                                                                            // Unsigned value?
+                                    module.Body.Add(new Instruction(Opcode.call, num.UnsignedValue));                               // Yes :)
+                                else if (num.IsFloat)                                                                               // Float value?
+                                    module.Body.Add(new Instruction(Opcode.call, (uint)num.FloatValue));                            // Yes, convert to unsigned integer value
+                            }
+                            else if (instr.Children[0] is IdentifierNode)
+                                module.Body.Add(new Instruction(Opcode.call, ((IdentifierNode)instr.Children[0]).Value));           // Yes (string)
+                            else
+                                Utils.Error($"{instr.Filename}:{instr.Line}", "invalid argument");                                  // No...
+                            
                             break;
                         }
                     default:

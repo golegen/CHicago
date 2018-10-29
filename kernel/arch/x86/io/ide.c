@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 23:40 BRT
-// Last edited on October 27 of 2018, at 20:43 BRT
+// Last edited on October 28 of 2018, at 21:32 BRT
 
 #include <chicago/arch/ide.h>
 #include <chicago/arch/idt.h>
@@ -407,7 +407,7 @@ Boolean IDEDeviceRead(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	if ((off % bsize) != 0) {																					// "Align" the start
 		PUInt8 buff = (PUInt8)MemAllocate(bsize);																// Alloc memory for reading
 		
-		if (buf == Null) {
+		if (buff == Null) {
 			return False;																						// Failed
 		}
 		

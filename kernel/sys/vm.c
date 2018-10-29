@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 21 of 2018, at 18:34 BRT
-// Last edited on October 21 of 2018, at 18:35 BRT
+// Last edited on October 28 of 2018, at 01:32 BRT
 
 #include <chicago/console.h>
 #include <chicago/file.h>
@@ -28,6 +28,23 @@ static PVmObject VmPopStack(PList stack, Boolean remove) {
 	return (PVmObject)(remove ? ListRemove(stack, stack->length - 1) : ListGet(stack, stack->length - 1));						// Ok, use the ListRemove function if the remove flag is set, else, use the ListGet function
 }
 
+static PVmObject VmPopCallStack(PList stack) {
+	if (stack == Null || ((UIntPtr)stack) >= MM_USER_END) {																		// Sanity check
+		return &VmNullObject;																									// Failed, return the null object
+	} else if (stack->length == 0) {																							// Empty call stack?
+		UIntPtr old = ConGetForeground();																						// Yes...
+		
+		ConSetForeground(0xFFFFFF55);
+		ConWriteFormated("warning:");
+		ConSetForeground(old);
+		ConWriteFormated(" empty call stack\r\n");
+		
+		return &VmNullObject;
+	}
+	
+	return (PVmObject)ListRemove(stack, stack->length - 1);																		// Ok, use the ListRemove
+}
+
 static UInt32 VmConvertValue(PVmObject obj, UInt8 new) {
 	if (obj == Null) {																											// Sanity check
 		return VmNullObject.uval;																								// Failed, return the null object
@@ -41,8 +58,12 @@ static UInt32 VmConvertValue(PVmObject obj, UInt8 new) {
 	
 	if (obj->type == VM_OBJECT_TYPE_FLOAT && new == VM_OBJECT_TYPE_INT) {														// Convert float to int
 		u.ival = (Int32)obj->fval;
+	} else if (obj->type == VM_OBJECT_TYPE_INT && new == VM_OBJECT_TYPE_FLOAT) {												// Convert int fo float
+		u.fval = obj->ival;
 	} else if (obj->type == VM_OBJECT_TYPE_FLOAT && new == VM_OBJECT_TYPE_UINT) {												// Convert float to uint
 		u.uval = (UInt32)obj->fval;
+	} else if (obj->type == VM_OBJECT_TYPE_UINT && new == VM_OBJECT_TYPE_FLOAT) {												// Convert uint to float
+		u.fval = (Float)obj->uval;
 	} else {																													// No need to convert
 		u.uval = obj->uval;
 	}
@@ -57,7 +78,6 @@ static Void VmBinaryOperation(PList stack, UInt8 type) {
 	
 	PVmObject right = VmPopStack(stack, True);																					// Get the right
 	PVmObject left = VmPopStack(stack, True);																					// And the left
-	
 	PVmObject obj = (PVmObject)MmAllocUserMemory(sizeof(VmObject));																// Alloc space for the result
 	
 	if (obj == Null) {																											// Failed?
@@ -106,14 +126,25 @@ static Void VmBinaryOperation(PList stack, UInt8 type) {
 			return;
 		}
 		
-		new->type = right->type;																								// Set the new type
-		new->uval = VmConvertValue(left, new->type);																			// Convert
-		
-		if (left != &VmNullObject) {																							// Free the old left
-			MmFreeUserMemory((UIntPtr)left);
+		if (left->type == VM_OBJECT_TYPE_FLOAT || right->type != VM_OBJECT_TYPE_FLOAT) {
+			new->type = left->type;																								// Set the new type
+			new->uval = VmConvertValue(left, new->type);																		// Convert
+			
+			if (left != &VmNullObject) {																						// Free the old left
+				MmFreeUserMemory((UIntPtr)left);
+			}
+
+			left = new;																											// Set it to the new one
+		} else {
+			new->type = right->type;																							// Set the new type
+			new->uval = VmConvertValue(right, new->type);																		// Convert
+			
+			if (right != &VmNullObject) {																						// Free the old right
+				MmFreeUserMemory((UIntPtr)right);
+			}
+
+			right = new;																										// Set it to the new one
 		}
-		
-		left = new;																												// Set it to the new one
 	}
 	
 	if (left->type == VM_OBJECT_TYPE_INT && right->type == VM_OBJECT_TYPE_INT) {												// Binary operation with int?
@@ -358,8 +389,16 @@ PVmObject VmRunModule(PVmModule module) {
 		return Null;
 	}
 	
-	for (UIntPtr i = 0; i < module->body.length; i++) {																			// Time to interpret!
-		PVmInstruction instr = (PVmInstruction)ListGet(&module->body, i);
+	PList cstack = ListNew(True, True);																							// Try to alloc the call stack
+	
+	if (cstack == Null) {
+		ListFree(stack);																										// Failed...
+		MmFreeUserMemory((UIntPtr)ret);
+		return Null;
+	}
+	
+	for (UIntPtr i = 0; i < module->body.length; ) {																			// Time to interpret!
+		PVmInstruction instr = (PVmInstruction)ListGet(&module->body, i++);
 		
 		switch (instr->opcode) {
 		case VM_OPCODE_ADD:
@@ -391,6 +430,54 @@ PVmObject VmRunModule(PVmModule module) {
 				obj->type = instr->arg.type;																					// Set the type
 				obj->uval = instr->arg.uval;																					// Set the value
 				ListAdd(stack, obj);																							// And (try to) add to the stack
+			}
+			
+			break;
+		}
+		case VM_OPCODE_POP: {																									// Pop
+			PVmObject obj = VmPopStack(stack, True);																			// Pop the last entry from the stack
+			
+			if (obj != &VmNullObject) {																							// And free it!
+				MmFreeUserMemory((UIntPtr)obj);
+			}
+			
+			break;
+		}
+		case VM_OPCODE_BR: {																									// Jump
+			i = instr->arg.uval + 1;
+			break;
+		}
+		case VM_OPCODE_CALL: {																									// Call
+			PVmObject obj = (PVmObject)MmAllocUserMemory(sizeof(VmObject));														// Alloc space for the call stack save object
+			
+			if (obj == Null) {
+				UIntPtr old = ConGetForeground();																				// Failed, let's show an warning
+				
+				ConSetForeground(0xFFFFFF55);
+				ConWriteFormated("warning:");
+				ConSetForeground(old);
+				ConWriteFormated(" out of memory\r\n");
+			} else {
+				obj->type = VM_OBJECT_TYPE_UINT;																				// Type is uint
+				obj->uval = i + 1;																								// Value is the current ip + 1
+				ListAdd(cstack, obj);
+			}
+			
+			i = instr->arg.uval + 1;																							// Jump!
+			
+			break;
+		}
+		case VM_OPCODE_RET: {																									// Return from method
+			PVmObject obj = VmPopCallStack(cstack);																				// Pop the last entry from the call stack
+			
+			if (obj->type != VM_OBJECT_TYPE_UINT) {																				// Convert to uint (if we need to do it)
+				i = VmConvertValue(obj, VM_OBJECT_TYPE_UINT) + 1;
+			} else {
+				i = obj->uval + 1;
+			}
+			
+			if (obj != &VmNullObject) {																							// Free it
+				MmFreeUserMemory((UIntPtr)obj);
 			}
 			
 			break;

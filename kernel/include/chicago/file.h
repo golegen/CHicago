@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:18 BRT
-// Last edited on October 12 of 2018, at 20:18 BRT
+// Last edited on October 28 of 2018, at 18:57 BRT
 
 #ifndef __CHICAGO_FILE_H__
 #define __CHICAGO_FILE_H__
@@ -40,6 +40,7 @@ typedef struct {
 	Boolean (*umount)(PFsMountPoint);
 } FsType, *PFsType;
 
+Void CHFsInit(Void);
 Void DevFsInit(Void);
 Void Iso9660Init(Void);
 

@@ -1,7 +1,7 @@
 ﻿// File author is Ítalo Lima Marconato Matias
 //
 // Created on October 05 of 2018, at 20:34 BRT
-// Last edited on October 20 of 2018, at 17:25 BRT
+// Last edited on October 28 of 2018, at 20:47 BRT
 
 using System;
 using System.Collections.Generic;
@@ -157,6 +157,24 @@ namespace Bliss.Assembler
                 str += (char)ReadChar();                                                                            // Yes!
 
             return new Token(TokenType.Identifier, filename, str, cline);                                           // Return the token!
+        }
+
+        Token ReadString(out bool rchar)
+        {
+            string str = "";
+            int cline = line;
+
+            rchar = true;
+
+            ReadChar();
+
+            while (GetChar() != -1 && GetChar() != '"')                                                             // End of the string?
+                str += (char)ReadChar();                                                                            // No, so keep on reading!
+
+            if (GetChar() == -1)                                                                                    // Unterminated?
+                Utils.Error($"{filename}:{cline}", "unterminated string constant");                                 // Yes...
+
+            return new Token(TokenType.String, filename, str, cline);                                               // Return the token
         }
 
         Token ReadNumber(out bool rchar)

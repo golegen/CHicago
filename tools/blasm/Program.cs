@@ -1,7 +1,7 @@
 ﻿// File author is Ítalo Lima Marconato Matias
 //
 // Created on October 04 of 2018, at 18:27 BRT
-// Last edited on October 20 of 2018, at 23:36 BRT
+// Last edited on October 28 of 2018, at 00:40 BRT
 
 using System;
 using System.Collections.Generic;
@@ -62,7 +62,7 @@ namespace Bliss.Assembler
             if (inputs.Count == 0)                                                                                                      // We have input files?
                 Utils.Error(Utils.GetProgramName(), "no input files");                                                                  // No :(
 
-            Module module = new Module();                                                                                               // This is our module :)
+            Module tmodule = new Module();                                                                                              // This is our temp module :)
 
             foreach (string file in inputs)                                                                                             // Let's parse all the files!
             {
@@ -71,8 +71,12 @@ namespace Bliss.Assembler
                 else if (!File.Exists(file))                                                                                            // It exists?
                     Utils.Error(Utils.GetProgramName(), $"{file}: no such file or directory");                                          // No...
 
-                module.Merge(new CodeGenerator(new Parser(new Lexer(file, File.ReadAllText(file)).Lex()).Parse()).Generate());          // Parse this file!
+                tmodule.Merge(new CodeGenerator(new Parser(new Lexer(file, File.ReadAllText(file)).Lex()).Parse()).Generate(), true);   // Parse this file!
             }
+
+            Module module = new Module();
+
+			module.Merge(tmodule, false);                                                                                               // Check/fix labels
 
             if (output == null)                                                                                                         // Output filename set?
                 File.WriteAllBytes("a.bliss", module.ToByteArray());                                                                    // No, so let's output to 'a.bliss'

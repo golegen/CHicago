@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 27 of 2018, at 21:37 BRT
-// Last edited on October 27 of 2018, at 22:00 BRT
+// Last edited on October 28 of 2018, at 21:27 BRT
 
 #include <chicago/console.h>
 #include <chicago/panic.h>

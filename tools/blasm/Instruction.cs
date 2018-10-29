@@ -1,7 +1,7 @@
 ﻿// File author is Ítalo Lima Marconato Matias
 //
 // Created on October 20 of 2018, at 22:32 BRT
-// Last edited on October 20 of 2018, at 23:03 BRT
+// Last edited on October 28 of 2018, at 00:19 BRT
 
 using System;
 using System.Collections.Generic;
@@ -23,6 +23,10 @@ namespace Bliss.Assembler
         lds,
         ldu,
         ldf,
+        pop,
+        br,
+        call,
+        ret,
         print
     }
 

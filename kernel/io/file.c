@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:28 BRT
-// Last edited on October 27 of 2018, at 22:32 BRT
+// Last edited on October 28 of 2018, at 18:59 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -676,6 +676,7 @@ Void FsDbgListTypes(Void) {
 
 Void FsInitTypes(Void) {
 	DevFsInit();																														// Mount the DevFs
+	CHFsInit();																															// Add the CHFs to the fs type list
 	Iso9660Init();																														// Add the Iso9660 to the fs type list
 }
 

@@ -1,7 +1,7 @@
 ﻿// File author is Ítalo Lima Marconato Matias
 //
 // Created on October 20 of 2018, at 17:45 BRT
-// Last edited on October 21 of 2018, at 12:20 BRT
+// Last edited on October 28 of 2018, at 01:01 BRT
 
 namespace Bliss.Assembler.Nodes
 {
@@ -26,11 +26,17 @@ namespace Bliss.Assembler.Nodes
 
             while (true)
             {
-                if (parser.MatchToken(TokenType.Float))                                                                 // Float?
+			    if (parser.MatchToken(TokenType.Identifier))                                                            // Identifier?
+                {
+                    Token str = parser.ExpectToken(TokenType.Identifier);                                               // Yes
+
+                    instr.Children.Add(new IdentifierNode(str.Filename, str.Line, (string)str.Value));
+                }
+                else if (parser.MatchToken(TokenType.Float))                                                            // Float?
                 {
                     Token num = parser.ExpectToken(TokenType.Float);                                                    // Yes
 
-                    instr.Children.Add(new NumberNode(num.Filename, num.Line, (float)opc.Value));
+                    instr.Children.Add(new NumberNode(num.Filename, num.Line, (float)num.Value));
                 }
                 else
                 {

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 17 of 2018, at 16:10 BRT
-// Last edited on October 27 of 2018, at 19:51 BRT
+// Last edited on October 28 of 2018, at 21:23 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/file.h>
@@ -232,6 +232,7 @@ PFsNode Iso9660FindInDirectory(PFsNode dir, PChar name) {
 					
 					if (de == Null) {
 						MemFree((UIntPtr)dename);																	// The allocation failed...
+						MemFree((UIntPtr)data);
 						return Null;
 					} else {
 						StrCopyMemory(de, dent, dent->directory_record_size);										// Copy it!
@@ -242,6 +243,7 @@ PFsNode Iso9660FindInDirectory(PFsNode dir, PChar name) {
 					if (node == Null) {
 						MemFree((UIntPtr)de);																		// Allocation failed, free everything and return Null
 						MemFree((UIntPtr)dename);
+						MemFree((UIntPtr)data);
 						return Null;
 					}
 					
@@ -251,19 +253,18 @@ PFsNode Iso9660FindInDirectory(PFsNode dir, PChar name) {
 					if ((dent->flags & 0x02) == 0x02) {																// Directory?
 						node->flags = FS_FLAG_DIR;																	// Yes!
 						node->read = Null;
-						node->write = Null;
 						node->readdir = Iso9660ReadDirectoryEntry;
 						node->finddir = Iso9660FindInDirectory;
 					} else {
 						node->flags = FS_FLAG_FILE;																	// Nope
 						node->read = Iso9660ReadFile;
-						node->write = Null;
 						node->readdir = Null;
 						node->finddir = Null;
 					}
 					
 					node->inode = (UIntPtr)de;																		// Inode is the directory entry (because of this i copied it before)
 					node->length = dent->extent_length_lsb;
+					node->write = Null;
 					node->open = Iso9660OpenFile;
 					node->close = Iso9660CloseFile;
 					
@@ -430,6 +431,7 @@ Boolean Iso9660Umount(PFsMountPoint mp) {
 	} else if (mp->root->priv == Null) {
 		return False;
 	} else if (mp->root->inode == 0) {
+		return False;
 	} else if (!StrCompare(mp->type, "Iso9660")) {
 		return False;
 	}
