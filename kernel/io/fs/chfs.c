@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 28 of 2018, at 09:41 BRT
-// Last edited on October 28 of 2018, at 21:35 BRT
+// Last edited on October 29 of 2018, at 15:19 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/chfs.h>
@@ -255,8 +255,6 @@ Boolean CHFsProbe(PFsNode file) {
 	} else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {
 		return False;
 	} else if (file->read == Null) {
-		return False;
-	} else if (StrCompare(file->name, "CdRom0")) {															// *HACKHACK* Our IDEDeviceRead/Write function doesn't works correctly, need to fix them to get this function working on cdrom
 		return False;
 	}
 	

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 23:40 BRT
-// Last edited on October 27 of 2018, at 20:44 BRT
+// Last edited on October 29 of 2018, at 15:30 BRT
 
 #include <chicago/arch/ide.h>
 #include <chicago/arch/idt.h>
@@ -306,61 +306,51 @@ Boolean IDEDeviceRead(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	UInt8 bus = (((UInt32)dev->priv) >> 8) & 0xFF;
 	UInt8 drive = ((UInt32)dev->priv) & 0xFF;
 	UIntPtr bsize = IDEGetBlockSize(bus, drive);																// Get the block size
-	UIntPtr end = 0;
-	UIntPtr curr = 0;
-	UIntPtr start = 0;
 	
 	if (bsize == 0) {
 		return False;																							// Invalid device!
 	}
 	
-	start = off / bsize;
-	end = (off + len - 1) / bsize;
+	UIntPtr cur = off / bsize;
+	UIntPtr end = (off + len) / bsize;
 	
 	if ((off % bsize) != 0) {																					// "Align" the start
-		PUInt8 buff = (PUInt8)MemAllocate(bsize);																// Alloc memory for reading
+		PUInt8 buff = (PUInt8)MemAllocate(bsize);																// Alloc memory for reading the disk
 		
-		if (buf == Null) {
-			return False;																						// Failed
-		}
-		
-		if (!IDEReadSectors(bus, drive, 1, start, buff)) {														// Read this block
+		if (buff == Null) {
+			return False;																						// Failed...
+		} else if (!IDEReadSectors(bus, drive, 1, cur, buff)) {													// Read this block
 			MemFree((UIntPtr)buff);																				// Failed...
 			return False;
 		}
 		
-		StrCopyMemory(buf, (PVoid)(((UIntPtr)buff) + (off % bsize)), bsize - (off % bsize));					// Put it into the user buffer
+		StrCopyMemory(buf, buff + (off % bsize), bsize - (off % bsize));										// Copy it into the user buffer
 		MemFree((UIntPtr)buff);
-		
-		curr += bsize - (off % bsize);
-		start++;
+		cur++;
 	}
 	
-	if (((off + len) % bsize) && (start <= end)) {																// "Align" the end
-		PUInt8 buff = (PUInt8)MemAllocate(bsize);																// Alloc memory for reading
+	if (((off + len) % bsize) != 0) {																			// "Align" the end
+		PUInt8 buff = (PUInt8)MemAllocate(bsize);																// Alloc memory for reading the disk
 		
-		if (buf == Null) {
-			return False;																						// Failed
-		}
-		
-		if (!IDEReadSectors(bus, drive, 1, end, buff)) {														// Read this block
+		if (buff == Null) {
+			return False;																						// Failed...
+		} else if (!IDEReadSectors(bus, drive, 1, end, buff)) {													// Read this block
 			MemFree((UIntPtr)buff);																				// Failed...
 			return False;
 		}
 		
-		StrCopyMemory((PVoid)(((UIntPtr)buf) + len - ((off + len) % bsize)), buff, (off + len) % bsize);		// Put it into the user buffer
+		StrCopyMemory(buf + len - ((off + len) % bsize), buff, (off + len) % bsize);							// Copy it into the user buffer
 		MemFree((UIntPtr)buff);
 		
-		end--;
+		if (end != 0) {																							// Only decrease the end if it isn't 0
+			end--;
+		}
 	}
 	
-	while (start <= end) {																						// Just read it!
-		if (!IDEReadSectors(bus, drive, 1, start, (PVoid)(((UIntPtr)buf) + curr))) {
+	if (cur < end) {																							// Let's read!
+		if (!IDEReadSectors(bus, drive, end - cur, cur, buf + (off % bsize))) {
 			return False;																						// Failed...
 		}
-		
-		curr += bsize;
-		start++;
 	}
 	
 	return True;
