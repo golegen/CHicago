@@ -1,12 +1,139 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 28 of 2018, at 09:41 BRT
-// Last edited on October 29 of 2018, at 19:14 BRT
+// Last edited on October 29 of 2018, at 21:59 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/chfs.h>
 #include <chicago/file.h>
 #include <chicago/string.h>
+
+static UInt32 CHFsAllocBlock(PFsNode dev, PCHFsHeader hdr) {
+	if ((dev == Null) || (hdr == Null)) {																	// Null pointer checks first!
+		return 0;
+	} else if (dev->read == Null) {																			// No read function?
+		return 0;
+	} else if (dev->write == Null) {																		// No write function?
+		return 0;
+	} else if (hdr->block_used_count == hdr->block_count) {													// No free blocks?
+		return 0;
+	}
+	
+	PUInt8 buf = (PUInt8)MemAllocate(512);																	// Alloc some space for reading the disk
+	
+	if (buf == Null) {
+		return 0;																							// Failed
+	}
+	
+	UInt32 end = hdr->block_count / 4096;
+	
+	if ((hdr->block_count % 4096) != 0) {																	// Align the division UP
+		end++;
+	}
+	
+	for (UInt32 i = 0; i < end; i++) {
+		if (!dev->read(dev, i + 1, 512, buf)) {																// Read this block bitmap
+			MemFree((UIntPtr)buf);																			// Failed
+			return 0;
+		}
+		
+		for (UIntPtr j = 0; j < 512; j++) {																	// Let's check every byte
+			for (IntPtr k = 32; k >= 0; k--) {																// And every bit
+				if ((buf[j] & (1 << k)) == 0) {																// Free?
+					hdr->block_used_count++;																// Yes! Increase the block used count
+					buf[j] |= 1 << k;																		// Set this block bit in the bitmap
+					
+					if (!dev->write(dev, 0, 512, (PUInt8)hdr)) {											// Rewrite the block
+						MemFree((UIntPtr)buf);
+						return 0;
+					}
+					
+					if (!dev->write(dev, i + 1, 512, buf)) {												// Rewrite this block bitmap 
+						MemFree((UIntPtr)buf);
+						return 0;
+					}
+					
+					MemFree((UIntPtr)buf);																	// Free the buffer
+					
+					return (i * 2097152) + (j * 4096) + k;													// 1 block = 512 bytes, in 1 byte we have 8 blocks, 512 * 8 = 4096, 4096 * 512 = 2097152
+				}
+			}
+		}
+	}
+	
+	MemFree((UIntPtr)buf);																					// ... This wasn't supposed to happen
+	
+	return 0;
+}
+
+static Void CHFsFreeBlock(PFsNode dev, PCHFsHeader hdr, UInt32 block) {
+	if ((dev == Null) || (hdr == Null)) {																	// Null pointer checks first!
+		return;
+	} else if (dev->read == Null) {																			// No read function?
+		return;
+	} else if (dev->write == Null) {																		// No write function?
+		return;
+	} else if (hdr->block_used_count == 0) {																// The superblock (header) and the bitmap blocks are always reserved, but if they aren't, STOP, SOMETHING IS WRONG!
+		return;
+	} else if (block >= hdr->block_count) {																	// Out of bound block?
+		return;
+	}
+	
+	UInt32 min = (hdr->block_count / 4096) + 2;																// Calculate the minimum block
+	
+	if ((hdr->block_count % 4096) != 0) {																	// Align the division UP
+		min++;
+	}
+	
+	if (block < min) {																						// Too low block?
+		return;																								// ... You can't free the bitmap blocks (and you can't free the superblock/header)
+	}
+	
+	PUInt8 buf = (PUInt8)MemAllocate(512);																	// Allocace some space for reading the disk
+	
+	if (buf == Null) {
+		return;																								// Failed
+	}
+	
+	UInt32 lba = block / 2097152 + 1;																		// Get the starting lba of this block in the bitmap
+	
+	if ((block % 2097152) != 0) {																			// Align the division UP
+		lba++;
+	}
+	
+	while (block > 2097152) {
+		block -= 2097152;
+	}
+	
+	UInt32 byte = block / 4096;																				// Get the byte of this block in the bitmap
+	
+	if ((block % 4096) != 0) {																				// Align the division UP
+		byte++;
+	}
+	
+	while (block > 4096) {
+		block -= 4096;
+	}
+	
+	if (!dev->read(dev, lba, 512, buf)) {																	// Read the block bitmap
+		return;																								// Failed...
+	}
+	
+	hdr->block_used_count--;																				// Decrease the used block count
+	buf[byte] &= ~(1 << block);																				// Unset this block
+	
+	if (!dev->write(dev, 0, 512, (PUInt8)hdr)) {															// Rewrite the superblock (header)
+		MemFree((UIntPtr)buf);
+		return;
+	}
+	
+	if (!dev->write(dev, lba, 512, buf)) {																	// Rewrite the block bitmap
+		MemFree((UIntPtr)buf);
+		return;
+	}
+	
+	MemFree((UIntPtr)buf);																					// Free the buffer!
+}
 
 Boolean CHFsReadFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	if (file == Null) {																						// Let's do some null pointer checks first!
@@ -25,7 +152,7 @@ Boolean CHFsReadFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	
 	if (dev->read == Null) {																				// We have the read function... right?
 		return False;																						// Nope (how you initialized this device WITHOUT THE READ FUNCTION????????????)
-	} if ((dev->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {													// It's a file?
+	} else if ((dev->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {												// It's a file?
 		return False;																						// Nope (again, how?)
 	}
 	

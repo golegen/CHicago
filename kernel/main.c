@@ -67,5 +67,7 @@ Void KernelMainLate(Void) {
 	ConWriteFormated("Codename '%s'\r\n", CHICAGO_CODENAME);
 	ConWriteFormated("%s\r\n\r\n", CHICAGO_VSTR);
 	
+	FsMountFile("\\MountPoint", "\\Devices\\HardDisk0", Null);
+	
 	while (1) ;
 }
