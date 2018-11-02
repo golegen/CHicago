@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on November 02 of 2018, at 12:56 BRT
+// Last edited on November 02 of 2018, at 17:28 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/arch.h>
@@ -10,6 +10,7 @@
 #include <chicago/display.h>
 #include <chicago/file.h>
 #include <chicago/process.h>
+#include <chicago/string.h>
 #include <chicago/version.h>
 
 Void KernelMain(Void) {
@@ -93,7 +94,16 @@ Void KernelMainLate(Void) {
 	}
 	
 	ConWriteFormated("Length: %d\r\n", file->length);																		// Show the length of the file
-	ConWriteFormated("Data: %s\r\n", buf);																					// And the data!
+	ConWriteFormated("Data: %s\r\n", buf);																					// Show the data
+	
+	if ((file->length != 20) && (!StrCompareMemory(buf, "Hello, write world!\0", 20))) {									// And test the write function!
+		StrCopyMemory(buf, "Hello, write world!\0", 20);
+		
+		if (!FsWriteFile(file, 0, 20, buf)) {
+			ConWriteFormated("Couldn't write to the file\r\n");
+			goto l;
+		}
+	}
 	
 l:	while (1) ;
 }
