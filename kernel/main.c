@@ -1,8 +1,9 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on October 29 of 2018, at 19:36 BRT
+// Last edited on November 02 of 2018, at 12:56 BRT
 
+#include <chicago/alloc.h>
 #include <chicago/arch.h>
 #include <chicago/console.h>
 #include <chicago/debug.h>
@@ -67,7 +68,32 @@ Void KernelMainLate(Void) {
 	ConWriteFormated("Codename '%s'\r\n", CHICAGO_CODENAME);
 	ConWriteFormated("%s\r\n\r\n", CHICAGO_VSTR);
 	
-	FsMountFile("\\MountPoint", "\\Devices\\HardDisk0", Null);
+	if (!FsMountFile("\\MountPoint", "\\Devices\\HardDisk0", Null)) {														// Try to mount the hard disk
+		ConWriteFormated("Couldn't mount \\Devices\\HardDisk0\r\n");
+		goto l;
+	}
 	
-	while (1) ;
+	PFsNode file = FsOpenFile("\\MountPoint\\hello");																		// Try to open the hello (test) file
+	
+	if (file == Null) {
+		ConWriteFormated("Couldn't open \\MountPoint\\hello\r\n");
+		goto l;
+	}
+	
+	PUInt8 buf = (PUInt8)MemAllocate(file->length);																			// Try to alloc space for reading it
+	
+	if (buf == Null) {
+		ConWriteFormated("Couldn't alloc space for reading the file\r\n");
+		goto l;
+	}
+	
+	if (!FsReadFile(file, 0, file->length, buf)) {																			// Try to read it
+		ConWriteFormated("Couldn't read the file\r\n");
+		goto l;
+	}
+	
+	ConWriteFormated("Length: %d\r\n", file->length);																		// Show the length of the file
+	ConWriteFormated("Data: %s\r\n", buf);																					// And the data!
+	
+l:	while (1) ;
 }
