@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 28 of 2018, at 09:41 BRT
-// Last edited on November 02 of 2018, at 17:27 BRT
+// Last edited on November 02 of 2018, at 22:15 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/chfs.h>
@@ -76,7 +76,7 @@ static UIntPtr CHFsGoToOffset(PCHFsMountInfo info, PCHFsINode file, UIntPtr off,
 		return 0;
 	} else if (!alloc && (info->dev->write == Null)) {
 		return 0;
-	} else if ((file->data_length == 0) || (off >= file->data_length)) {										// Too high offset?
+	} else if ((!alloc && file->data_length == 0) || (!alloc && off >= file->data_length)) {					// Too high offset?
 		return 0;
 	}
 	
@@ -227,7 +227,7 @@ Boolean CHFsWriteFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	
 	PCHFsMountInfo info = (PCHFsMountInfo)file->priv;
 	
-	if ((info->dev->read == Null) || (info->dev->write == Null)) {												// We have the read and the write functions... right?
+	if ((info->dev->read == Null) || (info->dev->write == Null)) {												// We have the read and the write function... right?
 		return False;
 	} else if ((info->dev->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {												// It's a file?
 		return False;
@@ -335,6 +335,108 @@ Void CHFsCloseFile(PFsNode node) {
 	MemFree((UIntPtr)node);
 }
 
+Boolean CHFsCreateFile(PFsNode dir, PChar name, UIntPtr flags) {
+	if ((dir == Null) || (name == Null) || (dir->priv == Null) || (dir->inode == 0)) {							// Let's do some null pointer checks first!
+		return False;
+	} else if ((dir->flags & FS_FLAG_DIR) != FS_FLAG_DIR) {														// Trying to create an directory entry inside of a file... why?
+		return False;
+	} else if (StrCompare(name, ".") || StrCompare(name, "..")) {												// We can't create '.' nor '..'
+		return False;
+	}
+	
+	PCHFsMountInfo info = (PCHFsMountInfo)dir->priv;
+	
+	if ((info->dev->read == Null) || (info->dev->write == Null)) {												// We have the read and the write function, right?
+		return False;
+	} else if ((info->dev->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {												// It's a file?
+		return False;
+	}
+	
+	PCHFsINode inode = (PCHFsINode)MemAllocate(512);															// Alloc space for reading the inode
+	
+	if (inode == Null) {
+		return False;
+	}
+	
+	if (!FsReadFile(info->dev, dir->inode * 512, 512, (PUInt8)inode)) {											// Read the inode
+		MemFree((UIntPtr)inode);
+		return False;
+	}
+	
+	PUInt8 buf = (PUInt8)MemAllocate(512);																		// Alloc space for reading from the disk
+	
+	if (buf == Null) {
+		MemFree((UIntPtr)inode);
+		return False;
+	}
+	
+	UIntPtr lba = dir->inode;																					// Let's search for a free entry in our directory
+	PCHFsINode ent = inode;
+	
+	while (1) {
+		if (ent->type == 0x00) {																				// Found?
+			ent->type = (flags & FS_FLAG_FILE) ? 0x01 : 0x02;													// Yes :)
+			ent->data_length = 0;
+			ent->name_length = StrGetLength(name);
+			StrCopyMemory(ent->name, name, ent->name_length);
+			
+			if (!FsWriteFile(info->dev, lba * 512, 512, buf)) {													// Write the dir entry back
+				MemFree((UIntPtr)buf);
+				MemFree((UIntPtr)inode);
+				return False;
+			}
+			
+			return True;
+		}
+		
+		lba = ent->next_block;																					// Follow to the next block
+		ent = (PCHFsINode)buf;																					// As we start with the first entry of the directory, we need to point the ent to the buffer now
+		
+		if (lba == 0) {																							// End of the chain?
+			break;																								// Yes...
+		} else if (!FsReadFile(info->dev, lba * 512, 512, buf)) {												// Read the block
+			MemFree((UIntPtr)buf);
+			MemFree((UIntPtr)inode);
+			return False;
+		}
+	}
+	
+	lba = CHFsAllocBlock(info);																					// Alright, let's alloc a new block
+	
+	if (lba == 0) {
+		MemFree((UIntPtr)buf);																					// Failed :(
+		MemFree((UIntPtr)inode);
+		return False;
+	}
+	
+	StrSetMemory(buf, 0, 512);																					// Clean the buffer
+	
+	ent->next_block = inode->next_block;																		// Setup the block
+	ent->type = (flags & FS_FLAG_FILE) ? 0x01 : 0x02;
+	ent->data_length = 0;
+	ent->name_length = StrGetLength(name);
+	StrCopyMemory(ent->name, name, ent->name_length);
+	
+	if (!FsWriteFile(info->dev, lba * 512, 512, buf)) {															// Write the inode back
+		MemFree((UIntPtr)buf);
+		MemFree((UIntPtr)inode);
+		return False;
+	}
+	
+	inode->next_block = lba;																					// Add it to the directory
+	
+	if (!FsWriteFile(info->dev, dir->inode * 512, 512, (PUInt8)inode)) {										// And write the directory's first inode back
+		MemFree((UIntPtr)buf);
+		MemFree((UIntPtr)inode);
+		return False;
+	}
+	
+	MemFree((UIntPtr)buf);
+	MemFree((UIntPtr)inode);
+	
+	return True;
+}
+
 PChar CHFsReadDirectoryEntry(PFsNode dir, UIntPtr entry) {
 	if ((dir == Null) || (dir->priv == Null) || (dir->inode == 0)) {											// Let's do some null pointer checks first!
 		return Null;
@@ -366,11 +468,6 @@ PChar CHFsReadDirectoryEntry(PFsNode dir, UIntPtr entry) {
 	}
 	
 	UIntPtr lba = inode->next_block;																			// Get the next lba
-	
-	if (lba == 0) {
-		MemFree((UIntPtr)inode);
-		return Null;
-	}
 	
 	PUInt8 buff = (PUInt8)MemAllocate(512);																		// Alloc some memory for reading the disk
 	PCHFsINode ent = inode;
@@ -453,11 +550,6 @@ PFsNode CHFsFindInDirectory(PFsNode dir, PChar name) {
 	UIntPtr lba = inode->next_block;																			// Get the next lba
 	UIntPtr olba = dir->inode;
 	
-	if (lba == 0) {
-		MemFree((UIntPtr)inode);
-		return Null;
-	}
-	
 	PUInt8 buff = (PUInt8)MemAllocate(512);																		// Alloc some memory for reading the disk
 	PCHFsINode ent = inode;
 	
@@ -503,18 +595,21 @@ PFsNode CHFsFindInDirectory(PFsNode dir, PChar name) {
 					node->write = CHFsWriteFile;
 					node->readdir = Null;
 					node->finddir = Null;
+					node->create = Null;
 				} else {
-					node->flags = FS_FLAG_DIR;																	// No, set the dir flag, the readdir entry and the finddir entry
+					node->flags = FS_FLAG_DIR;																	// No, set the dir flag, the readdir entry, the finddir entry and the create entry
 					node->read = Null;
 					node->write = Null;
 					node->readdir = CHFsReadDirectoryEntry;
 					node->finddir = CHFsFindInDirectory;
+					node->create = CHFsCreateFile;
 				}
 				
 				node->inode = olba;																				// Set the inode
 				node->length = ent->data_length;																// The length
 				node->open = CHFsOpenFile;																		// The open and close function
 				node->close = CHFsCloseFile;
+				node->control = Null;
 				
 				MemFree((UIntPtr)buff);																			// Free the buffer
 				MemFree((UIntPtr)inode);																		// Free the inode
@@ -522,7 +617,6 @@ PFsNode CHFsFindInDirectory(PFsNode dir, PChar name) {
 				return node;																					// And return :)
 			}
 		}
-		
 		
 		MemFree((UIntPtr)entname);																				// Free the copied name
 		
@@ -662,6 +756,8 @@ PFsMountPoint CHFsMount(PFsNode file, PChar path) {
 	mp->root->close = CHFsCloseFile;
 	mp->root->readdir = CHFsReadDirectoryEntry;
 	mp->root->finddir = CHFsFindInDirectory;
+	mp->root->create = CHFsCreateFile;
+	mp->root->control = Null;
 	
 	return mp;
 }

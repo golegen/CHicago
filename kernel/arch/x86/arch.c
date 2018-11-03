@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on October 28 of 2018, at 21:28 BRT
+// Last edited on November 03 of 2018, at 17:58 BRT
 
 #include <chicago/arch/bootmgr.h>
 #include <chicago/arch/gdt.h>
@@ -100,6 +100,7 @@ Void ArchInit(Void) {
 	DbgWriteFormated("[x86] GDT initialized\r\n");
 	
 	IDTInit();																											// Init the IDT
+	IDTRegisterInterruptHandler(0x3E, PsSwitchTaskForce);																// Register the force switch handler
 	DbgWriteFormated("[x86] IDT initialized\r\n");
 	
 	PITInit();																											// Init the PIT

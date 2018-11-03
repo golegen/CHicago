@@ -1,10 +1,12 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 28 of 2018, at 09:48 BRT
-// Last edited on October 28 of 2018, at 21:29 BRT
+// Last edited on November 03 of 2018, at 18:15 BRT
 
 #ifndef __CHICAGO_CHFS_H__
 #define __CHICAGO_CHFS_H__
+
+#include <chicago/file.h>
 
 typedef struct {
 	UInt8 jmp[2];
@@ -23,5 +25,10 @@ typedef struct {
 	UInt8 name_length;
 	UInt8 name[];
 } Packed CHFsINode, *PCHFsINode;
+
+typedef struct {
+	PFsNode dev;
+	CHFsHeader hdr;
+} CHFsMountInfo, *PCHFsMountInfo;
 
 #endif		// __CHICAGO_CHFS_H__

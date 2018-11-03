@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:29 BRT
-// Last edited on Octobe r27 of 2018, at 22:25 BRT
+// Last edited on November 02 of 2018, at 22:12 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -122,6 +122,7 @@ PFsNode DevFsFindInDirectory(PFsNode dir, PChar name) {
 	node->close = DevFsCloseFile;
 	node->readdir = Null;
 	node->finddir = Null;
+	node->create = Null;
 	node->control = DevFsControlFile;
 	
 	return node;

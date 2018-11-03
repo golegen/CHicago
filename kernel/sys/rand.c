@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 12 of 2018, at 18:17 BRT
-// Last edited on October 12 of 2018, at 20:13 BRT
+// Last edited on November 03 of 2018, at 17:54 BRT
 
 #include <chicago/arch.h>
 #include <chicago/process.h>
@@ -13,8 +13,8 @@ Void RandSetSeed(UIntPtr seed) {
 }
 
 UIntPtr RandGenerateSeed(Void) {
-	if (PsCurrentThread != Null && PsCurrentProcess != Null) {																	// We can use the process id + thread id?
-		return ArchGetSeconds() * ((PsCurrentProcess->id == 0) ? 1 : PsCurrentProcess->id) + PsCurrentThread->id;				// Yes!
+	if (PsCurrentProcess != Null) {																								// We can use the process id?
+		return ArchGetSeconds() * ((PsCurrentProcess->id == 0) ? 1 : PsCurrentProcess->id) / 2;									// Yes!
 	} else {
 		return ArchGetSeconds() * ArchGetSeconds() / 2;																			// Nope...
 	}

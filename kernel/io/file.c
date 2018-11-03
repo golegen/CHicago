@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:28 BRT
-// Last edited on October 29 of 2018, at 16:32 BRT
+// Last edited on November 02 of 2018, at 22:11 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -398,6 +398,27 @@ PFsNode FsFindInDirectory(PFsNode dir, PChar name) {
 		return dir->finddir(dir, name);
 	} else {
 		return Null;
+	}
+}
+
+Boolean FsCreateFile(PFsNode dir, PChar name, UIntPtr flags) {
+	if ((dir == Null) || (name == Null)) {
+		return False;
+	} else if ((dir->flags & FS_FLAG_DIR) != FS_FLAG_DIR) {																				// Directory-only function!
+		return False;
+	}
+	
+	PFsNode file = FsFindInDirectory(dir, name);																						// Let's try to not create entries with the same name
+	
+	if (file != Null) {
+		FsCloseFile(file);																												// ...
+		return False;
+	}
+	
+	if (dir->create != Null) {
+		return dir->create(dir, name, flags);
+	} else {
+		return False;
 	}
 }
 

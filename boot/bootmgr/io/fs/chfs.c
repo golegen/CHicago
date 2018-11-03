@@ -1,66 +1,132 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 28 of 2018, at 09:41 BRT
-// Last edited on October 29 of 2018, at 19:14 BRT
+// Last edited on November 03 of 2018, at 18:34 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/chfs.h>
 #include <chicago/file.h>
 #include <chicago/string.h>
 
+static UIntPtr CHFsGoToOffset(PCHFsMountInfo info, PCHFsINode file, UIntPtr off) {
+	if ((info == Null) || (file == Null) || (info->dev == Null) || (info->dev->read == Null)) {					// Let's do some null pointer checks first!
+		return 0;
+	} else if ((file->data_length == 0) || (off >= file->data_length)) {										// Too high offset?
+		return 0;
+	}
+	
+	UIntPtr lba = file->data_start;																				// Get the start lba
+	UIntPtr cur = 0;
+	
+	if (lba == 0) {																								// No chain to follow?
+		return 0;																								// ...
+	}
+	
+	if (off == 0) {																								// Offset is 0?
+		return lba;																								// Yes!
+	}
+	
+	PUInt8 buf = (PUInt8)MemAllocate(512);																		// Alloc some space for reading the disk
+	
+	if (buf == Null) {
+		return 0;																								// Failed...
+	}
+	
+	while (cur < off) {																							// Let's go!
+		if (!FsReadFile(info->dev, lba * 512, 512, buf)) {														// Read this block
+			MemFree((UIntPtr)buf);																				// Failed...
+			return 0;
+		}
+		
+		if (off - cur >= 508) {																					// Our data block is 508-bytes long (would be 512, but 4-bytes are reserved for the next chain block num), we all the 508 bytes?
+			cur += 508;																							// Yes
+		} else {
+			cur += off - cur;																					// No
+		}
+		
+		UIntPtr lba = *((PUInt32)buf);																			// Get the next block from the chain
+		
+		if (lba == 0) {																							// End of the chain?
+			MemFree((UIntPtr)buf);																				// Yes...
+			return 0;
+		}
+	}
+	
+	MemFree((UIntPtr)buf);
+	
+	return lba;
+}
+
 Boolean CHFsReadFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
-	if (file == Null) {																						// Let's do some null pointer checks first!
+	if ((file == Null) || (file->priv == Null) || (file->inode == 0)) {											// Let's do some null pointer checks first!
 		return False;
-	} else if ((file->priv == Null) || (file->inode == 0)) {
+	} else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {													// We're trying to read raw bytes from an directory?
 		return False;
-	} else if (file->read == Null) {
-		return False;
-	} else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {												// We're trying to read raw bytes from an directory?
-		return False;																						// Why?
-	} else if (off >= file->length) {																		// For byte per byte read
+	} else if (off >= file->length) {																			// For byte per byte read
 		return False;
 	}
 	
-	PFsNode dev = file->priv;																				// Let's get our base device (it's inside of the priv)
+	PCHFsMountInfo info = (PCHFsMountInfo)file->priv;
 	
-	if (dev->read == Null) {																				// We have the read function... right?
-		return False;																						// Nope (how you initialized this device WITHOUT THE READ FUNCTION????????????)
-	} if ((dev->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {													// It's a file?
-		return False;																						// Nope (again, how?)
+	if (info->dev->read == Null) {																				// We have the read function... right?
+		return False;
+	} else if ((info->dev->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {												// It's a file?
+		return False;
 	}
 	
-	PCHFsINode inode = (PCHFsINode)file->inode;																// Get the inode
-	PUInt8 buff = (PUInt8)MemAllocate(512);																	// Alloc some memory for reading the disk
-	UInt32 lba = inode->data_start;
-	UIntPtr cur = off;
-	UIntPtr end = 0;
+	PCHFsINode inode = (PCHFsINode)MemAllocate(512);															// Alloc space for reading the inode
+	
+	if (inode == Null) {
+		return False;																							// Failed...
+	}
+	
+	if (!FsReadFile(info->dev, file->inode * 512, 512, (PUInt8)inode)) {										// Read the inode
+		MemFree((UIntPtr)inode);
+		return False;
+	}
+	
+	UIntPtr lba = CHFsGoToOffset(info, inode, off);																// Get the start lba for off
+	
+	if (lba == 0) {
+		MemFree((UIntPtr)inode);
+		return False;
+	}
+	
+	PUInt8 buff = (PUInt8)MemAllocate(512);																		// Alloc some memory for reading the disk
+	UIntPtr end = len;
+	UIntPtr cur = 0;
 	
 	if (buff == Null) {
-		return False;																						// ...
-	} else if ((off + len) > file->length) {																// Let's calc the size that we're going to read
-		end = file->length;
-	} else {
-		end = off + len;
+		MemFree((UIntPtr)inode);																				// ...
+		return False;
+	} else if ((off + len) > file->length) {																	// Let's calc the size that we're going to read
+		end = file->length - off;
 	}
 	
-	while (cur < end) {																						// And read the file!
-		if (!dev->read(dev, lba * 512, 512, buff)) {														// Read the sector
-			MemFree((UIntPtr)buff);																			// Failed...
+	while (cur < end) {																							// And read the file!
+		if (lba == 0) {																							// Well, we can't continue, as the chain ends here...
+			MemFree((UIntPtr)buff);
+			MemFree((UIntPtr)inode);
+			return 0;
+		} else if (!FsReadFile(info->dev, lba * 512, 512, buff)) {												// Read the sector
+			MemFree((UIntPtr)buff);																				// Failed...
+			MemFree((UIntPtr)inode);
 			return False;
 		}
 		
-		if (cur - end >= 508) {																				// Our data block is 508-bytes long (would be 512, but 4-bytes are reserved for the next chain block num), we all the 508 bytes?
-			StrCopyMemory(buf + cur, buff + 4, 508);														// Yes
-			cur -= 508;
+		if (end - cur >= 508) {																					// Our data block is 508-bytes long (would be 512, but 4-bytes are reserved for the next chain block num), we need all the 508 bytes?
+			StrCopyMemory(buf + cur, buff + 4, 508);															// Yes
+			cur += 508;
 		} else {
-			StrCopyMemory(buf + cur, buf + 4, cur - end);													// No, so only read what we need
-			cur -= cur - end;
+			StrCopyMemory(buf + cur, buff + 4, end - cur);														// No, so only read what we need
+			cur += end - cur;
 		}
 		
-		lba = *((PUInt32)buff);																				// Get the next block from the chain
+		lba = *((PUInt32)buff);																					// Get the next block from the chain
 	}
 	
 	MemFree((UIntPtr)buff);
+	MemFree((UIntPtr)inode);
 	
 	return True;
 }
@@ -86,177 +152,204 @@ Void CHFsCloseFile(PFsNode node) {
 }
 
 PChar CHFsReadDirectoryEntry(PFsNode dir, UIntPtr entry) {
-	if (dir == Null) {																						// Let's do some null pointer checks first!
+	if ((dir == Null) || (dir->priv == Null) || (dir->inode == 0)) {											// Let's do some null pointer checks first!
 		return Null;
-	} else if ((dir->priv == Null) || (dir->inode == 0)) {
+	} else if ((dir->flags & FS_FLAG_DIR) != FS_FLAG_DIR) {														// Trying to read an directory entry using an file... why?
 		return Null;
-	} else if ((dir->flags & FS_FLAG_DIR) != FS_FLAG_DIR) {													// Trying to read an directory entry using an file... why?
-		return Null;
-	} else if (entry == 0) {																				// Current directory?
+	} else if (entry == 0) {																					// Current directory?
 		return StrDuplicate(".");
-	} else if (entry == 1) {																				// Parent directory?
+	} else if (entry == 1) {																					// Parent directory?
 		return StrDuplicate("..");
 	}
 	
-	PFsNode dev = dir->priv;																				// Get our device and make sure that it's valid
+	PCHFsMountInfo info = (PCHFsMountInfo)dir->priv;
 	
-	if (dev->read == Null) {
+	if (info->dev->read == Null) {																				// We have the read function... right?
 		return Null;
-	} if ((dev->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {
+	} else if ((info->dev->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {												// It's a file?
 		return Null;
 	}
 	
-	PCHFsINode inode = (PCHFsINode)dir->inode;																// Get the inode
-	PUInt8 buff = (PUInt8)MemAllocate(512);																	// Alloc some memory for reading the disk
-	UInt32 lba = inode->next_block;
+	PCHFsINode inode = (PCHFsINode)MemAllocate(512);															// Alloc space for reading the inode
+	
+	if (inode == Null) {
+		return Null;																							// Failed...
+	}
+	
+	if (!FsReadFile(info->dev, dir->inode * 512, 512, (PUInt8)inode)) {											// Read the inode
+		MemFree((UIntPtr)inode);
+		return Null;
+	}
+	
+	UIntPtr lba = inode->next_block;																			// Get the next lba
+	
+	PUInt8 buff = (PUInt8)MemAllocate(512);																		// Alloc some memory for reading the disk
 	PCHFsINode ent = inode;
 	
 	if (buff == Null) {
-		return Null;																						// ...
+		MemFree((UIntPtr)inode);																				// ...
+		return Null;
 	}
 	
-	for (UIntPtr i = 0;; i++) {																				// Let's search for the entry!
-		if (ent->type == 0x00) {																			// End of the directory?
-			MemFree((UIntPtr)buff);																			// Yes :(
+	for (UIntPtr i = 0;; i++) {																					// Let's search for the entry!
+		if (ent->type == 0x00) {																				// End of the directory?
+			MemFree((UIntPtr)buff);																				// Yes :(
+			MemFree((UIntPtr)inode);
 			return Null;
 		} else if (i == entry - 2) {
-			UIntPtr nlen = ent->name_length;																// Save the name length
-			PChar ret = (PChar)MemAllocate(nlen + 1);														// Alloc space for it
+			UIntPtr nlen = ent->name_length;																	// Save the name length
+			PChar ret = (PChar)MemAllocate(nlen + 1);															// Alloc space for it
 			
 			if (ret == Null) {
-				MemFree((UIntPtr)buff);																		// :(
+				MemFree((UIntPtr)buff);																			// :(
 				return Null;
 			}
 			
-			StrCopyMemory(ret, ent->name, nlen);															// Copy it
-			MemFree((UIntPtr)buff);																			// Free the buffer
+			StrCopyMemory(ret, ent->name, nlen);																// Copy it
+			MemFree((UIntPtr)buff);																				// Free the buffer
 			
-			ret[nlen] = '\0';																				// End the return string with a NUL character
+			ret[nlen] = '\0';																					// End the return string with a NUL character
 			
 			return ret;
 		}
 		
-		if (!dev->read(dev, lba * 512, 512, buff)) {														// Read the sector
-			MemFree((UIntPtr)buff);																			// Failed...
+		if (lba == 0) {																							// End of the chain?
+			MemFree((UIntPtr)buff);																				// Yes :(
+			MemFree((UIntPtr)inode);
+			return Null;
+		} else if (!FsReadFile(info->dev, lba * 512, 512, buff)) {												// Read the sector
+			MemFree((UIntPtr)buff);																				// Failed...
+			MemFree((UIntPtr)inode);
 			return Null;
 		}
 		
-		ent = (PCHFsINode)buff;																				// As we start with the first entry of the directory, we need to point the ent to the buffer now
-		lba = ent->next_block;																				// Follow to the next block
+		ent = (PCHFsINode)buff;																					// As we start with the first entry of the directory, we need to point the ent to the buffer now
+		lba = ent->next_block;																					// Follow to the next block
 	}
 	
-	MemFree((UIntPtr)buff);																					// The function should end on ent->type == 0x00, but if we got here, free the buffer and return Null
+	MemFree((UIntPtr)buff);
+	MemFree((UIntPtr)inode);
+	
 	return Null;
 }
 
 PFsNode CHFsFindInDirectory(PFsNode dir, PChar name) {
-	if ((dir == Null) || (name == Null)) {																	// Let's do some null pointer checks first!
+	if ((dir == Null) || (name == Null) || (dir->priv == Null) || (dir->inode == 0)) {							// Let's do some null pointer checks first!
 		return Null;
-	} else if ((dir->priv == Null) || (dir->inode == 0)) {
+	} else if ((dir->flags & FS_FLAG_DIR) != FS_FLAG_DIR) {														// Trying to read an directory entry using an file... why?
 		return Null;
-	} else if ((dir->flags & FS_FLAG_DIR) != FS_FLAG_DIR) {													// Trying to read an directory entry using an file... why?
+	} else if (StrCompare(name, ".") || StrCompare(name, "..")) {												// The . and the .. entries doesn't really exists
 		return Null;
 	}
 	
-	PCHFsINode inode = (PCHFsINode)dir->inode;																// Get the inode
-	PUInt8 buff = (PUInt8)MemAllocate(512);																	// Alloc some memory for reading the disk
+	PCHFsMountInfo info = (PCHFsMountInfo)dir->priv;
+	
+	if (info->dev->read == Null) {																				// We have the read function... right?
+		return Null;
+	} else if ((info->dev->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {												// It's a file?
+		return Null;
+	}
+	
+	PCHFsINode inode = (PCHFsINode)MemAllocate(512);															// Alloc space for reading the inode
+	
+	if (inode == Null) {
+		return Null;																							// Failed...
+	}
+	
+	if (!FsReadFile(info->dev, dir->inode * 512, 512, (PUInt8)inode)) {											// Read the inode
+		MemFree((UIntPtr)inode);
+		return Null;
+	}
+	
+	UIntPtr lba = inode->next_block;																			// Get the next lba
+	UIntPtr olba = dir->inode;
+	
+	PUInt8 buff = (PUInt8)MemAllocate(512);																		// Alloc some memory for reading the disk
 	PCHFsINode ent = inode;
-	UInt32 lba = inode->data_start;
 	
 	if (buff == Null) {
-		return Null;																						// ...
-	}
-	
-	PFsNode dev = dir->priv;																				// Get our device and make sure that it's valid
-	
-	if (dev->read == Null) {
-		return Null;
-	} if ((dev->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {
+		MemFree((UIntPtr)inode);																				// ...
 		return Null;
 	}
 	
-	while (1) {																								// Let's search for the entry!
-		if (ent->type == 0x00) {																			// End of the directory?
-			MemFree((UIntPtr)buff);																			// Yes :(
+	while (1) {																									// Let's search for the entry!
+		if (ent->type == 0x00) {																				// End of the directory?
+			MemFree((UIntPtr)buff);																				// Yes :(
+			MemFree((UIntPtr)inode);
 			return Null;
 		}
 		
-		PChar entname = (PChar)MemAllocate(ent->name_length + 1);											// Alloc space for copying the name of this entry
+		PChar entname = (PChar)MemAllocate(ent->name_length + 1);												// Alloc space for copying the name of this entry
 		
 		if (entname == Null) {
-			MemFree((UIntPtr)buff);																			// Failed...
+			MemFree((UIntPtr)buff);																				// Failed...
 			return Null;
 		}
 		
-		StrCopyMemory(entname, ent->name, ent->name_length);												// Copy the name
-		entname[ent->name_length] = '\0';																	// End it with a NUL character
+		StrCopyMemory(entname, ent->name, ent->name_length);													// Copy the name
+		entname[ent->name_length] = '\0';																		// End it with a NUL character
 		
-		if (StrGetLength(entname) == StrGetLength(name)) {													// same length?
-			if (StrCompare(entname, name)) {																// SAME NAME?
-				PCHFsINode ino = (PCHFsINode)MemAllocate(sizeof(CHFsINode) + ent->name_length);				// Yes! Let's try to alloc space for copying the inode
-				
-				if (ino == Null) {
-					MemFree((UIntPtr)entname);																// ...
-					MemFree((UIntPtr)buff);
-					return Null;
-				} else {
-					StrCopyMemory(ino, ent, sizeof(CHFsINode) + ent->name_length);							// Copy the inode!
-				}
-				
-				PFsNode node = (PFsNode)MemAllocate(sizeof(FsNode));										// Try to alloc space for the file node itself
+		if (StrGetLength(entname) == StrGetLength(name)) {														// Same length?
+			if (StrCompare(entname, name)) {																	// SAME NAME?
+				PFsNode node = (PFsNode)MemAllocate(sizeof(FsNode));											// Try to alloc space for the file node itself
 				
 				if (node == Null) {
-					MemFree((UIntPtr)ino);																	// ...
-					MemFree((UIntPtr)entname);
+					MemFree((UIntPtr)entname);																	// ...
 					MemFree((UIntPtr)buff);
+					MemFree((UIntPtr)inode);
 					return Null;
 				}
 				
-				node->name = entname;																		// Set the name
-				node->priv = dev;																			// The priv (device)
+				node->name = entname;																			// Set the name
+				node->priv = info;																				// The priv info
 				
-				if (ent->type == 0x01) {																	// File?
-					node->flags = FS_FLAG_FILE;																// Yes, set the file flag and the read function (for now)
+				if (ent->type == 0x01) {																		// File?
+					node->flags = FS_FLAG_FILE;																	// Yes, set the file flag and the read
 					node->read = CHFsReadFile;
-					node->write = Null;
 					node->readdir = Null;
 					node->finddir = Null;
 				} else {
-					node->flags = FS_FLAG_DIR;																// No, set the dir flag, the readdir entry and the finddir entry
+					node->flags = FS_FLAG_DIR;																	// No, set the dir flag, the readdir entry and the finddir entry
 					node->read = Null;
-					node->write = Null;
 					node->readdir = CHFsReadDirectoryEntry;
 					node->finddir = CHFsFindInDirectory;
 				}
 				
-				node->inode = (UIntPtr)ino;																	// Set the inode
-				node->length = ent->data_length;															// The length
-				node->open = CHFsOpenFile;																	// The open and close function
+				node->inode = olba;																				// Set the inode
+				node->length = ent->data_length;																// The length
+				node->write = Null;
+				node->open = CHFsOpenFile;																		// The open and close function
 				node->close = CHFsCloseFile;
 				
-				MemFree((UIntPtr)buff);																		// Free the buffer
+				MemFree((UIntPtr)buff);																			// Free the buffer
+				MemFree((UIntPtr)inode);																		// Free the inode
 				
-				return node;																				// And return :)
+				return node;																					// And return :)
 			}
 		}
 		
-		MemFree((UIntPtr)entname);																			// Free the copied name
+		MemFree((UIntPtr)entname);																				// Free the copied name
 		
-		if (!dev->read(dev, lba * 512, 512, buff)) {														// Read the sector
-			MemFree((UIntPtr)buff);																			// Failed...
+		if (lba == 0) {																							// End of the chain?
+			MemFree((UIntPtr)buff);																				// Yes :(
+			MemFree((UIntPtr)inode);
+			return Null;
+		} else if (!FsReadFile(info->dev, lba * 512, 512, buff)) {												// Read the sector
+			MemFree((UIntPtr)buff);																				// Failed...
+			MemFree((UIntPtr)inode);
 			return Null;
 		}
 		
-		ent = (PCHFsINode)buff;																				// As we start with the first entry of the directory, we need to point the ent to the buffer now
-		lba = ent->next_block;																				// Follow to the next block
+		ent = (PCHFsINode)buff;																					// As we start with the first entry of the directory, we need to point the ent to the buffer now
+		olba = lba;																								// Save the old lba
+		lba = ent->next_block;																					// Follow to the next block
 	}
 	
-	MemFree((UIntPtr)buff);																					// The function should end on ent->type == 0x00, but if we got here, free the buffer and return Null
 	return Null;
 }
 
 Boolean CHFsProbe(PFsNode file) {
-	if (file == Null) {																						// Sanity checks :)
+	if (file == Null) {																							// Sanity checks :)
 		return False;
 	} else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {
 		return False;
@@ -264,27 +357,27 @@ Boolean CHFsProbe(PFsNode file) {
 		return False;
 	}
 	
-	PCHFsHeader hdr = (PCHFsHeader)MemAllocate(sizeof(CHFsHeader));											// Alloc space for reading the header
+	PCHFsHeader hdr = (PCHFsHeader)MemAllocate(512);															// Alloc space for reading the header
 	
 	if (hdr == Null) {
 		return False;
 	}
 	
-	if (!file->read(file, 0, 512, (PUInt8)hdr)) {															// Read it!
+	if (!file->read(file, 0, 512, (PUInt8)hdr)) {																// Read it!
 		MemFree((UIntPtr)hdr);
 		return False;
-	} else if (StrCompareMemory(hdr->magic, "CHFS", 4)) {													// Check the magic number
-		MemFree((UIntPtr)hdr);																				// :)
+	} else if (StrCompareMemory(hdr->magic, "CHFS", 4)) {														// Check the magic number
+		MemFree((UIntPtr)hdr);																					// :)
 		return True;
 	}
 	
-	MemFree((UIntPtr)hdr);																					// Free the header
+	MemFree((UIntPtr)hdr);																						// Free the header
 	
 	return False;
 }
 
 PFsMountPoint CHFsMount(PFsNode file, PChar path) {
-	if ((file == Null) || (path == Null)) {																	// Sanity checks :)
+	if ((file == Null) || (path == Null)) {																		// Sanity checks :)
 		return Null;
 	} else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {
 		return Null;
@@ -292,84 +385,80 @@ PFsMountPoint CHFsMount(PFsNode file, PChar path) {
 		return Null;
 	}
 	
-	PUInt8 buf = (PUInt8)MemAllocate(512);																	// Alloc space for reading from the disk
+	PCHFsHeader hdr = (PCHFsHeader)MemAllocate(512);															// Alloc space for reading the superblock/header
 	
-	if (buf == Null) {
+	if (hdr == Null) {
 		return Null;
 	}
 	
-	PCHFsHeader hdr = (PCHFsHeader)buf;
-	
-	if (!file->read(file, 0, 512, buf)) {																	// Read it!
-		MemFree((UIntPtr)buf);
+	if (!file->read(file, 0, 512, (PUInt8)hdr)) {																// Read it!
+		MemFree((UIntPtr)hdr);
 		return Null;
-	} else if (!StrCompareMemory(hdr->magic, "CHFS", 4)) {													// And check the magic number/signature
-		MemFree((UIntPtr)buf);
+	} else if (!StrCompareMemory(hdr->magic, "CHFS", 4)) {														// And check the magic number/signature
+		MemFree((UIntPtr)hdr);
 		return Null;
 	}
 	
-	PCHFsINode inode = (PCHFsINode)MemAllocate(512);														// Alloc space for the root inode
+	PCHFsMountInfo info = (PCHFsMountInfo)MemAllocate(sizeof(CHFsMountInfo));									// Alloc space for the mount info
 	
-	if (inode == Null) {
-		MemFree((UIntPtr)buf);
+	if (info == Null) {
+		MemFree((UIntPtr)hdr);
 		return Null;
-	} else if (!file->read(file, hdr->root_directory_start * 512, 512, buf)) {								// Read it
-		MemFree((UIntPtr)inode);
-		MemFree((UIntPtr)buf);
-		return Null;
-	} else {
-		StrCopyMemory(inode, buf, 512);																		// Copy it
-		MemFree((UIntPtr)buf);																				// And free the buffer!
 	}
 	
-	PFsMountPoint mp = (PFsMountPoint)MemAllocate(sizeof(FsMountPoint));									// Let's alloc space for the mount point struct
+	info->dev = file;																							// Set the "dev" file
+	
+	StrCopyMemory(&info->hdr, hdr, sizeof(CHFsHeader));															// Copy the superblock/header
+	MemFree((UIntPtr)hdr);																						// Free the buffer
+	
+	PFsMountPoint mp = (PFsMountPoint)MemAllocate(sizeof(FsMountPoint));										// Let's alloc space for the mount point struct
 	
 	if (mp == Null) {
-		MemFree((UIntPtr)inode);
+		MemFree((UIntPtr)info);
 		return Null;
 	}
 	
-	mp->path = StrDuplicate(path);																			// Let's try to duplicate the path string
+	mp->path = StrDuplicate(path);																				// Let's try to duplicate the path string
 	
 	if (mp->path == Null) {
 		MemFree((UIntPtr)mp);
-		MemFree((UIntPtr)inode);
+		MemFree((UIntPtr)info);
 		return Null;
 	}
 	
-	mp->type = StrDuplicate("CHFs");																		// And the type string
+	mp->type = StrDuplicate("CHFs");																			// And the type string
 	
 	if (mp->type == Null) {
 		MemFree((UIntPtr)mp->path);
 		MemFree((UIntPtr)mp);
-		MemFree((UIntPtr)inode);
+		MemFree((UIntPtr)info);
 		return Null;
 	}
 	
-	mp->root = (PFsNode)MemAllocate(sizeof(FsNode));														// Create the root directory node
+	mp->root = (PFsNode)MemAllocate(sizeof(FsNode));															// Create the root directory node
 	
 	if (mp->root == Null) {
 		MemFree((UIntPtr)mp->type);
 		MemFree((UIntPtr)mp->path);
 		MemFree((UIntPtr)mp);
-		MemFree((UIntPtr)inode);
+		MemFree((UIntPtr)info);
 		return Null;
 	}
 	
-	mp->root->name = StrDuplicate("\\");																	// Duplicate the name
+	mp->root->name = StrDuplicate("\\");																		// Duplicate the name
 	
 	if (mp->root->name == Null) {
 		MemFree((UIntPtr)mp->root);
 		MemFree((UIntPtr)mp->type);
 		MemFree((UIntPtr)mp->path);
 		MemFree((UIntPtr)mp);
-		MemFree((UIntPtr)inode);
+		MemFree((UIntPtr)info);
 		return Null;
 	}
 	
-	mp->root->priv = file;																					// Finally, fill everything!
+	mp->root->priv = info;																						// Finally, fill everything!
 	mp->root->flags = FS_FLAG_DIR;
-	mp->root->inode = (UIntPtr)inode;
+	mp->root->inode = info->hdr.root_directory_start;
 	mp->root->length = 0;
 	mp->root->read = Null;
 	mp->root->write = Null;
@@ -382,30 +471,30 @@ PFsMountPoint CHFsMount(PFsNode file, PChar path) {
 }
 
 Boolean CHFsUmount(PFsMountPoint mp) {
-	if (mp == Null) {																						// Sanity checks
+	if (mp == Null) {																							// Sanity checks
 		return False;
 	} else if (mp->root == Null) {
 		return False;
 	} else if (mp->root->priv == Null) {
 		return False;
-	} else if (mp->root->inode == 0) {
-		return False;
 	} else if (!StrCompare(mp->type, "CHFs")) {
 		return False;
 	}
 	
-	FsCloseFile((PFsNode)mp->root->priv);																	// Close the dev file
-	MemFree(mp->root->inode);																				// And free the root inode
+	PCHFsMountInfo info = (PCHFsMountInfo)mp->root->priv;
+	
+	FsCloseFile(info->dev);																						// Close the dev file
+	MemFree((UIntPtr)info);																						// Free the info struct
 	
 	return True;
 }
 
 Void CHFsInit(Void) {
-	PChar name = StrDuplicate("CHFs");																		// Let's get our type string
+	PChar name = StrDuplicate("CHFs");																			// Let's get our type string
 	
 	if (name == Null) {
-		return;																								// Failed...
+		return;																									// Failed...
 	}
 	
-	FsAddType(name, CHFsProbe, CHFsMount, CHFsUmount);														// And add ourself into the type list
+	FsAddType(name, CHFsProbe, CHFsMount, CHFsUmount);															// And add ourself into the type list
 }

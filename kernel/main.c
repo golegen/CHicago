@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on November 02 of 2018, at 17:28 BRT
+// Last edited on November 03 of 2018, at 18:05 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/arch.h>
@@ -58,8 +58,7 @@ Void KernelMain(Void) {
 }
 
 Void KernelMainLate(Void) {
-	PsTaskSwitchEnabled = True;																								// Enable task switch
-	DbgWriteFormated("[Kernel] Tasking initialized\r\n");
+	DbgWriteFormated("[Kernel] Tasking initialized\r\n");																	// Tasking initialized :)
 	
 	DispFillProgressBar();																									// Kernel initialized :)
 	DbgWriteFormated("[Kernel] Kernel initialized\r\n");
@@ -69,41 +68,5 @@ Void KernelMainLate(Void) {
 	ConWriteFormated("Codename '%s'\r\n", CHICAGO_CODENAME);
 	ConWriteFormated("%s\r\n\r\n", CHICAGO_VSTR);
 	
-	if (!FsMountFile("\\MountPoint", "\\Devices\\HardDisk0", Null)) {														// Try to mount the hard disk
-		ConWriteFormated("Couldn't mount \\Devices\\HardDisk0\r\n");
-		goto l;
-	}
-	
-	PFsNode file = FsOpenFile("\\MountPoint\\hello");																		// Try to open the hello (test) file
-	
-	if (file == Null) {
-		ConWriteFormated("Couldn't open \\MountPoint\\hello\r\n");
-		goto l;
-	}
-	
-	PUInt8 buf = (PUInt8)MemAllocate(file->length);																			// Try to alloc space for reading it
-	
-	if (buf == Null) {
-		ConWriteFormated("Couldn't alloc space for reading the file\r\n");
-		goto l;
-	}
-	
-	if (!FsReadFile(file, 0, file->length, buf)) {																			// Try to read it
-		ConWriteFormated("Couldn't read the file\r\n");
-		goto l;
-	}
-	
-	ConWriteFormated("Length: %d\r\n", file->length);																		// Show the length of the file
-	ConWriteFormated("Data: %s\r\n", buf);																					// Show the data
-	
-	if ((file->length != 20) && (!StrCompareMemory(buf, "Hello, write world!\0", 20))) {									// And test the write function!
-		StrCopyMemory(buf, "Hello, write world!\0", 20);
-		
-		if (!FsWriteFile(file, 0, 20, buf)) {
-			ConWriteFormated("Couldn't write to the file\r\n");
-			goto l;
-		}
-	}
-	
-l:	while (1) ;
+	while (1) ;
 }

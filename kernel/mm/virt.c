@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on September 15 of 2018, at 12:46 BRT
-// Last edited on October 12 of 2018, at 16:13 BRT
+// Last edited on November 03 of 2018, at 17:53 BRT
 
 #include <chicago/mm.h>
 #include <chicago/process.h>
@@ -111,7 +111,7 @@ UIntPtr VirtAllocAddress(UIntPtr addr, UIntPtr size, UInt32 flags) {
 		}
 	}
 	
-	if (PsCurrentThread != Null && PsCurrentProcess != Null) {
+	if (PsCurrentProcess != Null) {
 		PsCurrentProcess->mem_usage += size;
 	}
 	
@@ -138,7 +138,7 @@ Boolean VirtFreeAddress(UIntPtr addr, UIntPtr size) {
 		MmUnmap(i);																		// And unmap
 	}
 	
-	if (PsCurrentThread != Null && PsCurrentProcess != Null) {
+	if (PsCurrentProcess != Null) {
 		PsCurrentProcess->mem_usage -= size;
 	}
 	
@@ -178,7 +178,7 @@ Boolean VirtChangeProtection(UIntPtr addr, UIntPtr size, UInt32 flags) {
 }
 
 UIntPtr VirtGetUsage(Void) {
-	if (PsCurrentThread != Null && PsCurrentProcess != Null) {
+	if (PsCurrentProcess != Null) {
 		return PsCurrentProcess->mem_usage;
 	} else {
 		return 0;

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:59 BRT
-// Last edited on October 27 of 2018, at 22:28 BRT
+// Last edited on November 03 of 2018, at 17:55 BRT
 
 #define __CHICAGO_PROCESS__
 
@@ -12,45 +12,17 @@
 #include <chicago/process.h>
 #include <chicago/string.h>
 #include <chicago/timer.h>
+#include <chicago/list.h>
+#include <chicago/queue.h>
 #include <chicago/virt.h>
 
 extern Void KernelMainLate(Void);
 
 Boolean PsTaskSwitchEnabled = False;
-PThread PsCurrentThread = Null;
+PProcess PsCurrentProcess = Null;
+PQueue PsProcessQueue = Null;
 PList PsProcessList = Null;
-PList PsWaittList = Null;
-PList PsWaitpList = Null;
-UIntPtr PsNextPID = 0;
-
-PThread PsCreateThreadInt(PProcess proc, UIntPtr entry) {
-	if (proc == Null) {																															// proc can't be Null! If you want to use the current process, don't use Null in this function, instead, use the PsCreateThread() function!
-		return Null;
-	}
-	
-	PThread th = (PThread)MemAllocate(sizeof(Thread));																							// Let's try to allocate the thread struct!
-	
-	if (th == Null) {
-		return Null;																															// Failed
-	}
-	
-	th->id = proc->lasttid++;																													// Use the next TID
-	th->priv = PsCreateThreadPrivateData(entry);																								// Let's create our priv data
-	th->time = PS_TIMESLICE - 1;																												// Set the default timeslice
-	th->retv = 0;																																// This may be set in the PsExitThread/Process function
-	th->next = th;																																// (This way it's easier to init the first process)
-	th->prev = th;																																// ^
-	th->waitt = Null;																															// This will be set in the PsWaitThread function
-	th->waitp = Null;																															// This will be set in the PsWaitProcess function
-	th->parent = proc;																															// Set our parent
-	
-	if (th->priv == Null) {
-		MemFree((UIntPtr)th);																													// Failed to create the priv data
-		return Null;
-	}
-	
-	return th;
-}
+UIntPtr PsNextID = 0;
 
 PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir) {
 	PProcess proc = (PProcess)MemAllocate(sizeof(Process));																						// Let's try to allocate the process struct!
@@ -59,24 +31,22 @@ PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir) {
 		return Null;																															// Failed
 	}
 	
-	proc->id = PsNextPID++;																														// Use the next PID
+	proc->id = PsNextID++;																														// Use the next PID
 	proc->name = StrDuplicate(name);																											// Duplicate the name
-	proc->dir = dir;																															// We're only going to create a new page directory if dir is Null
-	proc->lasttid = 0;
-	proc->lastfid = 0;
-	proc->threads = ListNew(False, False);																										// Create the thread list
 	
-	if (proc->threads == Null) {
-		MemFree((UIntPtr)proc->name);																											// Failed...
-		MemFree((UIntPtr)proc);
+	if ((proc->dir = dir) == 0) {																												// Create an new page dir?
+		proc->dir = MmCreateDirectory();																										// Yes
 		
-		return Null;
+		if (proc->dir == 0) {
+			MemFree((UIntPtr)proc->name);																										// Failed...
+			MemFree((UIntPtr)proc);
+			
+			return Null;
+		}
 	}
 	
-	proc->files = ListNew(False, False);																										// Create the file list
-	
-	if (proc->files == Null) {
-		ListFree(proc->threads);																												// Failed...
+	if ((proc->ctx = PsCreateContext(entry)) == Null) {																							// Create the process context
+		MmFreeDirectory(proc->dir);																												// Failed...
 		MemFree((UIntPtr)proc->name);
 		MemFree((UIntPtr)proc);
 	}
@@ -84,174 +54,25 @@ PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir) {
 	proc->alloc_base = Null;
 	proc->mem_usage = 0;
 	
-	PThread th = PsCreateThreadInt(proc, entry);																								// Let's create the first thread!
-	
-	if (th == Null) {																										
-		ListFree(proc->files);																													// Failed...
-		ListFree(proc->threads);
-		MemFree((UIntPtr)proc->name);
-		MemFree((UIntPtr)proc);
-		
-		return Null;
-	}
-	
-	if (!ListAdd(proc->threads, th)) {																											// Let's add it to this proc thread list!
-		PsFreeThreadPrivateData(th->priv);																										// Failed...
-		MemFree((UIntPtr)th);
-		ListFree(proc->files);
-		ListFree(proc->threads);
-		MemFree((UIntPtr)proc->name);
-		MemFree((UIntPtr)proc);
-		
-		return Null;
-	}
-	
-	if (proc->dir == 0) {																														// Create an new page dir?
-		proc->dir = MmCreateDirectory();																										// Yes
-		
-		if (proc->dir == 0) {
-			PsFreeThreadPrivateData(th->priv);																									// Failed...
-			ListFree(proc->files);
-			ListFree(proc->threads);
-			MemFree((UIntPtr)proc->name);
-			MemFree((UIntPtr)proc);
-			
-			return Null;
-		}
-	}
-	
-	UIntPtr old = MmGetCurrentDirectory();																										// Save our cur page dir
-	
-	if (old != proc->dir) {
-		MmSwitchDirectory(proc->dir);																											// Switch to the new proc page dir
-	}
-	
-	th->thdata = (PThreadData)VirtAllocAddress(0, sizeof(ThreadData), VIRT_FLAGS_HIGHEST | VIRT_PROT_READ | VIRT_PROT_WRITE);
-	
-	if (th->thdata == Null) {																													// Failed?
-		if (old != MmGetCurrentDirectory()) {																									// Yes....
-			MmSwitchDirectory(old);
-		}
-		
-		MmFreeDirectory(proc->dir);
-		PsFreeThreadPrivateData(th->priv);
-		ListFree(proc->files);
-		ListFree(proc->threads);
-		MemFree((UIntPtr)proc->name);
-		MemFree((UIntPtr)proc);
-		
-		return Null;
-	}
-	
-	th->thdata->errno = 0;
-	
-	if (old != MmGetCurrentDirectory()) {
-		MmSwitchDirectory(old);																													// Switch back to the old page dir
-	}
-	
 	return proc;
-}
-
-PThread PsCreateThread(UIntPtr entry) {
-	if (PsCurrentThread == Null) {																												// This function requires the PsCurrentThread to be initialized
-		return Null;
-	}
-	
-	PThread th = PsCreateThreadInt(PsCurrentProcess, entry);																					// Use our PsCreateThreadInt function
-	
-	if (th == Null) {
-		return Null;																															// Failed...
-	}
-	
-	th->thdata = (PThreadData)VirtAllocAddress(0, sizeof(ThreadData), VIRT_FLAGS_HIGHEST | VIRT_PROT_READ | VIRT_PROT_WRITE);					// Alloc the thread data struct
-	
-	if (th->thdata == Null) {																													// Failed?
-		PsLockTaskSwitch(old);																													// Yes...
-		PsFreeThreadPrivateData(th->priv);
-		MemFree((UIntPtr)th);
-		PsUnlockTaskSwitch(old);
-		
-		return Null;
-	}
-	
-	th->thdata->errno = 0;
-	
-	return th;
 }
 
 PProcess PsCreateProcess(PChar name, UIntPtr entry) {
 	return PsCreateProcessInt(name, entry, 0);																									// Use our PsCreateProcessInt function
 }
 
-Void PsAddThread(PThread th) {
-	if ((th == Null) || (th->parent == Null) || (th->parent->threads == Null) || (PsCurrentThread == Null) || (PsCurrentProcess == Null)) {		// Sanity checks
-		return;
-	}
-	
-	PsLockTaskSwitch(old);																														// Lock
-	
-	UIntPtr idx = 0;																															// Let's search if this thread is already in the process thread list
-	Boolean found = False;
-	
-	for (UIntPtr i = 0; i < !found && th->parent->threads->length; i++) {
-		if (ListGet(th->parent->threads, idx) == th) {
-			found = True;
-		}
-	}
-	
-	if (!found) {
-		ListAdd(th->parent->threads, th);																										// Nope, add it
-	}
-	
-	th->next = PsCurrentThread->next;																											// Add it to the thread queue
-	th->prev = PsCurrentThread;
-	PsCurrentThread->next = th;
-	th->next->prev = th;
-	
-	PsUnlockTaskSwitch(old);																													// Unlock
-}
-
 Void PsAddProcess(PProcess proc) {
-	if ((proc == Null) || (proc->dir == 0) || (proc->threads == Null) || (PsCurrentThread == Null) || (PsCurrentProcess == Null)) {				// Sanity checks
+	if ((proc == Null) || (proc->dir == 0) || (PsProcessQueue == Null) || (PsProcessList == Null)) {											// Sanity checks
 		return;
 	}
 	
 	PsLockTaskSwitch(old);																														// Lock
-	
-	for (PListNode i = proc->threads->tail; ; i = i->prev) {																					// Let's add all the threads of this proc!
-		PThread th = (PThread)i->data;
-		
-		th->next = PsCurrentThread->next;
-		th->prev = PsCurrentThread;
-		PsCurrentThread->next = th;
-		th->next->prev = th;
-		
-		if (i == proc->threads->head) {																											// If we're in the last (first) entry, stop
-			break;
-		}
-	}
-	
+	QueueAdd(PsProcessQueue, proc);																												// Try to add the proc to the queue
 	ListAdd(PsProcessList, proc);																												// Try to add the proc to the proc list
 	PsUnlockTaskSwitch(old);																													// Unlock
 }
 
-PThread PsGetThread(UIntPtr tid) {
-	if (PsCurrentThread == Null) {																												// Sanity checks
-		return Null;
-	}
-	
-	ListForeach(PsCurrentProcess->threads, i) {																									// Let's search!
-		PThread th = (PThread)i->data;
-		
-		if (th->id == tid) {																													// Match?
-			return th;																															// Yes :)
-		}
-	}
-	
-	return Null;
-}
-
-PProcess PsGetProcess(UIntPtr pid) {
+PProcess PsGetProcess(UIntPtr id) {
 	if (PsProcessList == Null) {																												// Sanity checks
 		return Null;
 	}
@@ -259,7 +80,7 @@ PProcess PsGetProcess(UIntPtr pid) {
 	ListForeach(PsProcessList, i) {																												// Let's search!
 		PProcess proc = (PProcess)i->data;
 		
-		if (proc->id == pid) {																													// Match?
+		if (proc->id == id) {																													// Match?
 			return proc;																														// Yes :)
 		}
 	}
@@ -267,63 +88,8 @@ PProcess PsGetProcess(UIntPtr pid) {
 	return Null;
 }
 
-Void PsSleep(UIntPtr ms) {
-	if (PsCurrentThread == Null) {																												// Thread list is initialized?
-		TimerSleep(ms);																															// Nope, just TimerSleep
-		return;
-	} else if (PsCurrentThread == PsCurrentThread->next) {																						// We can add this thread to the sleep list?
-		TimerSleep(ms);																															// Nope, just TimerSleep
-		return;
-	} else if (ms == 0) {																														// ms == 0?
-		PsSwitchTask(Null);																														// Yes...
-		return;
-	}
-	
-	TimerSleepProcess(ms);																														// Use this function
-}
-
-UIntPtr PsWaitThread(PThread th) {
-	if ((th == Null) || (PsWaittList == Null) || (PsCurrentThread == Null)) {																	// Sanity checks
-		return 1;																																// ...
-	} else if (PsCurrentThread == PsCurrentThread->next) {																						// We can add this thread to the wait list?
-		return 1;																																// Nope
-	}
-	
-	if (!ListAdd(PsWaittList, PsCurrentThread)) {																								// Try to add this thread to the wait list
-		return PsWaitThread(th);																												// Failed, but let's keep on trying!
-	}
-	
-	PsCurrentThread->waitt = th;
-	
-	while (PsCurrentThread->waitt != Null) {																									// Let's wait...
-		PsSwitchTask(Null);
-	}
-	
-	return PsCurrentThread->retv;
-}
-
-UIntPtr PsWaitProcess(PProcess proc) {
-	if ((proc == Null) || (PsWaittList == Null) || (PsCurrentThread == Null)) {																	// Sanity checks
-		return 1;																																// ...
-	} else if (PsCurrentThread == PsCurrentThread->next) {																						// We can add this thread to the wait list?
-		return 1;																																// Nope
-	}
-	
-	if (!ListAdd(PsWaitpList, PsCurrentThread)) {																								// Try to add this thread to the wait list
-		return PsWaitProcess(proc);																												// Failed, but let's keep on trying!
-	}
-	
-	PsCurrentThread->waitp = proc;
-	
-	while (PsCurrentThread->waitp != Null) {																									// Let's wait...
-		PsSwitchTask(Null);
-	}
-	
-	return PsCurrentThread->retv;
-}
-
 Void PsLock(PLock lock) {
-	if ((lock == Null) || (PsCurrentThread == Null) || (PsCurrentThread == PsCurrentThread->next)) {											// Sanity checks
+	if ((lock == Null) || (PsCurrentProcess == Null)) {																							// Sanity checks
 		return;
 	}
 	
@@ -335,106 +101,15 @@ Void PsLock(PLock lock) {
 }
 
 Void PsUnlock(PLock lock) {
-	if ((lock == Null) || (PsCurrentThread == Null)) {																							// Sanity checks
+	if ((lock == Null) || (PsCurrentProcess == Null)) {																							// Sanity checks
 		return;
 	}
 	
 	*lock = False;																																// Unlock...
 }
 
-Void PsWakeup(PList list, PThread th) {
-	if ((list == Null) || (th == Null) || (PsCurrentThread == Null)) {																			// Sanity checks...
-		return;
-	}
-	
-	PsLockTaskSwitch(old);																														// Lock
-	
-	UIntPtr idx = 0;																															// Let's try to find th in list
-	Boolean found = False;
-	
-	ListForeach(list, i) {
-		if (i->data == th) {																													// Found?
-			found = True;																														// Yes!
-			break;
-		} else {
-			idx++;																																// Nope
-		}
-	}
-	
-	if (!found) {																																// Found?
-		PsUnlockTaskSwitch(old);																												// Nope
-		return;
-	}
-	
-	ListRemove(list, idx);																														// Remove th from list
-	
-	th->waitt = Null;
-	th->waitp = Null;
-	
-	PsUnlockTaskSwitch(old);																													// Unlock
-}
-
-Void PsExitThread(UIntPtr ret) {
-	if ((PsCurrentThread == Null) || (PsCurrentProcess == Null)) {																				// Sanity checks...
-		return;
-	} else if ((PsCurrentProcess->id == 0) && (PsCurrentThread->id == 0)) {																		// Kernel main thread?
-		PsLockTaskSwitch(old);																													// ...
-		DbgWriteFormated("PANIC! Tried to close the main kernel thread\r\n");
-		Panic(PANIC_KERNEL_UNEXPECTED_ERROR);
-	}
-	
-	PsLockTaskSwitch(old);																														// Lock
-	
-	if (PsCurrentProcess->threads->length == 1) {																								// This is the only thread of this process?
-		PsUnlockTaskSwitch(old);																												// Yes, so use PsExitProcess instead of PsExitThread
-		PsExitProcess(ret);
-		while (1) ;
-	}
-	
-	UIntPtr idx = 0;																															// Search for this thread in the current process thread list
-	Boolean found = False;
-	
-	ListForeach(PsCurrentProcess->threads, i) {
-		if (i->data == PsCurrentThread) {																										// Found?
-			found = True;																														// Yes :)
-			break;
-		} else {
-			idx++;																																// Nope
-		}
-	}
-	
-	if (found) {																																// Found?
-		ListRemove(PsCurrentProcess->threads, idx);																								// Yes!
-	}
-	
-	if (PsWaittList != Null) {																													// Let's wake up any thread that is waiting for us
-		for (PListNode i = PsWaittList->tail; i != Null; i = i->prev) {
-			PThread th = (PThread)i->data;
-			
-			if (th->waitt == PsCurrentThread) {
-				th->retv = ret;
-				PsWakeup(PsWaittList, th);
-			}
-			
-			if (i == PsWaittList->head) {
-				break;
-			}
-		}
-	}
-	
-	PsCurrentThread->prev->next = PsCurrentThread->next;																						// Unqueue
-	PsCurrentThread->next->prev = PsCurrentThread->prev;
-	
-	PsFreeThreadPrivateData(PsCurrentThread->priv);																								// Free the priv data
-	MemFree((UIntPtr)PsCurrentThread);																											// Free the thread struct
-	PsUnlockTaskSwitch(old);																													// Unlock
-	PsSwitchTask(Null);																															// Switch
-	
-	while (1) ;
-}
-
-Void PsExitProcess(UIntPtr ret) {
-	if ((PsCurrentThread == Null) || (PsCurrentProcess == Null)) {																				// Sanity checks
+Void PsExitProcess(Void) {
+	if (PsCurrentProcess == Null) {																												// Sanity checks
 		return;
 	} else if (PsCurrentProcess->id == 0) {																										// Kernel process?
 		PsLockTaskSwitch(old);																													// Yes, so PANIC!
@@ -443,66 +118,6 @@ Void PsExitProcess(UIntPtr ret) {
 	}
 	
 	PsLockTaskSwitch(old);																														// Lock
-	
-	if (MmGetCurrentDirectory() != MmKernelDirectory) {																							// Switch into the kernel directory
-		MmSwitchDirectory(MmKernelDirectory);
-	}
-	
-	ListForeach(PsCurrentProcess->files, i) {
-		PProcessFile pf = (PProcessFile)i->data;
-		FsCloseFile(pf->file);
-		MemFree((UIntPtr)pf);
-	}
-	
-	ListForeach(PsCurrentProcess->threads, i) {																									// Alright, now wakeup (if we need) and free all the threads of this process
-		PThread th = (PThread)i->data;
-		
-		if (PsWaittList != Null) {																												// From the wait thread list
-			for (PListNode j = PsWaittList->tail; j != Null; j = j->prev) {
-				PThread th2 = (PThread)j->data;
-				
-				if (th2->waitt == th) {
-					th2->retv = ret;
-					PsWakeup(PsWaittList, th2);
-				} else if (th2 == th) {
-					PsWakeup(PsWaittList, th2);
-				}
-				
-				if (j == PsWaittList->head) {
-					break;
-				}
-			}
-		}
-		
-		if (PsWaitpList != Null) {																												// From the wait process list
-			ListForeach(PsWaitpList, j) {
-				if (j->data == th) {
-					PsWakeup(PsWaitpList, (PThread)j->data);
-				}
-			}
-		}
-		
-		th->prev->next = th->next;																												// Unqueue
-		th->next->prev = th->prev;
-		
-		PsFreeThreadPrivateData(th->priv);																										// Free the priv data
-		MemFree((UIntPtr)th);																													// And the thread struct
-	}
-	
-	if (PsWaitpList != Null) {																													// Let's wakeup any thread that is waiting for us
-		for (PListNode i = PsWaitpList->tail; i != Null; i = i->prev) {
-			PThread th = (PThread)i->data;
-			
-			if (th->waitp == PsCurrentProcess) {
-				th->retv = ret;
-				PsWakeup(PsWaitpList, th);
-			}
-			
-			if (i == PsWaitpList->head) {
-				break;
-			}
-		}
-	}
 	
 	if (PsProcessList != Null) {																												// Let's (try) to remove ourself from the process list
 		UIntPtr idx = 0;
@@ -522,11 +137,8 @@ Void PsExitProcess(UIntPtr ret) {
 		}
 	}
 	
-	if (PsCurrentProcess->dir != MmKernelDirectory) {																							// Kernel directory?
-		MmFreeDirectory(PsCurrentProcess->dir);																									// No, so free it!
-	}
-	ListFree(PsCurrentProcess->files);
-	ListFree(PsCurrentProcess->threads);																										// Free our thread list
+	PsFreeContext(PsCurrentProcess->ctx);																										// Free the context
+	MmFreeDirectory(PsCurrentProcess->dir);																										// Free the directory
 	MemFree((UIntPtr)PsCurrentProcess->name);																									// Free the name
 	MemFree((UIntPtr)PsCurrentProcess);																											// And the current process itself
 	
@@ -537,23 +149,12 @@ Void PsExitProcess(UIntPtr ret) {
 }
 
 Void PsInit(Void) {
-	PsProcessList = ListNew(False, False);																										// Try to init the process list
-	
-	if (PsProcessList == Null) {
+	if ((PsProcessQueue = QueueNew(False)) == Null) {																							// Try to init the process queue
 		DbgWriteFormated("PANIC! Failed to init tasking\r\n");
 		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
-	PsWaittList = ListNew(False, False);																										// Try to init the waitt list
-	
-	if (PsWaittList == Null) {
-		DbgWriteFormated("PANIC! Failed to init tasking\r\n");
-		Panic(PANIC_KERNEL_INIT_FAILED);
-	}
-	
-	PsWaitpList = ListNew(False, False);																										// Try to init the waitp list
-	
-	if (PsWaitpList == Null) {
+	if ((PsProcessList = ListNew(False, False)) == Null) {																						// Try to init the process list
 		DbgWriteFormated("PANIC! Failed to init tasking\r\n");
 		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
@@ -565,12 +166,16 @@ Void PsInit(Void) {
 		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
-	PsCurrentThread = ListGet(proc->threads, 0);																								// And, get the first thread!	
-	
-	if (PsCurrentThread == Null) {
+	if (!QueueAdd(PsProcessQueue, proc)) {																										// Try to add it to the process queue
 		DbgWriteFormated("PANIC! Failed to init tasking\r\n");
 		Panic(PANIC_KERNEL_INIT_FAILED);
 	}
 	
-	PsInitInt();																																// Switch to the first thread!
+	if (!ListAdd(PsProcessList, proc)) {																										// And to the process list
+		DbgWriteFormated("PANIC! Failed to init tasking\r\n");
+		Panic(PANIC_KERNEL_INIT_FAILED);
+	}
+	
+	PsTaskSwitchEnabled = True;																													// Enable task switching
+	PsSwitchTask(Null);																															// And switch to the system process!
 }

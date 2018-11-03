@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on October 28 of 2018, at 21:27 BRT
+// Last edited on November 03 of 2018, at 12:32 BRT
 
 .section .text
 
@@ -422,13 +422,7 @@ ISR_NO_ERRCODE 255
 
 .extern ISRDefaultHandler
 ISRCommonStub:
-	push %eax
-	push %ecx
-	push %edx
-	push %ebx
-	push %ebp
-	push %esi
-	push %edi
+	pusha
 	
 	push %ds
 	push %es
@@ -450,13 +444,7 @@ ISRCommonStub:
 	pop %es
 	pop %ds
 	
-	pop %edi
-	pop %esi
-	pop %ebp
-	pop %ebx
-	pop %edx
-	pop %ecx
-	pop %eax
+	popa
 	
 	add $8, %esp
 	iret
@@ -483,13 +471,7 @@ Panic:
 	push $0
 	push $0
 	
-	push %eax
-	push %ecx
-	push %edx
-	push %ebx
-	push %ebp
-	push %esi
-	push %edi
+	pusha
 	
 	push %ds
 	push %es

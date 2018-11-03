@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 17 of 2018, at 16:10 BRT
-// Last edited on October 29 of 2018, at 18:09 BRT
+// Last edited on November 02 of 2018, at 22:13 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/file.h>
@@ -267,6 +267,8 @@ PFsNode Iso9660FindInDirectory(PFsNode dir, PChar name) {
 					node->write = Null;
 					node->open = Iso9660OpenFile;
 					node->close = Iso9660CloseFile;
+					node->create = Null;
+					node->control = Null;
 					
 					MemFree((UIntPtr)data);																			// Free the allocated/readed directory data
 					
@@ -419,6 +421,8 @@ PFsMountPoint Iso9660Mount(PFsNode file, PChar path) {
 	mp->root->close = Iso9660CloseFile;
 	mp->root->readdir = Iso9660ReadDirectoryEntry;
 	mp->root->finddir = Iso9660FindInDirectory;
+	mp->root->create = Null;
+	mp->root->control = Null;
 	
 	return mp;
 }
