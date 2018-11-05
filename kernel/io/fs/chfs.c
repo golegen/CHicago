@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 28 of 2018, at 09:41 BRT
-// Last edited on November 02 of 2018, at 22:15 BRT
+// Last edited on November 05 of 2018, at 18:19 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/chfs.h>
@@ -33,9 +33,9 @@ static UIntPtr CHFsAllocBlock(PCHFsMountInfo info) {
 		}
 		
 		for (UIntPtr j = 0; j < 512; j++) {																		// Let's check every byte
-			for (IntPtr k = 31; k >= 0; k--) {																	// And every bit
+			for (IntPtr k = 7; k >= 0; k--) {																	// And every bit
 				if ((buf[j] & (1 << k)) == 0) {																	// Free?
-					UIntPtr bnum = (i * 2097152) + (j * 4096) + k;												// Yes! 1 block = 512 bytes, in 1 byte we have 8 blocks, 512 * 8 = 4096, 4096 * 512 = 2097152
+					UIntPtr bnum = (i * 2097152) + (j * 4096) + (7 - k);										// Yes! 1 block = 512 bytes, in 1 byte we have 8 blocks, 512 * 8 = 4096, 4096 * 512 = 2097152
 					
 					info->hdr.block_used_count++;																// Increase the block used count
 					buf[j] |= 1 << k;																			// Set this block bit in the bitmap
@@ -251,6 +251,11 @@ Boolean CHFsWriteFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
 		return False;
 	} else if (inode->data_start == 0) {																		// First data block of this file?
 		inode->data_start = lba;																				// Yes!
+		
+		if (!FsWriteFile(info->dev, file->inode * 512, 512, (PUInt8)inode)) {
+			MemFree((UIntPtr)inode);
+			return False;
+		}
 	}
 	
 	PUInt8 buff = (PUInt8)MemAllocate(512);																		// Alloc some memory for reading the disk
@@ -304,7 +309,8 @@ Boolean CHFsWriteFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
 		inode->data_length += (off + len) - inode->data_length;													// Yes!
 		
 		if (!FsWriteFile(info->dev, file->inode * 512, 512, (PUInt8)inode)) {
-			MemFree((UIntPtr)inode);																			// Failed to write the inode...
+			MemFree((UIntPtr)buff);																				// Failed to write the inode...
+			MemFree((UIntPtr)inode);
 			return False;
 		}
 		
@@ -375,12 +381,23 @@ Boolean CHFsCreateFile(PFsNode dir, PChar name, UIntPtr flags) {
 	
 	while (1) {
 		if (ent->type == 0x00) {																				// Found?
-			ent->type = (flags & FS_FLAG_FILE) ? 0x01 : 0x02;													// Yes :)
+			ent->type = (flags == FS_FLAG_FILE) ? 0x01 : 0x02;													// Yes :)
+			
+			if (ent->type == 0x02) {
+				ent->data_start = CHFsAllocBlock(info);
+				
+				if (ent->data_start == 0) {
+					MemFree((UIntPtr)buf);
+					MemFree((UIntPtr)inode);
+					return False;
+				}
+			}
+			
 			ent->data_length = 0;
 			ent->name_length = StrGetLength(name);
 			StrCopyMemory(ent->name, name, ent->name_length);
 			
-			if (!FsWriteFile(info->dev, lba * 512, 512, buf)) {													// Write the dir entry back
+			if (!FsWriteFile(info->dev, lba * 512, 512, (PUInt8)ent)) {											// Write the dir entry back
 				MemFree((UIntPtr)buf);
 				MemFree((UIntPtr)inode);
 				return False;
@@ -412,7 +429,18 @@ Boolean CHFsCreateFile(PFsNode dir, PChar name, UIntPtr flags) {
 	StrSetMemory(buf, 0, 512);																					// Clean the buffer
 	
 	ent->next_block = inode->next_block;																		// Setup the block
-	ent->type = (flags & FS_FLAG_FILE) ? 0x01 : 0x02;
+	ent->type = (flags == FS_FLAG_FILE) ? 0x01 : 0x02;
+	
+	if (ent->type == 0x02) {
+		ent->data_start = CHFsAllocBlock(info);
+		
+		if (ent->data_start == 0) {
+			MemFree((UIntPtr)buf);
+			MemFree((UIntPtr)inode);
+			return False;
+		}
+	}
+	
 	ent->data_length = 0;
 	ent->name_length = StrGetLength(name);
 	StrCopyMemory(ent->name, name, ent->name_length);
@@ -590,14 +618,16 @@ PFsNode CHFsFindInDirectory(PFsNode dir, PChar name) {
 				node->priv = info;																				// The priv info
 				
 				if (ent->type == 0x01) {																		// File?
-					node->flags = FS_FLAG_FILE;																	// Yes, set the file flag, the read and the write function
+					node->flags = FS_FLAG_FILE;																	// Yes, set the file flag, the ino num and the read and the write function
+					node->inode = olba;
 					node->read = CHFsReadFile;
 					node->write = CHFsWriteFile;
 					node->readdir = Null;
 					node->finddir = Null;
 					node->create = Null;
 				} else {
-					node->flags = FS_FLAG_DIR;																	// No, set the dir flag, the readdir entry, the finddir entry and the create entry
+					node->flags = FS_FLAG_DIR;																	// No, set the dir flag, the ino num, the readdir entry, the finddir entry and the create entry
+					node->inode = ent->data_start;
 					node->read = Null;
 					node->write = Null;
 					node->readdir = CHFsReadDirectoryEntry;
@@ -605,7 +635,6 @@ PFsNode CHFsFindInDirectory(PFsNode dir, PChar name) {
 					node->create = CHFsCreateFile;
 				}
 				
-				node->inode = olba;																				// Set the inode
 				node->length = ent->data_length;																// The length
 				node->open = CHFsOpenFile;																		// The open and close function
 				node->close = CHFsCloseFile;

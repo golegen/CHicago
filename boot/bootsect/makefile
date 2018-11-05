@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on October 22 of 2018, at 13:39 BRT
-# Last edited on October 23 of 2018, at 17:22 BRT
+# Last edited on November 05 of 2018, at 18:18 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -63,3 +63,4 @@ endif
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 	$(NOECHO)$(PREFIX)as $(ARCH_AFLAGS) $< -o $@.o
 	$(NOECHO)$(PREFIX)ld -T$(LINKER_SCRIPT) -o $@ $@.o
+	$(NOECHO)rm $@.o

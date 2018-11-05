@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 28 of 2018, at 09:41 BRT
-// Last edited on November 03 of 2018, at 18:34 BRT
+// Last edited on November 05 of 2018, at 14:53 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/chfs.h>
@@ -304,18 +304,19 @@ PFsNode CHFsFindInDirectory(PFsNode dir, PChar name) {
 				node->priv = info;																				// The priv info
 				
 				if (ent->type == 0x01) {																		// File?
-					node->flags = FS_FLAG_FILE;																	// Yes, set the file flag and the read
+					node->flags = FS_FLAG_FILE;																	// Yes, set the file flag, the ino num and the read function
+					node->inode = olba;
 					node->read = CHFsReadFile;
 					node->readdir = Null;
 					node->finddir = Null;
 				} else {
-					node->flags = FS_FLAG_DIR;																	// No, set the dir flag, the readdir entry and the finddir entry
+					node->flags = FS_FLAG_DIR;																	// No, set the dir flag, the ino num, the readdir entry and the finddir entry
+					node->inode = ent->data_start;
 					node->read = Null;
 					node->readdir = CHFsReadDirectoryEntry;
 					node->finddir = CHFsFindInDirectory;
 				}
 				
-				node->inode = olba;																				// Set the inode
 				node->length = ent->data_length;																// The length
 				node->write = Null;
 				node->open = CHFsOpenFile;																		// The open and close function

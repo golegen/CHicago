@@ -1,11 +1,10 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 22 of 2018, at 13:36 BRT
-// Last edited on October 26 of 2018, at 18:47 BRT
+// Last edited on November 04 of 2018, at 22:15 BRT
 
 .code16
 
-.global BootEntry
 BootEntry:
 	cli
 	
@@ -184,14 +183,8 @@ WriteString:
 	ret
 
 Reboot:
-	mov $AnyKeyMsg, %si											// Print the "any key" message
+	mov $RebootMsg, %si											// Print the "reboot" message
 	call WriteString
-	xor %ah, %ah												// 0x00 is the wait keystroke function
-	int $0x16
-	mov $NewLineMsg, %si										// New line (for qemu, as the other emulators/virtual machines/real computers don't need this)
-	call WriteString
-	call WriteString
-	int $0x19													// Restart
 1:
 	hlt
 	jmp 1b
@@ -213,5 +206,7 @@ FolderMsg: .asciz " folder\r\n"
 FileMsg: .asciz " file\r\n"
 BootFolder: .asciz "Boot"
 BootmgrFile: .asciz "bootmgr.bin"
-AnyKeyMsg: .asciz "Press any key to restart"
-NewLineMsg: .byte 0x0D, 0x0A, 0
+RebootMsg: .asciz "Please reboot your computer"
+
+.space 510 - (. - BootEntry)
+.word 0xAA55

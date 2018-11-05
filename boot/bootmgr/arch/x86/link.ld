@@ -2,11 +2,10 @@
    File author is Ítalo Lima Marconato Matias
   
    Created on October 22 of 2018, at 15:33 BRT
-   Last edited on October 24 of 2018, at 18:03 BRT
+   Last edited on November 05 of 2018, at 15:55 BRT
 */
 
 OUTPUT_FORMAT("binary")
-ENTRY(LoaderEntry)
 
 SECTIONS
 {
