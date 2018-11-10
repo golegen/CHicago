@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on October 29 of 2018, at 16:19 BRT
+# Last edited on November 10 of 2018, at 16:36 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -27,9 +27,9 @@ ifneq ($(VERBOSE),true)
 NOECHO := @
 endif
 
-.PHONY: boot kernel tools test
+.PHONY: boot kernel
 
-all: boot kernel tools test finish
+all: boot kernel finish
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
@@ -40,8 +40,6 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C boot clean
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel clean
-	$(NOECHO)VERBOSE=$(VERBOSE) make -C tools clean
-	$(NOECHO)VERBOSE=$(VERBOSE) make -C test clean
 
 clean-all:
 ifeq ($(UNSUPPORTED_ARCH),true)
@@ -49,8 +47,6 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C boot clean-all
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel clean-all
-	$(NOECHO)VERBOSE=$(VERBOSE) make -C tools clean-all
-	$(NOECHO)VERBOSE=$(VERBOSE) make -C test clean-all
 	$(NOECHO)rm -rf build
 
 remake:
@@ -59,8 +55,6 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C boot remake
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel remake
-	$(NOECHO)VERBOSE=$(VERBOSE) make -C tools remake
-	$(NOECHO)VERBOSE=$(VERBOSE) make -C test remake
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make finish
 
 boot:
@@ -74,12 +68,6 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) PREFIX=$(PREFIX) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel all
-
-tools:
-	$(NOECHO)VERBOSE=$(VERBOSE) make -C tools all
-
-test:
-	$(NOECHO)VERBOSE=$(VERBOSE) make -C test all
 
 ifeq ($(UNSUPPORTED_ARCH),true)
 arch-clean:
@@ -105,7 +93,6 @@ endif
 	$(NOECHO)cp $(CDBOOT) build/iso/Boot/bootsect.bin
 	$(NOECHO)cp $(BOOTMGR) build/iso/Boot/bootmgr.bin
 	$(NOECHO)cp $(KERNEL) build/iso/Boot/chkrnl.elf
-	$(NOECHO)cp test/build/test.bliss build/iso/test.bliss
 	$(NOECHO)echo '"Boot from CHicago Install CD"=BootDevice,chicago' >> build/iso/Boot/bootmgr.conf
 ifeq ($(SUBARCH),)
 	$(NOECHO)xorriso -as mkisofs -R -c Boot/boot.cat -b Boot/bootsect.bin -U -no-emul-boot -o build/chicago-$(ARCH).iso build/iso 2>/dev/null
