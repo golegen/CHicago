@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 21 of 2018, at 18:34 BRT
-// Last edited on October 28 of 2018, at 01:32 BRT
+// Last edited on November 10 of 2018, at 13:44 BRT
 
 #include <chicago/console.h>
 #include <chicago/file.h>
@@ -482,26 +482,6 @@ PVmObject VmRunModule(PVmModule module) {
 			
 			break;
 		}
-		case VM_OPCODE_PRINT: {																									// Print operation
-			PVmObject obj = VmPopStack(stack, False);																			// Let's get the last entry from the stack
-			
-			switch (obj->type) {
-			case VM_OBJECT_TYPE_INT: {																							// Signed integer
-				ConWriteFormated("%s%d\r\n", obj->ival < 0 ? "-" : "", obj->ival < 0 ? -obj->ival : obj->ival);
-				break;
-			}
-			case VM_OBJECT_TYPE_UINT: {																							// Unsigned integer
-				ConWriteFormated("%d\r\n", obj->uval);
-				break;
-			}
-			case VM_OBJECT_TYPE_FLOAT: {																						// Float (we can't print it yet!)
-				ConWriteFormated("<float>\r\n");
-				break;
-			}
-			}
-			
-			break;
-		}
 		default: {
 			UIntPtr old = ConGetForeground();																					// Unimplemented instruction, let's show an warning
 			
@@ -526,6 +506,7 @@ PVmObject VmRunModule(PVmModule module) {
 		}
 	}
 	
+	ListFree(cstack);																											// Free the call stack
 	ListFree(stack);																											// Free the stack
 	
 	return ret;

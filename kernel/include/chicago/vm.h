@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 21 of 2018, at 18:36 BRT
-// Last edited on October 28 of 2018, at 00:13 BRT
+// Last edited on November 10 of 2018, at 13:35 BRT
 
 #ifndef __CHICAGO_VM_H__
 #define __CHICAGO_VM_H__
@@ -23,11 +23,22 @@
 #define VM_OPCODE_LDS 0x0A
 #define VM_OPCODE_LDU 0x0B
 #define VM_OPCODE_LDF 0x0C
-#define VM_OPCODE_POP 0x0D
-#define VM_OPCODE_BR 0x0E
-#define VM_OPCODE_CALL 0x0F
-#define VM_OPCODE_RET 0x10
-#define VM_OPCODE_PRINT 0x11
+#define VM_OPCODE_LDLOC 0x0D
+#define VM_OPCODE_STLOC 0x0E
+#define VM_OPCODE_POP 0x0F
+#define VM_OPCODE_BR 0x10
+#define VM_OPCODE_BRC 0x11
+#define VM_OPCODE_CALL 0x12
+#define VM_OPCODE_CALLC 0x13
+#define VM_OPCODE_NCALL 0x14
+#define VM_OPCODE_NCALLC 0x15
+#define VM_OPCODE_RET 0x16
+#define VM_OPCODE_AARGS 0x17
+#define VM_OPCODE_ALOCS 0x18
+#define VM_OPCODE_FARGS 0x19
+#define VM_OPCODE_FLOCS 0x1A
+#define VM_OPCODE_CMP 0x1B
+#define VM_OPCODE_SETC 0x1C
 
 typedef struct {
 	UInt8 type;

@@ -1,7 +1,7 @@
 ﻿// File author is Ítalo Lima Marconato Matias
 //
 // Created on October 20 of 2018, at 23:12 BRT
-// Last edited on October 28 of 2018, at 01:20 BRT
+// Last edited on November 10 of 2018, at 13:22 BRT
 
 using System;
 using System.Collections.Generic;
@@ -32,7 +32,8 @@ namespace Bliss.Assembler
             
             foreach (Instruction instr in module.Body)
 			{
-                if (instr.Opcode == Opcode.br || instr.Opcode == Opcode.call) {                                         // Fix the argument of this instruction?
+                if (instr.Opcode == Opcode.br || instr.Opcode == Opcode.brc ||
+                    instr.Opcode == Opcode.call || instr.Opcode == Opcode.callc) {                                      // Fix the argument of this instruction?
                     if (instr.Argument is string) {                                                                     // Yes, label?
                         if (Labels.ContainsKey((string)instr.Argument))                                                 // We can resolve it?
                             Body.Add(new Instruction(instr.Opcode, (uint)Labels[(string)instr.Argument]));              // Yes :)

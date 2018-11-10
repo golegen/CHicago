@@ -1,7 +1,7 @@
 ﻿// File author is Ítalo Lima Marconato Matias
 //
 // Created on October 20 of 2018, at 22:32 BRT
-// Last edited on October 28 of 2018, at 00:19 BRT
+// Last edited on November 10 of 2018, at 13:30 BRT
 
 using System;
 using System.Collections.Generic;
@@ -23,11 +23,22 @@ namespace Bliss.Assembler
         lds,
         ldu,
         ldf,
+        ldloc,
+        stloc,
         pop,
         br,
+        brc,
         call,
+        callc,
+        ncall,
+        ncallc,
         ret,
-        print
+        aargs,
+        alocs,
+        fargs,
+        flocs,
+        cmp,
+        setc
     }
 
     public class Instruction
