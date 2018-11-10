@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:42 BRT
-// Last edited on November 03 of 2018, at 17:50 BRT
+// Last edited on November 10 of 2018, at 11:28 BRT
 
 #ifndef __CHICAGO_PROCESS_H__
 #define __CHICAGO_PROCESS_H__
@@ -28,6 +28,7 @@ typedef struct {
 extern Boolean PsTaskSwitchEnabled;
 extern PProcess PsCurrentProcess;
 extern PQueue PsProcessQueue;
+extern PList PsProcessList;
 #endif
 
 PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir);

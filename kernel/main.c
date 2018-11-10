@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on November 05 of 2018, at 18:15 BRT
+// Last edited on November 10 of 2018, at 12:41 BRT
 
 #include <chicago/arch.h>
 #include <chicago/console.h>
@@ -57,9 +57,9 @@ Void KernelMain(Void) {
 }
 
 Void KernelMainLate(Void) {
-	DbgWriteFormated("[Kernel] Tasking initialized\r\n");																	// Tasking initialized :)
+	DbgWriteFormated("[Kernel] Tasking initialized\r\n");																	// Tasking initialized
 	
-	DispFillProgressBar();																									// Kernel initialized :)
+	DispFillProgressBar();																									// Kernel initialized
 	DbgWriteFormated("[Kernel] Kernel initialized\r\n");
 	
 	ConClearScreen();																										// Clear the screen

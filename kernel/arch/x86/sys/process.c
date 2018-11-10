@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 28 of 2018, at 01:09 BRT
-// Last edited on November 03 of 2018, at 18:08 BRT
+// Last edited on November 10 of 2018, at 12:39 BRT
 
 #define __CHICAGO_ARCH_PROCESS__
 
@@ -45,6 +45,7 @@ PContext PsCreateContext(UIntPtr entry) {
 	*kstack-- = (UIntPtr)(ctx->kstack + PS_STACK_SIZE - 1);
 	*kstack-- = 0;
 	*kstack-- = 0;
+	*kstack-- = 0;
 	*kstack-- = 0x10;
 	*kstack-- = 0x10;
 	*kstack-- = 0x10;
@@ -71,6 +72,7 @@ Void PsSwitchTaskTimer(PRegisters regs) {
 	PsCurrentProcess = QueueRemove(PsProcessQueue);																	// Get the next process
 	old->ctx->esp = (UIntPtr)regs;																					// Save the old context
 	
+	QueueAdd(PsProcessQueue, old);																					// Add the old process to the queue again
 	GDTSetKernelStack((UInt32)(PsCurrentProcess->ctx->kstack));														// Switch the kernel stack in the tss
 	Asm Volatile("fxsave (%0)" :: "r"(PsFPUStateSave));																// Save the old fpu state
 	StrCopyMemory(old->ctx->fpu_state, PsFPUStateSave, 512);
@@ -87,13 +89,7 @@ Void PsSwitchTaskTimer(PRegisters regs) {
 	Asm Volatile("pop %fs");
 	Asm Volatile("pop %es");
 	Asm Volatile("pop %ds");
-	Asm Volatile("pop %edi");
-	Asm Volatile("pop %esi");
-	Asm Volatile("pop %ebp");
-	Asm Volatile("pop %ebx");
-	Asm Volatile("pop %edx");
-	Asm Volatile("pop %ecx");
-	Asm Volatile("pop %eax");
+	Asm Volatile("popa");
 	Asm Volatile("add $8, %esp");
 	Asm Volatile("iret");
 }
@@ -111,13 +107,14 @@ Void PsSwitchTaskForce(PRegisters regs) {
 		old->ctx->esp = (UIntPtr)regs;																				// Yes, save the old context
 		Asm Volatile("fxsave (%0)" :: "r"(PsFPUStateSave));															// And the old fpu state
 		StrCopyMemory(old->ctx->fpu_state, PsFPUStateSave, 512);
+		QueueAdd(PsProcessQueue, old);																				// And add the old process to the queue again
 	}
 	
 	GDTSetKernelStack((UInt32)(PsCurrentProcess->ctx->kstack));														// Switch the kernel stack in the tss
 	StrCopyMemory(PsFPUStateSave, PsCurrentProcess->ctx->fpu_state, 512);											// And load the new fpu state
 	Asm Volatile("fxrstor (%0)" :: "r"(PsFPUStateSave));
 	
-	if ((old != Null) && (PsCurrentProcess->dir != old->dir)) {														// Switch the page dir
+	if (((old != Null) && (PsCurrentProcess->dir != old->dir)) || (old == Null)) {									// Switch the page dir
 		MmSwitchDirectory(PsCurrentProcess->dir);
 	}
 	
@@ -126,13 +123,7 @@ Void PsSwitchTaskForce(PRegisters regs) {
 	Asm Volatile("pop %fs");
 	Asm Volatile("pop %es");
 	Asm Volatile("pop %ds");
-	Asm Volatile("pop %edi");
-	Asm Volatile("pop %esi");
-	Asm Volatile("pop %ebp");
-	Asm Volatile("pop %ebx");
-	Asm Volatile("pop %edx");
-	Asm Volatile("pop %ecx");
-	Asm Volatile("pop %eax");
+	Asm Volatile("popa");
 	Asm Volatile("add $8, %esp");
 	Asm Volatile("iret");
 }
