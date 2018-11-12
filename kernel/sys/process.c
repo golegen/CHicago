@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:59 BRT
-// Last edited on November 03 of 2018, at 17:55 BRT
+// Last edited on November 10 of 2018, at 21:25 BRT
 
 #define __CHICAGO_PROCESS__
 
@@ -53,6 +53,8 @@ PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir) {
 	
 	proc->alloc_base = Null;
 	proc->mem_usage = 0;
+	proc->handle_list = Null;
+	proc->global_handle_list = Null;
 	
 	return proc;
 }

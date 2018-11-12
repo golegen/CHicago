@@ -1,14 +1,18 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on November 10 of 2018, at 16:35 BRT
+# Last edited on November 12 of 2018, at 14:48 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
 DEBUG ?= false
 
+PATH := $(PWD)/toolchain/$(ARCH)/bin:$(PATH)
+SHELL := env PATH=$(PATH) /bin/bash
+
 ifeq ($(ARCH),x86)
-	PREFIX ?= i686-elf-
+	PREFIX ?= i686-chicago
+	ARCH_CFLAGS := -DCHEXEC_ARCH=CHEXEC_HEADER_FLAGS_ARCH_X86
 	
 	ifneq ($(SUBARCH),)
 		UNSUPPORTED_ARCH := true
@@ -31,6 +35,7 @@ endif
 
 OBJECTS := main.c.o
 OBJECTS += ds/list.c.o ds/queue.c.o ds/stack.c.o
+OBJECTS += exec/chexec.c.o exec/lib.c.o
 OBJECTS += io/console.c.o io/device.c.o io/debug.c.o io/display.c.o
 OBJECTS += io/file.c.o
 OBJECTS += io/dev/framebuffer.c.o io/dev/rawkeyboard.c.o io/dev/rawmouse.c.o io/dev/null.c.o
@@ -82,7 +87,7 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)echo Linking $@
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(NOECHO)$(PREFIX)gcc -T$(LINKER_SCRIPT) -ffreestanding -nostdlib -o $@ $(ARCH_OBJECTS) $(OBJECTS) $(OTHER_OBJECTS) $(ARCH_LDFLAGS) -lgcc
+	$(NOECHO)$(TARGET)-gcc -T$(LINKER_SCRIPT) -ffreestanding -nostdlib -o $@ $(ARCH_OBJECTS) $(OBJECTS) $(OTHER_OBJECTS) $(ARCH_LDFLAGS) -lgcc
 
 build/%.oo: %
 ifeq ($(UNSUPPORTED_ARCH),true)
@@ -90,8 +95,8 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)echo Compiling $<
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(NOECHO)$(PREFIX)objcopy -Ibinary -O$(OBJCOPY_FORMAT) -B$(OBJCOPY_ARCH) $< $@
-	$(NOECHO)$(PREFIX)objcopy --rename-section .data=.rodata,alloc,load,readonly,data,contents $@ $@
+	$(NOECHO)$(TARGET)-objcopy -Ibinary -O$(OBJCOPY_FORMAT) -B$(OBJCOPY_ARCH) $< $@
+	$(NOECHO)$(TARGET)-objcopy --rename-section .data=.rodata,alloc,load,readonly,data,contents $@ $@
 
 build/%.s.o: %.s
 ifeq ($(UNSUPPORTED_ARCH),true)
@@ -99,7 +104,7 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)echo Compiling $<
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(NOECHO)$(PREFIX)as $(ARCH_AFLAGS) $< -o $@
+	$(NOECHO)$(TARGET)-as $(ARCH_AFLAGS) $< -o $@
 
 build/%.c.o: %.c
 ifeq ($(UNSUPPORTED_ARCH),true)
@@ -109,14 +114,14 @@ endif
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
 ifeq ($(SUBARCH),)
 ifeq ($(DEBUG),yes)
-	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -DDEBUG -g -std=c11 -Iinclude -Iarch/$(ARCH)/include -ffreestanding -O0 -Wall -Wextra -Wno-implicit-fallthrough -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast $(ARCH_CFLAGS) -c $< -o $@
+	$(NOECHO)$(TARGET)-gcc -DARCH=\"$(ARCH)\" -DDEBUG -g -std=c11 -Iinclude -Iarch/$(ARCH)/include -ffreestanding -O0 -Wall -Wextra -Wno-implicit-fallthrough -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast $(ARCH_CFLAGS) -c $< -o $@
 else
-	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -std=c11 -Iinclude -Iarch/$(ARCH)/include -ffreestanding -O3 -Wall -Wextra -Wno-implicit-fallthrough -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast $(ARCH_CFLAGS) -c $< -o $@
+	$(NOECHO)$(TARGET)-gcc -DARCH=\"$(ARCH)\" -std=c11 -Iinclude -Iarch/$(ARCH)/include -ffreestanding -O3 -Wall -Wextra -Wno-implicit-fallthrough -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast $(ARCH_CFLAGS) -c $< -o $@
 endif
 else
 ifeq ($(DEBUG),yes)
-	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -DDEBUG -g -std=c11 -Iinclude -Iarch/$(ARCH)/include -I arch/$(ARCH)/subarch/$(SUBARCH)/include -ffreestanding -O0 -Wall -Wextra -Wno-implicit-fallthrough -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast $(ARCH_CFLAGS) -c $< -o $@
+	$(NOECHO)$(TARGET)-gcc -DARCH=\"$(ARCH)\" -DDEBUG -g -std=c11 -Iinclude -Iarch/$(ARCH)/include -I arch/$(ARCH)/subarch/$(SUBARCH)/include -ffreestanding -O0 -Wall -Wextra -Wno-implicit-fallthrough -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast $(ARCH_CFLAGS) -c $< -o $@
 else
-	$(NOECHO)$(PREFIX)gcc -DARCH=\"$(ARCH)\" -std=c11 -Iinclude -Iarch/$(ARCH)/include -I arch/$(ARCH)/subarch/$(SUBARCH)/include -ffreestanding -O3 -Wall -Wextra -Wno-implicit-fallthrough -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast $(ARCH_CFLAGS) -c $< -o $@
+	$(NOECHO)$(TARGET)-gcc -DARCH=\"$(ARCH)\" -std=c11 -Iinclude -Iarch/$(ARCH)/include -I arch/$(ARCH)/subarch/$(SUBARCH)/include -ffreestanding -O3 -Wall -Wextra -Wno-implicit-fallthrough -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast $(ARCH_CFLAGS) -c $< -o $@
 endif
 endif

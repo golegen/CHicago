@@ -1,14 +1,17 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on October 22 of 2018, at 13:39 BRT
-# Last edited on November 05 of 2018, at 18:18 BRT
+# Last edited on November 12 of 2018, at 14:48 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
 DEBUG ?= false
 
+PATH := $(PWD)/../toolchain/$(ARCH)/bin:$(PATH)
+SHELL := env PATH=$(PATH) /bin/bash
+
 ifeq ($(ARCH),x86)
-	PREFIX ?= i686-elf-
+	TARGET ?= i686-chicago
 	
 	ifneq ($(SUBARCH),)
 		UNSUPPORTED_ARCH := true
@@ -61,6 +64,6 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)echo Compiling $<
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(NOECHO)$(PREFIX)as $(ARCH_AFLAGS) $< -o $@.o
-	$(NOECHO)$(PREFIX)ld -T$(LINKER_SCRIPT) -o $@ $@.o
+	$(NOECHO)$(TARGET)-as $(ARCH_AFLAGS) $< -o $@.o
+	$(NOECHO)$(TARGET)-ld -T$(LINKER_SCRIPT) -o $@ $@.o
 	$(NOECHO)rm $@.o

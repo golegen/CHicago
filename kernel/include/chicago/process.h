@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:42 BRT
-// Last edited on November 10 of 2018, at 11:28 BRT
+// Last edited on November 10 of 2018, at 21:22 BRT
 
 #ifndef __CHICAGO_PROCESS_H__
 #define __CHICAGO_PROCESS_H__
@@ -22,6 +22,8 @@ typedef struct {
 	PContext ctx;
 	PAllocBlock alloc_base;
 	UIntPtr mem_usage;
+	PList handle_list;
+	PList global_handle_list;
 } Process, *PProcess;
 
 #ifndef __CHICAGO_PROCESS__

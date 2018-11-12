@@ -1,37 +1,24 @@
 # CHicago
 
-## Build your own CHicago iso
+## Building the ISO
 
-You need: i686-elf toolchain, xorriso, mono and make
+For building the ISO from scratch, you need:
 
-Go to the root directory and type:
+	A Unix-like environment
+	GCC and G++
+	Make
+	Bison
+	Flex
+	GMP
+	MPFR
+	MPC
+	Texinfo
+	Xorriso
 
-```
-make
-```
+To build it, go to the root directory and type:
 
-You should have the bootable iso inside of the build folder and the blasm tool inside of tools/blasm/build (blasm.exe, you can run it with mono).
+	make
 
-## Troubleshooting
+You can append ARCH=\<ARCH\> and SUBARCH=\<SUBARCH\> to change the system architecture, BUILD_CORES=\<CORES_AMOUNT\> to build the toolchain with multiple cores, VERBOSE=true to enable verbose build (good for finding compilation errors) and DEBUG=yes to disable optimizations and make a debug build.
 
-### Barebone toolchain
-
-To easy get toolchain to build this project you can clone:
-
-https://github.com/rm-hull/barebones-toolchain.git
-
-Read the repo README for instructions of toolchain versions and enviroment setup.
-
-### No iso in build folder
-
-Maybe some error during build. For debug it use:
-
-```
-make VERBOSE=true
-```
-
-Or:
-
-```
-make remake VERBOSE=true
-```
+After building everything, you should have your toolchain inside of the toolchain/<ARCH> folder and the bootable iso inside of the build folder.

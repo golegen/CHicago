@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 18 of 2018, at 21:12 BRT
-// Last edited on October 27 of 2018, at 19:49 BRT
+// Last edited on November 10 of 2018, at 19:43 BRT
 
 #define __CHICAGO_DISPLAY__
 
@@ -13,6 +13,7 @@
 
 UIntPtr DispFrameBuffer = 0;
 UIntPtr DispBackBuffer = 0;
+UInt8 DispBytesPerPixel = 0;
 UIntPtr DispWidth = 0;
 UIntPtr DispHeight = 0;
 UInt32 DispProgressBar = 0;
@@ -152,6 +153,10 @@ UIntPtr DispGetFrameBuffer(Void) {
 	return DispFrameBuffer;
 }
 
+UInt8 DispGetBytesPerPixel(Void) {
+	return DispBytesPerPixel;
+}
+
 UIntPtr DispGetWidth(Void) {
 	return DispWidth;
 }
@@ -179,7 +184,7 @@ Void DispExtractARGB(UIntPtr c, PUInt8 a, PUInt8 r, PUInt8 g, PUInt8 b) {
 }
 
 Void DispRefresh(Void) {
-	StrCopyMemory((PUInt8)DispFrameBuffer, (PUInt8)DispBackBuffer, DispWidth * DispHeight * 4);
+	StrCopyMemory((PUInt8)DispFrameBuffer, (PUInt8)DispBackBuffer, DispWidth * DispHeight * DispBytesPerPixel);
 }
 
 Void DispClearScreen(UIntPtr c) {
@@ -195,7 +200,11 @@ Void DispClearScreen(UIntPtr c) {
 	c = a | (r << 8) | (g << 16) | (b << 24);																					// Convert to little endian
 #endif
 	
-	StrSetMemory32((PUInt32)DispBackBuffer, c, DispWidth * DispHeight);															// Fill the screen with the color c
+	if (DispBytesPerPixel == 3) {																								// Fill the screen with the color c
+		StrSetMemory24((PUInt32)DispBackBuffer, c, DispWidth * DispHeight);
+	} else if (DispBytesPerPixel == 4) {
+		StrSetMemory32((PUInt32)DispBackBuffer, c, DispWidth * DispHeight);
+	}
 }
 
 Void DispScrollScreen(IntPtr scale, UIntPtr c) {
@@ -217,8 +226,13 @@ Void DispScrollScreen(IntPtr scale, UIntPtr c) {
 	c = a | (r << 8) | (g << 16) | (b << 24);																					// Convert to little endian
 #endif
 	
-	StrCopyMemory32((PUInt32)DispBackBuffer, (PUInt32)(DispBackBuffer + (lsz * 4)), DispWidth * DispHeight - lsz);				// Scroll the screen UP
-	StrSetMemory32((PUInt32)(DispBackBuffer + (DispWidth * DispHeight * 4) - (lsz * 4)), c, lsz);								// Clear the last line
+	if (DispBytesPerPixel == 3) {																								// Scroll the screen contents up and clear the last line!
+		StrCopyMemory24((PUInt32)DispBackBuffer, (PUInt32)(DispBackBuffer + (lsz * 3)), DispWidth * DispHeight - lsz);
+		StrSetMemory24((PUInt32)(DispBackBuffer + (DispWidth * DispHeight * 3) - (lsz * 3)), c, lsz);
+	} else if (DispBytesPerPixel == 4) {
+		StrCopyMemory32((PUInt32)DispBackBuffer, (PUInt32)(DispBackBuffer + (lsz * 4)), DispWidth * DispHeight - lsz);
+		StrSetMemory32((PUInt32)(DispBackBuffer + (DispWidth * DispHeight * 4) - (lsz * 4)), c, lsz);
+	}
 }
 
 Void DispPutPixel(UIntPtr x, UIntPtr y, UIntPtr c) {
@@ -242,7 +256,12 @@ Void DispPutPixel(UIntPtr x, UIntPtr y, UIntPtr c) {
 	c = a | (r << 8) | (g << 16) | (b << 24);																					// Convert to little endian
 #endif
 	
-	*((PUIntPtr)(DispBackBuffer + (y * (DispWidth * 4)) + (x * 4))) = c;														// Write the pixel!
+	if (DispBytesPerPixel == 3) {																								// Write the pixel!
+		*((PUInt16)(DispBackBuffer + (y * (DispWidth * 3)) + (x * 3))) = (UInt16)c;
+		*((PUInt8)(DispBackBuffer + (y * (DispWidth * 3)) + (x * 3) + 2)) = (UInt8)(c << 16);
+	} else if (DispBytesPerPixel == 4) {
+		*((PUIntPtr)(DispBackBuffer + (y * (DispWidth * 4)) + (x * 4))) = c;
+	}
 }
 
 Void DispDrawLine(UIntPtr x0, UIntPtr y0, UIntPtr x1, UIntPtr y1, UIntPtr c) {
@@ -288,7 +307,12 @@ Void DispDrawLine(UIntPtr x0, UIntPtr y0, UIntPtr x1, UIntPtr y1, UIntPtr c) {
 	
 	if (dx >= dy) {																												// This line is more horizontal?
 		for (x = 0; x < dx; x++) {																								// Yes
-			*((PUInt32)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = c;
+			if (DispBytesPerPixel == 3) {
+				*((PUInt16)(DispBackBuffer + (py * (DispWidth * 3)) + (px * 3))) = (UInt16)c;
+				*((PUInt8)(DispBackBuffer + (py * (DispWidth * 3)) + (px * 3) + 2)) = (UInt8)(c << 16);
+			} else if (DispBytesPerPixel == 4) {
+				*((PUInt32)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = c;
+			}
 			
 			y += dy;
 			
@@ -301,7 +325,12 @@ Void DispDrawLine(UIntPtr x0, UIntPtr y0, UIntPtr x1, UIntPtr y1, UIntPtr c) {
 		}
 	} else {
 		for (y = 0; y < dy; y++) {																								// No, so is more vertical
-			*((PUInt32)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = c;
+			if (DispBytesPerPixel == 3) {
+				*((PUInt16)(DispBackBuffer + (py * (DispWidth * 3)) + (px * 3))) = (UInt16)c;
+				*((PUInt8)(DispBackBuffer + (py * (DispWidth * 3)) + (px * 3) + 2)) = (UInt8)(c << 16);
+			} else if (DispBytesPerPixel == 4) {
+				*((PUInt32)(DispBackBuffer + (py * (DispWidth * 4)) + (px * 4))) = c;
+			}
 			
 			x += dx;
 			
@@ -339,7 +368,7 @@ Void DispFillRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr c) {
 		h = DispHeight - y;
 	}
 	
-	PUInt32 fb = (PUInt32)(DispBackBuffer + (y * (DispWidth * 4)) + (x * 4));
+	PUInt32 fb = (PUInt32)(DispBackBuffer + (y * (DispWidth * DispBytesPerPixel)) + (x * DispBytesPerPixel));
 	
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 	UInt8 a;																													// Big endian...
@@ -354,7 +383,12 @@ Void DispFillRectangle(UIntPtr x, UIntPtr y, UIntPtr w, UIntPtr h, UIntPtr c) {
 #endif
 	
 	for (UIntPtr i = 0; i < h; i++) {																							// And fill our rectangle
-		StrSetMemory32(fb, c, w);
+		if (DispBytesPerPixel == 3) {
+			StrSetMemory24(fb, c, w);
+		} else if (DispBytesPerPixel == 4) {
+			StrSetMemory32(fb, c, w);
+		}
+		
 		fb += DispWidth;
 	}
 }
@@ -594,13 +628,14 @@ Void DispDrawProgessBar(Void) {
 }
 
 Void DispInit(UIntPtr w, UIntPtr h, UIntPtr bpp, UIntPtr fb) {
-	if (bpp != 4) {																												// For now, we only support 32 bpp
+	if ((bpp != 3) && (bpp != 4)) {																								// We only support 24 and 32 bpp
 		DbgWriteFormated("PANIC! Couldn't init the display\r\n");
 		while (1) ;
 	}
 	
 	DispFrameBuffer = MemAAllocate(w * h * bpp, MM_PAGE_SIZE);																	// Alloc some virt space for the frame buffer
 	DispBackBuffer = MemAllocate(w * h * bpp);
+	DispBytesPerPixel = bpp;
 	DispWidth = w;
 	DispHeight = h;
 	
@@ -609,7 +644,7 @@ Void DispInit(UIntPtr w, UIntPtr h, UIntPtr bpp, UIntPtr fb) {
 		while (1) ;
 	}
 	
-	for (UIntPtr i = 0; i < DispWidth * DispHeight * 4; i += MM_PAGE_SIZE) {													// Let's map the frame buffer to the virtual memory!
+	for (UIntPtr i = 0; i < DispWidth * DispHeight * bpp; i += MM_PAGE_SIZE) {													// Let's map the frame buffer to the virtual memory!
 		if (!MmMap(DispFrameBuffer + i, fb + i, MM_MAP_KDEF)) {
 			DbgWriteFormated("PANIC! Couldn't init the display\r\n");
 			while (1) ;
