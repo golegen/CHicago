@@ -2,7 +2,7 @@
    File author is Ítalo Lima Marconato Matias
   
    Created on May 11 of 2018, at 13:21 BRT
-   Last edited on June 24 of 2018, at 14:45 BRT
+   Last edited on November 13 of 2018, at 16:46 BRT
 */
 
 ENTRY(KernelEntry)
@@ -15,7 +15,6 @@ SECTIONS
 	
 	.text ALIGN(4K) : AT(ADDR(.text) - 0xC0000000)
 	{
-		*(.multiboot)
 		*(.text.unlikely .text.*_unlikely .text.unlikely.*)
 		*(.text.exit .text.exit.*)
 		*(.text.startup .text.startup.*)

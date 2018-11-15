@@ -50,7 +50,7 @@ diff -ruN a/gcc/config/chicago.h b/gcc/config/chicago.h
 +#define ENDFILE_SPEC "%{!shared:crtend.o%s} crtn.o%s"
 +
 +#undef LINK_SPEC
-+#define LINK_SPEC "%{shared:-shared} %{!shared: %{shared:-shared}} -z max-page-size=4096"
++#define LINK_SPEC "%{shared:-shared} -z max-page-size=4096"
 +
 +/* Don't automatically add extern "C" { } around header files. */
 +#undef  NO_IMPLICIT_EXTERN_C

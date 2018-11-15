@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on November 11 of 2018, at 20:35 BRT
-# Last edited on November 12 of 2018, at 14:41 BRT
+# Last edited on November 15 of 2018, at 14:48 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -68,4 +68,6 @@ endif
 	$(NOECHO)echo Compiling Binutils
 	$(NOECHO)mkdir build/binutils-2.29.1/build && cd build/binutils-2.29.1/build && ../configure --target=$(TARGET) --prefix=$(ROOT_DIR)/$@ --with-sysroot=$(ROOT_DIR)/$@/sysroot --disable-nls --disable-werror 1>/dev/null 2>1 && make -j$(BUILD_CORES) 1>/dev/null 2>1 && make install -j$(BUILD_CORES) 1>/dev/null 2>1
 	$(NOECHO)echo Compiling GCC
-	$(NOECHO)mkdir build/gcc-7.2.0/build && cd build/gcc-7.2.0/build && ../configure --target=$(TARGET) --prefix=$(ROOT_DIR)/$@ --with-sysroot=$(ROOT_DIR)/$@/sysroot --enable-languages=c,c++ --disable-nls --disable-werror 1>/dev/null 2>1 && make all-gcc all-target-libgcc -j$(BUILD_CORES) 1>/dev/null 2>1 && make install-gcc install-target-libgcc 1>/dev/null 2>1
+	$(NOECHO)mkdir build/gcc-7.2.0/build && cd build/gcc-7.2.0/build && ../configure --target=$(TARGET) --prefix=$(ROOT_DIR)/$@ --with-sysroot=$(ROOT_DIR)/$@/sysroot --enable-languages=c,c++ --enable-default-pie --with-linker-hash-style=sysv --disable-nls --disable-werror 1>/dev/null 2>1 && make all-gcc all-target-libgcc -j$(BUILD_CORES) 1>/dev/null 2>1 && make install-gcc install-target-libgcc 1>/dev/null 2>1
+	$(NOECHO)echo Compiling Objconv
+	$(NOECHO)gcc -Iobjconv/include -o $@ objconv/*.c

@@ -1,13 +1,13 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on October 22 of 2018, at 13:39 BRT
-# Last edited on November 12 of 2018, at 14:48 BRT
+# Last edited on November 13 of 2018, at 16:32 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
 DEBUG ?= false
 
-PATH := $(PWD)/../toolchain/$(ARCH)/bin:$(PATH)
+PATH := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))/../../toolchain/$(ARCH)/bin:$(PATH)
 SHELL := env PATH=$(PATH) /bin/bash
 
 ifeq ($(ARCH),x86)
