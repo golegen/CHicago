@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 23:40 BRT
-// Last edited on October 29 of 2018, at 19:05 BRT
+// Last edited on November 15 of 2018, at 16:00 BRT
 
 #include <chicago/arch/ide.h>
 #include <chicago/arch/idt.h>
@@ -346,7 +346,7 @@ Void IDEInitializeInt(UInt32 bus, UInt32 drive)
 	
 	Boolean err = False;
 	
-	while (1) {																									// Poll until BSY is clear
+	while (True) {																									// Poll until BSY is clear
 		UInt8 status = PortInByte(io + ATA_REG_STATUS);
 		
 		if (status & ATA_SR_ERR) {																				// ERR set?

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on November 03 of 2018, at 17:58 BRT
+// Last edited on November 15 of 2018, at 15:54 BRT
 
 #include <chicago/arch/bootmgr.h>
 #include <chicago/arch/gdt.h>
@@ -22,6 +22,12 @@
 #include <chicago/panic.h>
 #include <chicago/string.h>
 
+Void ArchHalt(Void) {
+	while (True) {
+		Asm Volatile("cli; hlt");																						// Disable interrupts and Halt!
+	}
+}
+
 Void ArchInitFPU(Void) {
 	UInt16 cw0 = 0x37E;
 	UInt16 cw1 = 0x37A;
@@ -30,14 +36,14 @@ Void ArchInitFPU(Void) {
 	
 	if (!CPUIDCheck()) {																								// Let's check if we can use the CPUID instruction
 		DbgWriteFormated("PANIC! CPUID instruction isn't avaliable\r\n");												// We can't but we need it...
-		while (1) ;
+		ArchHalt();																										// Halt
 	}
 	
 	Asm Volatile("cpuid" : "=d"(d) : "a"(1) : "ecx", "ebx");															// EAX = 1, Get features
 	
 	if (!(d & (1 << 0))) {																								// FPU avaliable?
 		DbgWriteFormated("PANIC! FPU isn't avaliable\r\n");																// Nope
-		while (1) ;
+		ArchHalt();																										// Halt
 	}
 	
 	Asm Volatile("mov %%cr0, %0" : "=r"(cr0));
@@ -62,7 +68,7 @@ Void ArchInitVMM(Void) {
 			
 			if (phys == 0) {
 				DbgWriteFormated("PANIC! Couldn't init the VMM\r\n");													// Failed...
-				while (1) ;
+				ArchHalt();																								// Halt
 			}
 			
 			MmSetPDE(MmCurrentDirectory, i, phys, 0x03);																// Set the physical address of this PDE

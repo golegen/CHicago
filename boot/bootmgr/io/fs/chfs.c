@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 28 of 2018, at 09:41 BRT
-// Last edited on November 05 of 2018, at 14:53 BRT
+// Last edited on November 15 of 2018, at 15:59 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/chfs.h>
@@ -272,7 +272,7 @@ PFsNode CHFsFindInDirectory(PFsNode dir, PChar name) {
 		return Null;
 	}
 	
-	while (1) {																									// Let's search for the entry!
+	while (True) {																									// Let's search for the entry!
 		if (ent->type == 0x00) {																				// End of the directory?
 			MemFree((UIntPtr)buff);																				// Yes :(
 			MemFree((UIntPtr)inode);

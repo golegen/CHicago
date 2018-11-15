@@ -1,9 +1,10 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:35 BRT
-// Last edited on October 24 of 2018, at 14:16 BRT
+// Last edited on November 15 of 2018, at 15:47 BRT
 
 #include <chicago/alloc.h>
+#include <chicago/arch.h>
 #include <chicago/console.h>
 #include <chicago/device.h>
 #include <chicago/list.h>
@@ -155,6 +156,6 @@ Void FsInitDeviceList(Void) {
 	
 	if (FsDeviceList == Null) {														// Failed?
 		ConWriteFormated("PANIC! Couldn't init the device list\r\n");				// Yes, so halt
-		while (1) ;
+		ArchHalt();																	// Halt
 	}
 }

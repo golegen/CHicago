@@ -1,13 +1,14 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:15 BRT
-// Last edited on October 27 of 2018, at 22:14 BRT
+// Last edited on November 15 of 2018, at 15:56 BRT
 
 #ifndef __CHICAGO_ARCH_H__
 #define __CHICAGO_ARCH_H__
 
 #include <chicago/types.h>
 
+Void ArchHalt(Void);
 Void ArchInit(Void);
 Void ArchInitFPU(Void);
 Void ArchInitPMM(Void);

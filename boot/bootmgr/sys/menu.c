@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 25 of 2018, at 14:29 BRT
-// Last edited on October 27 of 2018, at 20:57 BRT
+// Last edited on November 15 of 2018, at 15:53 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/arch.h>
@@ -84,7 +84,7 @@ static Void MenuIterator(PConfField field) {
 	
 	if (opt == Null) {
 		ConWriteFormated("PANIC! Couldn't init the menu\r\n");												// Failed to alloc...
-		while (1) ;
+		ArchHalt();																							// Halt
 	}
 	
 	opt->name = field->name;																				// Set the name
@@ -92,7 +92,7 @@ static Void MenuIterator(PConfField field) {
 	
 	if (field->attrs == Null) {
 		ConWriteFormated("PANIC! Couldn't init the menu\r\n");												// No attributes...
-		while (1) ;
+		ArchHalt();																							// Halt
 	}
 	
 	opt->boot_type = (PChar)ListGet(field->attrs, field->attrs->length - 1);								// Set the boot type!
@@ -100,7 +100,7 @@ static Void MenuIterator(PConfField field) {
 	if (add) {
 		if (!ListAdd(MenuOptions, opt)) {																	// Add to the menu option list!
 			ConWriteFormated("PANIC! Couldn't init the menu\r\n");											// Failed...
-			while (1) ;
+			ArchHalt();																						// Halt
 		}
 	}
 }
@@ -110,7 +110,7 @@ static Void MenuShowMessage(PChar msg, PChar msg2) {
 		return;																								// Nope...
 	}
 	
-	while (1) {
+	while (True) {
 		ConClearScreen();																					// Clear the screen
 		ConWriteFormated("%s", msg);																		// Print the message
 		
@@ -136,7 +136,7 @@ Void MenuLoop(Void) {
 	
 	MenuSelectedOption = MenuGetOptionIdx(MenuDefault);														// Select the default option
 	
-l:	while (1) {
+l:	while (True) {
 		if (MenuSelectedOption >= MenuOptions->length) {													// Fix the current selected option
 			MenuSelectedOption = MenuOptions->length - 1;
 		}
@@ -228,7 +228,7 @@ l:	while (1) {
 		if (buffer == Null) {
 			ConClearScreen();																				// Failed...
 			ConWriteFormated("PANIC! Couldn't allocate memory for reading the kernel\r\n");	
-			while (1) ;
+			ArchHalt();																						// Halt
 		}
 		
 		if (!FsReadFile(file, 0, file->length, buffer)) {													// Read the file!
@@ -324,7 +324,7 @@ Void MenuInit(Void) {
 	
 	if (MenuOptions == Null) {
 		ConWriteFormated("PANIC! Failed to init the menu\r\n");												// Failed
-		while (1) ;
+		ArchHalt();																							// Halt
 	}
 	
 	ConfIterate(MenuIterator);																				// Init the option list

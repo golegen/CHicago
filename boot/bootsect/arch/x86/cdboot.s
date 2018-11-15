@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 22 of 2018, at 13:36 BRT
-// Last edited on November 04 of 2018, at 22:15 BRT
+// Last edited on November 15 of 2018, at 15:38 BRT
 
 .code16
 
@@ -208,5 +208,5 @@ BootFolder: .asciz "Boot"
 BootmgrFile: .asciz "bootmgr.bin"
 RebootMsg: .asciz "Please reboot your computer"
 
-.space 510 - (. - BootEntry)
+.space 2046 - (. - BootEntry)
 .word 0xAA55

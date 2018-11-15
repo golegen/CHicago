@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 28 of 2018, at 09:41 BRT
-// Last edited on November 05 of 2018, at 18:19 BRT
+// Last edited on November 15 of 2018, at 16:01 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/chfs.h>
@@ -379,7 +379,7 @@ Boolean CHFsCreateFile(PFsNode dir, PChar name, UIntPtr flags) {
 	UIntPtr lba = dir->inode;																					// Let's search for a free entry in our directory
 	PCHFsINode ent = inode;
 	
-	while (1) {
+	while (True) {
 		if (ent->type == 0x00) {																				// Found?
 			ent->type = (flags == FS_FLAG_FILE) ? 0x01 : 0x02;													// Yes :)
 			
@@ -586,7 +586,7 @@ PFsNode CHFsFindInDirectory(PFsNode dir, PChar name) {
 		return Null;
 	}
 	
-	while (1) {																									// Let's search for the entry!
+	while (True) {																									// Let's search for the entry!
 		if (ent->type == 0x00) {																				// End of the directory?
 			MemFree((UIntPtr)buff);																				// Yes :(
 			MemFree((UIntPtr)inode);

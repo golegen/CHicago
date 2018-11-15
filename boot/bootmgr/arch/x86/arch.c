@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 24 of 2018, at 13:58 BRT
-// Last edited on November 10 of 2018, at 19:02 BRT
+// Last edited on November 15 of 2018, at 15:57 BRT
 
 #include <chicago/arch/ide.h>
 #include <chicago/arch/idt.h>
@@ -151,6 +151,12 @@ IntPtr ArchJump(UIntPtr dest, PChar bootdev) {
 c:	ArchJumpInt(dest, bootdev, 0x3000, mmapc, data);											// Jump!
 	
 	return -1;																					// ... Returned?
+}
+
+Void ArchHalt(Void) {
+	while (True) {
+		Asm Volatile("cli; hlt");																// Disable interrupts and Halt!
+	}
 }
 
 Void ArchInit(Void) {

@@ -1,9 +1,10 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:28 BRT
-// Last edited on October 29 of 2018, at 19:40 BRT
+// Last edited on November 15 of 2018, at 15:48 BRT
 
 #include <chicago/alloc.h>
+#include <chicago/arch.h>
 #include <chicago/console.h>
 #include <chicago/file.h>
 #include <chicago/string.h>
@@ -613,12 +614,12 @@ Void FsInit(Void) {
 	
 	if (bdpath == Null) {
 		ConWriteFormated("PANIC! Couldn't mount the boot device\r\n");
-		while (1) ;
+		ArchHalt();																														// Halt
 	}
 	
 	if (!FsMountFile("\\", bdpath, Null)) {
 		ConWriteFormated("PANIC! Couldn't mount the boot device\r\n");
-		while (1) ;
+		ArchHalt();																														// Halt
 	}
 	
 	MemFree((UIntPtr)bdpath);

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on November 10 of 2018, at 21:14 BRT
+// Last edited on November 15 of 2018, at 15:55 BRT
 
 #include <chicago/arch.h>
 #include <chicago/console.h>
@@ -52,8 +52,7 @@ Void KernelMain(Void) {
 	DbgWriteFormated("[Kernel] Filesystem initialized\r\n");
 	
 	PsInit();																												// Init tasking
-	
-	while (1) ;
+	ArchHalt();																												// Halt
 }
 
 Void KernelMainLate(Void) {
@@ -67,5 +66,5 @@ Void KernelMainLate(Void) {
 	ConWriteFormated("Codename '%s'\r\n", CHICAGO_CODENAME);
 	ConWriteFormated("%s\r\n\r\n", CHICAGO_VSTR);
 	
-	while (1) ;
+	ArchHalt();																												// Halt
 }

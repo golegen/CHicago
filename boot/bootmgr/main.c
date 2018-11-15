@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 22 of 2018, at 18:36 BRT
-// Last edited on November 05 of 2018, at 18:14 BRT
+// Last edited on November 15 of 2018, at 15:49 BRT
 
 #include <chicago/arch.h>
 #include <chicago/config.h>
@@ -16,6 +16,5 @@ Void LoaderMain(Void) {
 	ConfInit();						// Read the config file
 	MenuInit();						// Init the menu
 	MenuLoop();						// Enter the menu loop
-	
-	while (1) ;
+	ArchHalt();						// Halt
 }

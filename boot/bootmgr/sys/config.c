@@ -1,9 +1,10 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 25 of 2018, at 14:23 BRT
-// Last edited on October 25 of 2018, at 14:25 BRT
+// Last edited on November 15 of 2018, at 15:59 BRT
 
 #include <chicago/alloc.h>
+#include <chicago/arch.h>
 #include <chicago/config.h>
 #include <chicago/console.h>
 #include <chicago/file.h>
@@ -74,32 +75,32 @@ static Boolean ConfAcceptToken(PList toks, UIntPtr pos, PChar value) {
 static Void ConfExpectToken(PList toks, UIntPtr pos, PChar value, Boolean enums, Boolean equals) {
 	if (toks == Null || value == Null) {															// Checks
 		ConWriteFormated("PANIC! Couldn't parse the configuration file\r\n");						// Failed
-		while (1) ;
+		ArchHalt();																					// Halt
 	} else if (pos >= toks->length) {
 		ConWriteFormated("PANIC! Couldn't parse the configuration file\r\n");						// Failed
-		while (1) ;
+		ArchHalt();																					// Halt
 	}
 	
 	PChar str = (PChar)ListGet(toks, pos);
 	
 	if (!enums && ConfIsNumber(str[0])) {															// Accept numbers?
 		ConWriteFormated("PANIC! Couldn't parse the configuration file\r\n");						// Nope
-		while (1) ;
+		ArchHalt();																					// Halt
 	}
 	
 	if ((StrGetLength(str) != StrGetLength(value)) && equals) {										// Same length?
 		ConWriteFormated("PANIC! Couldn't parse the configuration file\r\n");						// Nope
-		while (1) ;
+		ArchHalt();																					// Halt
 	}
 	
 	Boolean scmp = StrCompare(str, value);
 	
 	if (!scmp && equals) {																			// Equals?
 		ConWriteFormated("PANIC! Couldn't parse the configuration file\r\n");						// Nope
-		while (1) ;
+		ArchHalt();																					// Halt
 	} else if (scmp && !equals) {
 		ConWriteFormated("PANIC! Couldn't parse the configuration file\r\n");						// Yes, but the user don't want it to be equal...
-		while (1) ;
+		ArchHalt();																					// Halt
 	}
 }
 
@@ -222,7 +223,7 @@ static PList ConfLexBuffer(PChar buffer, UIntPtr len) {
 static Void ConfParseTokens(PList toks) {
 	if (toks == Null) {																				// Valid tok buffer?
 		ConWriteFormated("PANIC! Couldn't parse the configuration file\r\n");						// No
-		while (1) ;
+		ArchHalt();																					// Halt
 	}
 	
 	UIntPtr pos = 0;
@@ -244,7 +245,7 @@ static Void ConfParseTokens(PList toks) {
 		
 		if (field == Null) {
 			ConWriteFormated("PANIC! Couldn't parse the configuration file\r\n");					// Failed
-			while (1) ;
+			ArchHalt();																				// Halt
 		}
 		
 		field->name = (PChar)ListGet(toks, pos++);													// Set the name
@@ -266,7 +267,7 @@ static Void ConfParseTokens(PList toks) {
 			
 			if (field->attrs == Null) {
 				ConWriteFormated("PANIC! Couldn't parse the configuration file\r\n");				// Failed
-				while (1) ;
+				ArchHalt();																			// Halt
 			}
 			
 			ConfExpectToken(toks, pos++, ",", False, True);											// Now we should have an comma here
@@ -276,7 +277,7 @@ start:		ConfExpectToken(toks, pos, "=", True, False);											// Accept almost
 			
 			if (!ListAdd(field->attrs, (PChar)ListGet(toks, pos++))) {								// And try to add this attribute
 				ConWriteFormated("PANIC! Couldn't parse the configuration file\r\n");				// Failed
-				while (1) ;
+				ArchHalt();																			// Halt
 			}
 			
 			if (ConfAcceptToken(toks, pos, ",")) {													// More attributes?
@@ -291,12 +292,12 @@ start:		ConfExpectToken(toks, pos, "=", True, False);											// Accept almost
 		
 		if (field->value == Null) {
 			ConWriteFormated("PANIC! Couldn't parse the configuration file\r\n");					// No valid value...
-			while (1) ;
+			ArchHalt();																				// Halt
 		}
 		
 		if (!ListAdd(ConfFields, field)) {															// Try to add this field
 			ConWriteFormated("PANIC! Couldn't parse the configuration file\r\n");					// Failed
-			while (1) ;	
+			ArchHalt();																				// Halt
 		}
 	}
 }
@@ -312,26 +313,26 @@ Void ConfInit(Void) {
 	
 	if (ConfFields == Null) {
 		ConWriteFormated("PANIC! Couldn't open the configuration file\r\n");						// Failed...
-		while (1) ;
+		ArchHalt();																					// Halt
 	}
 	
 	PFsNode file = FsOpenFile("\\Boot\\bootmgr.conf");												// Try to open the config file
 	
 	if (file == Null) {
 		ConWriteFormated("PANIC! Couldn't open the configuration file\r\n");						// Failed...
-		while (1) ;
+		ArchHalt();																					// Halt
 	}
 	
 	PChar buffer = (PChar)MemAllocate(file->length);												// Alloc space for reading the file
 	
 	if (buffer == Null) {
 		ConWriteFormated("PANIC! Couldn't read the configuration file\r\n");						// Failed...
-		while (1) ;
+		ArchHalt();																					// Halt
 	}
 	
 	if (!FsReadFile(file, 0, file->length, (PUInt8)buffer)) {										// Read the file!
 		ConWriteFormated("PANIC! Couldn't read the configuration file\r\n");						// Failed...
-		while (1) ;
+		ArchHalt();																					// Halt
 	}
 	
 	FsCloseFile(file);																				// Close the file
@@ -340,7 +341,7 @@ Void ConfInit(Void) {
 	
 	if (toks == Null) {
 		ConWriteFormated("PANIC! Couldn't lex the configuration file\r\n");							// Failed...
-		while (1) ;
+		ArchHalt();																					// Halt
 	}
 	
 	MemFree((UIntPtr)buffer);																		// Free the buffer

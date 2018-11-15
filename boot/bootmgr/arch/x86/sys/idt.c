@@ -1,12 +1,13 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 26 of 2018, at 22:00 BRT
-// Last edited on October 24 of 2018, at 17:42 BRT
+// Last edited on November 15 of 2018, at 15:49 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
 #include <chicago/arch/registers.h>
 
+#include <chicago/arch.h>
 #include <chicago/console.h>
 
 UInt8 IDTEntries[256][8];
@@ -27,7 +28,7 @@ Void ISRDefaultHandler(PRegisters regs) {
 		InterruptHandlers[regs->int_num](regs);														// Yes!
 	} else {
 		ConWriteFormated("PANIC! Unhandled interrupt 0x%x\r\n", regs->int_num);						// No
-		while (1) ;
+		ArchHalt();																					// Halt
 	}
 }
 

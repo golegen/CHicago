@@ -1,10 +1,11 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 27 of 2018, at 21:48 BRT
-// Last edited on October 27 of 2018, at 22:13 BRT
+// Last edited on November 15 of 2018, at 16:04 BRT
 
 #include <chicago/arch/registers.h>
 
+#include <chicago/arch.h>
 #include <chicago/console.h>
 #include <chicago/display.h>
 #include <chicago/panic.h>
@@ -30,13 +31,15 @@ Void ArchPanicWriteHex(UInt32 val) {
 	}
 }
 
-Void ArchPanic(UInt32 err, PRegisters regs) {
+Void ArchPanic(UInt32 err, PVoid priv) {
 	PsLockTaskSwitch(old);																						// Lock
 	ConSetRefresh(False);																						// Disable the automatic screen refresh
 	PanicInt(err, False);																						// Print the "Sorry" message
 	
 	UInt32 cr2 = 0;																								// Get the CR2
 	Asm Volatile("mov %%cr2, %0" : "=r"(cr2));
+	
+	PRegisters regs = (PRegisters)priv;																			// Cast the priv into the PRegisters struct
 	
 	ConWriteFormated("| EAX: "); ArchPanicWriteHex(regs->eax); ConWriteFormated(" | ");							// Print the registers
 	ConWriteFormated("EBX: "); ArchPanicWriteHex(regs->ebx); ConWriteFormated(" | ");
@@ -65,6 +68,5 @@ Void ArchPanic(UInt32 err, PRegisters regs) {
 	
 	PanicInt(err, True);																						// Print the error code
 	DispRefresh();																								// Refresh the screen
-	
-	while (1) ;
+	ArchHalt();																									// Halt
 }

@@ -1,11 +1,12 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:59 BRT
-// Last edited on November 10 of 2018, at 21:25 BRT
+// Last edited on November 15 of 2018, at 16:02 BRT
 
 #define __CHICAGO_PROCESS__
 
 #include <chicago/alloc.h>
+#include <chicago/arch.h>
 #include <chicago/debug.h>
 #include <chicago/mm.h>
 #include <chicago/panic.h>
@@ -146,8 +147,7 @@ Void PsExitProcess(Void) {
 	
 	PsUnlockTaskSwitch(old);																													// Unlock
 	PsSwitchTask(Null);																															// Switch to the next process
-	
-	while (1) ;
+	ArchHalt();																																	// Halt
 }
 
 Void PsInit(Void) {

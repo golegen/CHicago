@@ -1,9 +1,10 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:29 BRT
-// Last edited on October 24 of 2018, at 14:45 BRT
+// Last edited on November 15 of 2018, at 16:00 BRT
 
 #include <chicago/alloc.h>
+#include <chicago/arch.h>
 #include <chicago/console.h>
 #include <chicago/device.h>
 #include <chicago/file.h>
@@ -128,28 +129,28 @@ Void DevFsInit(Void) {
 	
 	if (path == Null) {																			// Failed?
 		ConWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Yes (halt, as we need DevFs for everything)
-		while (1);
+		ArchHalt();
 	}
 	
 	PChar type = StrDuplicate("DevFs");															// Try to duplicate the type string
 	
 	if (type == Null) {																			// Failed?
 		ConWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Yes (same as above)
-		while (1);
+		ArchHalt();
 	}
 	
 	PFsNode root = (PFsNode)MemAllocate(sizeof(FsNode));										// Try to alloc some space for the root directory
 	
 	if (root == Null) {																			// Failed?
 		ConWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Yes (same as above)
-		while (1);
+		ArchHalt();
 	}
 	
 	root->name = StrDuplicate("\\");															// Try to duplicate the root directory string
 	
 	if (root->name == Null) {																	// Failed?
 		ConWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Yes (same as above)
-		while (1);
+		ArchHalt();
 	}
 	
 	root->priv = Null;
@@ -165,6 +166,6 @@ Void DevFsInit(Void) {
 	
 	if (!FsAddMountPoint(path, type, root)) {													// Try to add this device
 		ConWriteFormated("PANIC! Couldn't mount \\Devices\r\n");								// Failed (same as above)
-		while (1);
+		ArchHalt();
 	}
 }
