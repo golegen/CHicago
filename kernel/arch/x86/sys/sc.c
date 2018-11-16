@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 16 of 2018, at 00:48 BRT
-// Last edited on November 16 of 2018, at 11:41 BRT
+// Last edited on November 16 of 2018, at 16:28 BRT
 
 #include <chicago/arch/idt.h>
 #include <chicago/sc.h>
@@ -48,83 +48,99 @@ Void ArchScHandler(PRegisters regs) {
 		regs->eax = ScVirtGetUsage();
 		break;
 	}
-	case 0x0A: {																						// UIntPtr PsGetPID(Void)
+	case 0x0A: {																						// UIntPtr PsCreateThread(UIntPtr entry)
+		regs->eax = ScPsCreateThread(regs->ebx);
+		break;
+	}
+	case 0x0B: {																						// UIntPtr PsGetTID(Void)
+		regs->eax = ScPsGetTID();
+		break;
+	}
+	case 0x0C: {																						// UIntPtr PsGetPID(Void)
 		regs->eax = ScPsGetPID();
 		break;
 	}
-	case 0x0B: {																						// Void PsSleep(UIntPtr ms)
+	case 0x0D: {																						// Void PsSleep(UIntPtr ms)
 		ScPsSleep(regs->ebx);
 		break;
 	}
-	case 0x0C: {																						// Void PsWaitProcess(UIntPtr pid)
+	case 0x0E: {																						// Void PsWaitThread(UIntPtr tid)
+		ScPsWaitThread(regs->ebx);
+		break;
+	}
+	case 0x0F: {																						// Void PsWaitProcess(UIntPtr pid)
 		ScPsWaitProcess(regs->ebx);
 		break;
 	}
-	case 0x0D: {																						// Void PsLock(PLock lock)
+	case 0x10: {																						// Void PsLock(PLock lock)
 		ScPsLock((PLock)regs->ebx);
 		break;
 	}
-	case 0x0E: {																						// Void PsUnlock(PLock lock)
+	case 0x11: {																						// Void PsUnlock(PLock lock)
 		ScPsUnlock((PLock)regs->ebx);
 		break;
 	}
-	case 0x0F: {																						// Void PsExitProcess(Void)
+	case 0x12: {																						// Void PsExitThread(Void)
+		ScPsExitThread();
+		break;
+	}
+	case 0x13: {																						// Void PsExitProcess(Void)
 		ScPsExitProcess();
 		break;
 	}
-	case 0x10: {																						// Void PsForceSwitch(Void)
+	case 0x14: {																						// Void PsForceSwitch(Void)
 		ScPsForceSwitch();
 		break;
 	}
-	case 0x11: {																						// IntPtr FsOpenFile(PChar path)
+	case 0x15: {																						// IntPtr FsOpenFile(PChar path)
 		regs->eax = ScFsOpenFile((PChar)regs->ebx);
 		break;
 	}
-	case 0x12: {																						// Void FsCloseFile(IntPtr file)
+	case 0x16: {																						// Void FsCloseFile(IntPtr file)
 		ScFsCloseFile(regs->ebx);
 		break;
 	}
-	case 0x13: {																						// Boolean FsReadFile(IntPtr file, UIntPtr size, PUInt8 buf)
+	case 0x17: {																						// Boolean FsReadFile(IntPtr file, UIntPtr size, PUInt8 buf)
 		regs->eax = ScFsReadFile(regs->ebx, regs->ecx, (PUInt8)regs->edx);
 		break;
 	}
-	case 0x14: {																						// Boolean FsWriteFile(IntPtr file, UIntPtr size, PUInt8 buf)
+	case 0x18: {																						// Boolean FsWriteFile(IntPtr file, UIntPtr size, PUInt8 buf)
 		regs->eax = ScFsWriteFile(regs->ebx, regs->ecx, (PUInt8)regs->edx);
 		break;
 	}
-	case 0x15: {																						// Boolean FsMountFile(PChar path, PChar file, PChar type)
+	case 0x19: {																						// Boolean FsMountFile(PChar path, PChar file, PChar type)
 		regs->eax = ScFsMountFile((PChar)regs->ebx, (PChar)regs->ecx, (PChar)regs->edx);
 		break;
 	}
-	case 0x16: {																						// Boolean FsUmountFile(PChar path)
+	case 0x1A: {																						// Boolean FsUmountFile(PChar path)
 		regs->eax = ScFsUmountFile((PChar)regs->ebx);
 		break;
 	}
-	case 0x17: {																						// Boolean FsReadDirectoryEntry(IntPtr dir, UIntPtr entry, PChar out)
+	case 0x1B: {																						// Boolean FsReadDirectoryEntry(IntPtr dir, UIntPtr entry, PChar out)
 		regs->eax = ScFsReadDirectoryEntry(regs->ebx, regs->ecx, (PChar)regs->edx);
 		break;
 	}
-	case 0x18: {																						// IntPtr FsFindInDirectory(IntPtr dir, PChar name)
+	case 0x1C: {																						// IntPtr FsFindInDirectory(IntPtr dir, PChar name)
 		regs->eax = ScFsFindInDirectory(regs->ebx, (PChar)regs->ecx);
 		break;
 	}
-	case 0x19: {																						// Boolean FsCreateFile(IntPtr dir, PChar name, UIntPtr type)
+	case 0x1D: {																						// Boolean FsCreateFile(IntPtr dir, PChar name, UIntPtr type)
 		regs->eax = ScFsCreateFile(regs->ebx, (PChar)regs->ecx, regs->edx);
 		break;
 	}
-	case 0x1A: {																						// Boolean FsControlFile(IntPtr file, UIntPtr cmd, PUInt8 ibuf, PUInt8 obuf)
+	case 0x1E: {																						// Boolean FsControlFile(IntPtr file, UIntPtr cmd, PUInt8 ibuf, PUInt8 obuf)
 		regs->eax = ScFsControlFile(regs->ebx, regs->ecx, (PUInt8)regs->edx, (PUInt8)regs->esi);
 		break;
 	}
-	case 0x1B: {																						// UIntPtr FsGetSize(IntPtr file)
+	case 0x1F: {																						// UIntPtr FsGetSize(IntPtr file)
 		regs->eax = ScFsGetFileSize(regs->ebx);
 		break;
 	}
-	case 0x1C: {																						// UIntPtr FsGetPosition(IntPtr file)
+	case 0x20: {																						// UIntPtr FsGetPosition(IntPtr file)
 		regs->eax = ScFsGetPosition(regs->ebx);
 		break;
 	}
-	case 0x1D: {																						// Boolean FsSetPosition(IntPtr file, IntPtr base, UIntPtr off)
+	case 0x21: {																						// Boolean FsSetPosition(IntPtr file, IntPtr base, UIntPtr off)
 		ScFsSetPosition(regs->ebx, regs->ecx, regs->edx);
 		break;
 	}

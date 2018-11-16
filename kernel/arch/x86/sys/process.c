@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 28 of 2018, at 01:09 BRT
-// Last edited on November 16 of 2018, at 00:28 BRT
+// Last edited on November 16 of 2018, at 16:15 BRT
 
 #define __CHICAGO_ARCH_PROCESS__
 
@@ -63,28 +63,28 @@ Void PsFreeContext(PContext ctx) {
 }
 
 Void PsSwitchTaskTimer(PRegisters regs) {
-	if ((PsProcessQueue == Null) || (PsProcessQueue->length == 0) || (!PsTaskSwitchEnabled)) {						// We can switch?
+	if ((PsThreadQueue == Null) || (PsThreadQueue->length == 0) || (!PsTaskSwitchEnabled)) {						// We can switch?
 		return;																										// Nope
 	}
 	
-	PProcess old = PsCurrentProcess;																				// Save the old process
+	PThread old = PsCurrentThread;																					// Save the old thread
 	
-	PsCurrentProcess = QueueRemove(PsProcessQueue);																	// Get the next process
+	PsCurrentThread = QueueRemove(PsThreadQueue);																	// Get the next thread
 	old->ctx->esp = (UIntPtr)regs;																					// Save the old context
 	
-	QueueAdd(PsProcessQueue, old);																					// Add the old process to the queue again
-	GDTSetKernelStack((UInt32)(PsCurrentProcess->ctx->kstack));														// Switch the kernel stack in the tss
+	QueueAdd(PsThreadQueue, old);																					// Add the old thread to the queue again
+	GDTSetKernelStack((UInt32)(PsCurrentThread->ctx->kstack));														// Switch the kernel stack in the tss
 	Asm Volatile("fxsave (%0)" :: "r"(PsFPUStateSave));																// Save the old fpu state
 	StrCopyMemory(old->ctx->fpu_state, PsFPUStateSave, 512);
-	StrCopyMemory(PsFPUStateSave, PsCurrentProcess->ctx->fpu_state, 512);											// And load the new one
+	StrCopyMemory(PsFPUStateSave, PsCurrentThread->ctx->fpu_state, 512);											// And load the new one
 	Asm Volatile("fxrstor (%0)" :: "r"(PsFPUStateSave));
 	
-	if (PsCurrentProcess->dir != old->dir) {																		// Switch the page dir
+	if (PsCurrentProcess->dir != old->parent->dir) {																// Switch the page dir
 		MmSwitchDirectory(PsCurrentProcess->dir);
 	}
 	
 	PortOutByte(0x20, 0x20);																						// Send EOI
-	Asm Volatile("mov %%eax, %%esp" :: "a"(PsCurrentProcess->ctx->esp));											// And let's switch!
+	Asm Volatile("mov %%eax, %%esp" :: "a"(PsCurrentThread->ctx->esp));												// And let's switch!
 	Asm Volatile("pop %gs");
 	Asm Volatile("pop %fs");
 	Asm Volatile("pop %es");
@@ -95,30 +95,30 @@ Void PsSwitchTaskTimer(PRegisters regs) {
 }
 
 Void PsSwitchTaskForce(PRegisters regs) {
-	if ((PsProcessQueue == Null) || (PsProcessQueue->length == 0) || (!PsTaskSwitchEnabled)) {						// We can switch?
+	if ((PsThreadQueue == Null) || (PsThreadQueue->length == 0) || (!PsTaskSwitchEnabled)) {						// We can switch?
 		return;																										// Nope
 	}
 	
-	PProcess old = PsCurrentProcess;																				// Save the old process
+	PThread old = PsCurrentThread;																					// Save the old thread
 	
-	PsCurrentProcess = QueueRemove(PsProcessQueue);																	// Get the next process
+	PsCurrentThread = QueueRemove(PsThreadQueue);																	// Get the next thread
 	
-	if (old != Null) {																								// Save the old proc info?
+	if (old != Null) {																								// Save the old thread info?
 		old->ctx->esp = (UIntPtr)regs;																				// Yes, save the old context
 		Asm Volatile("fxsave (%0)" :: "r"(PsFPUStateSave));															// And the old fpu state
 		StrCopyMemory(old->ctx->fpu_state, PsFPUStateSave, 512);
-		QueueAdd(PsProcessQueue, old);																				// And add the old process to the queue again
+		QueueAdd(PsThreadQueue, old);																				// And add the old process to the queue again
 	}
 	
-	GDTSetKernelStack((UInt32)(PsCurrentProcess->ctx->kstack));														// Switch the kernel stack in the tss
-	StrCopyMemory(PsFPUStateSave, PsCurrentProcess->ctx->fpu_state, 512);											// And load the new fpu state
+	GDTSetKernelStack((UInt32)(PsCurrentThread->ctx->kstack));														// Switch the kernel stack in the tss
+	StrCopyMemory(PsFPUStateSave, PsCurrentThread->ctx->fpu_state, 512);											// And load the new fpu state
 	Asm Volatile("fxrstor (%0)" :: "r"(PsFPUStateSave));
 	
-	if (((old != Null) && (PsCurrentProcess->dir != old->dir)) || (old == Null)) {									// Switch the page dir
+	if (((old != Null) && (PsCurrentProcess->dir != old->parent->dir)) || (old == Null)) {							// Switch the page dir
 		MmSwitchDirectory(PsCurrentProcess->dir);
 	}
 	
-	Asm Volatile("mov %%eax, %%esp" :: "a"(PsCurrentProcess->ctx->esp));											// And let's switch!
+	Asm Volatile("mov %%eax, %%esp" :: "a"(PsCurrentThread->ctx->esp));												// And let's switch!
 	Asm Volatile("pop %gs");
 	Asm Volatile("pop %fs");
 	Asm Volatile("pop %es");
@@ -129,13 +129,13 @@ Void PsSwitchTaskForce(PRegisters regs) {
 }
 
 Void PsSwitchTask(PVoid priv) {
-	if ((PsProcessQueue == Null) || (PsProcessQueue->length == 0) || (!PsTaskSwitchEnabled)) {						// We can switch?
+	if ((PsThreadQueue == Null) || (PsThreadQueue->length == 0) || (!PsTaskSwitchEnabled)) {						// We can switch?
 		return;																										// Nope
 	} else if (priv != Null && priv != PsDontRequeue) {																// Use timer?
 		PsSwitchTaskTimer((PRegisters)priv);																		// Yes!
 	} else {
-		if (PsDontRequeue) {																						// Requeue?
-			PsCurrentProcess = Null;																				// Nope
+		if (priv == PsDontRequeue) {																				// Requeue?
+			PsCurrentThread = Null;																					// Nope
 		}
 		
 		Asm Volatile("int $0x3E");																					// Let's use int 0x3E!

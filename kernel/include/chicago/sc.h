@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 16 of 2018, at 01:04 BRT
-// Last edited on November 16 of 2018, at 01:47 BRT
+// Last edited on November 16 of 2018, at 16:18 BRT
 
 #ifndef __CHICAGO_SC_H__
 #define __CHICAGO_SC_H__
@@ -17,11 +17,6 @@ typedef struct {
 	PChar arch;
 } SystemVersion, *PSystemVersion;
 
-typedef struct {
-	PFsNode file;
-	IntPtr num;
-} ProcessFile, *PProcessFile;
-
 Void ScSysGetVersion(PSystemVersion ver);
 UIntPtr ScMmAllocMemory(UIntPtr size);
 Void ScMmFreeMemory(UIntPtr block);
@@ -32,11 +27,15 @@ Boolean ScVirtFreeAddress(UIntPtr addr, UIntPtr size);
 UInt32 ScVirtQueryProtection(UIntPtr addr);
 Boolean ScVirtChangeProtection(UIntPtr addr, UIntPtr size, UInt32 flags);
 UIntPtr ScVirtGetUsage(Void);
+UIntPtr ScPsCreateThread(UIntPtr entry);
+UIntPtr ScPsGetTID(Void);
 UIntPtr ScPsGetPID(Void);
 Void ScPsSleep(UIntPtr ms);
+Void ScPsWaitThread(UIntPtr tid);
 Void ScPsWaitProcess(UIntPtr pid);
 Void ScPsLock(PLock lock);
 Void ScPsUnlock(PLock lock);
+Void ScPsExitThread(Void);
 Void ScPsExitProcess(Void);
 Void ScPsForceSwitch(Void);
 IntPtr ScFsOpenFile(PChar path);

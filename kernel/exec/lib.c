@@ -1,13 +1,14 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 10 of 2018, at 21:18 BRT
-// Last edited on November 16 of 2018, at 09:49 BRT
+// Last edited on November 16 of 2018, at 16:10 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/chexec.h>
 #include <chicago/exec.h>
 #include <chicago/file.h>
 #include <chicago/mm.h>
+#include <chicago/process.h>
 #include <chicago/string.h>
 
 static PFsNode ExecFindFile(PChar path) {
@@ -76,8 +77,10 @@ static PChar ExecGetName(PChar path, Boolean user) {
 }
 
 static PExecHandle ExecGetHandle(PChar path) {
-	if ((path == Null) || (PsCurrentProcess->handle_list == Null)) {															// Sanity checks
+	if ((path == Null) || (PsCurrentThread == Null) || (PsCurrentProcess == Null)) {											// Sanity checks
 		return Null;
+	} else if (PsCurrentProcess->handle_list == Null) {
+		return Null;	
 	}
 	
 	PChar name = ExecGetName(path, False);																						// Get the handle name
@@ -347,7 +350,7 @@ static Boolean ExecLoadLibraryInt(PExecHandle handle, PUInt8 buf) {
 }
 
 PExecHandle ExecLoadLibrary(PChar path, Boolean global) {
-	if (path == Null) {																											// Sanity check
+	if ((path == Null) || (PsCurrentThread == Null) || (PsCurrentProcess == Null)) {											// Sanity checks
 		return Null;
 	} else if ((PsCurrentProcess->handle_list == Null) || (PsCurrentProcess->global_handle_list == Null)) {						// Init the handle list (or the global handle list)?
 		if (PsCurrentProcess->handle_list == Null) {																			// Yes, init the handle list?
@@ -470,8 +473,10 @@ PExecHandle ExecLoadLibrary(PChar path, Boolean global) {
 }
 
 Void ExecCloseLibrary(PExecHandle handle) {
-	if ((handle == Null) || (PsCurrentProcess->handle_list == Null) || (PsCurrentProcess->global_handle_list == Null)) {		// Sanity checks
-		return;																													// Failed
+	if ((handle == Null) || (PsCurrentThread == Null) || (PsCurrentProcess == Null)) {											// Sanity checks
+		return;
+	} else if ((PsCurrentProcess->handle_list == Null) || (PsCurrentProcess->global_handle_list == Null)) {						// Even more sanity checks
+		return;
 	} else if (handle->refs > 1) {
 		handle->refs--;																											// Just decrease the refs count
 		return;
@@ -515,8 +520,8 @@ Void ExecCloseLibrary(PExecHandle handle) {
 }
 
 UIntPtr ExecGetSymbol(PExecHandle handle, PChar name) {
-	if (name == Null) {																											// Valid handle?
-		return 0;																												// Nope
+	if ((name == Null) || (PsCurrentThread == Null) || (PsCurrentProcess == Null)) {											// Sanity checks
+		return 0;
 	} else if (handle == Null) {																								// Search in the global handle list?
 		if (PsCurrentProcess->global_handle_list == Null) {																		// Yes! But the global handle list is initialized?
 			return 0;																											// No :(

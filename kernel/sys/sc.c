@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 16 of 2018, at 01:14 BRT
-// Last edited on November 16 of 2018, at 01:47 BRT
+// Last edited on November 16 of 2018, at 16:35 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/mm.h>
@@ -25,12 +25,6 @@ static Boolean ScCheckPointer(PVoid ptr) {
 static IntPtr ScAppendProcessFile(PFsNode file) {
 	if (file == Null) {																																		// Valid file?
 		return -1;																																			// No...
-	} else if (PsCurrentProcess->files == Null) {																											// Init the file list of this process?
-		PsCurrentProcess->files = ListNew(False, False);																									// Yup
-		
-		if (PsCurrentProcess->files == Null) {
-			return -1;																																		// Failed...
-		}
 	}
 	
 	ListForeach(PsCurrentProcess->files, i) {																												// Try to find an unused entry
@@ -88,19 +82,19 @@ Void ScSysGetVersion(PSystemVersion ver) {
 }
 
 UIntPtr ScMmAllocMemory(UIntPtr size) {
-	return MmAllocUserMemory(size);
+	return MmAllocUserMemory(size);																															// Just redirect
 }
 
 Void ScMmFreeMemory(UIntPtr block) {
-	return MmFreeUserMemory(block);
+	return MmFreeUserMemory(block);																															// Just redirect
 }
 
 UIntPtr ScMmReallocMemory(UIntPtr block, UIntPtr size) {
-	return MmReallocUserMemory(block, size);
+	return MmReallocUserMemory(block, size);																												// Just redirect
 }
 
 UIntPtr ScMmGetUsage(Void) {
-	return MmGetUsage();
+	return MmGetUsage();																																	// Just redirect
 }
 
 UIntPtr ScVirtAllocAddress(UIntPtr addr, UIntPtr size, UInt32 flags) {
@@ -120,15 +114,35 @@ Boolean ScVirtChangeProtection(UIntPtr addr, UIntPtr size, UInt32 flags) {
 }
 
 UIntPtr ScVirtGetUsage(Void) {
-	return VirtGetUsage();
+	return VirtGetUsage();																																	// Just redirect
+}
+
+UIntPtr ScPsCreateThread(UIntPtr entry) {
+	PThread th = PsCreateThread(entry);																														// Create a new thread
+	
+	if (th == Null) {
+		return 0;																																			// Failed
+	}
+	
+	PsAddThread(th);																																		// Try to add it
+	
+	return th->id;
+}
+
+UIntPtr ScPsGetTID(Void) {
+	return (PsCurrentThread == Null) ? 0 : PsCurrentThread->id;																								// Return the ID of the current thread
 }
 
 UIntPtr ScPsGetPID(Void) {
-	return PsCurrentProcess->id;																															// Return the ID of the current process
+	return ((PsCurrentThread == Null) || (PsCurrentProcess == Null)) ? 0 : PsCurrentProcess->id;															// Return the ID of the current process
 }
 
 Void ScPsSleep(UIntPtr ms) {
 	PsSleep(ms);																																			// Just redirect
+}
+
+Void ScPsWaitThread(UIntPtr tid) {
+	PsWaitThread(tid);																																		// Just redirect
 }
 
 Void ScPsWaitProcess(UIntPtr pid) {
@@ -149,6 +163,10 @@ Void ScPsUnlock(PLock lock) {
 	}
 	
 	PsUnlock(lock);																																			// Just redirect
+}
+
+Void ScPsExitThread(Void) {
+	PsExitThread();																																			// Just redirect
 }
 
 Void ScPsExitProcess(Void) {
