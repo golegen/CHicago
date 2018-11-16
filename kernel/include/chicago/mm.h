@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 18:48 BRT
-// Last edited on September 21 of 2018, at 20:42 BRT
+// Last edited on November 16 of 2018, at 10:39 BRT
 
 #ifndef __CHICAGO_MM_H__
 #define __CHICAGO_MM_H__
@@ -51,7 +51,6 @@ UIntPtr MmMapTemp(UIntPtr phys, UInt32 flags);
 Boolean MmMap(UIntPtr virt, UIntPtr phys, UInt32 flags);
 Boolean MmUnmap(UIntPtr virt);
 UIntPtr MmCreateDirectory(Void);
-UIntPtr MmCloneDirectory(Void);
 Void MmFreeDirectory(UIntPtr dir);
 UIntPtr MmGetCurrentDirectory(Void);
 Void MmSwitchDirectory(UIntPtr dir);

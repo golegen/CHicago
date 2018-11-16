@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 12 of 2018, at 20:11 BRT
-// Last edited on November 15 of 2018, at 14:54 BRT
+// Last edited on November 16 of 2018, at 10:00 BRT
 
 #include <elf.h>
 #include <stdio.h>
@@ -180,9 +180,11 @@ int main(int argc, char *argv[]) {
 	}
 	
 	for (relocation_t *r = relocations; r != NULL; r = r->next) {										// Write all the relocations
+		uint32_t op = r->op;
 		uint32_t vaddr = (uint32_t)r->vaddr;
 		uint32_t nl = r->name != NULL ? (strlen(r->name) + 1) : 0;
 		
+		fwrite(&op, sizeof(uint32_t), 1, out);
 		fwrite(&vaddr, sizeof(uint32_t), 1, out);
 		fwrite(&nl, sizeof(uint32_t), 1, out);
 		

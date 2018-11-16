@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 28 of 2018, at 01:09 BRT
-// Last edited on November 10 of 2018, at 12:39 BRT
+// Last edited on November 16 of 2018, at 00:28 BRT
 
 #define __CHICAGO_ARCH_PROCESS__
 
@@ -131,9 +131,13 @@ Void PsSwitchTaskForce(PRegisters regs) {
 Void PsSwitchTask(PVoid priv) {
 	if ((PsProcessQueue == Null) || (PsProcessQueue->length == 0) || (!PsTaskSwitchEnabled)) {						// We can switch?
 		return;																										// Nope
-	} else if (priv != Null) {																						// Use timer?
+	} else if (priv != Null && priv != PsDontRequeue) {																// Use timer?
 		PsSwitchTaskTimer((PRegisters)priv);																		// Yes!
 	} else {
-		Asm Volatile("int $0x3E");																					// Nope, so let's use int 0x3E
+		if (PsDontRequeue) {																						// Requeue?
+			PsCurrentProcess = Null;																				// Nope
+		}
+		
+		Asm Volatile("int $0x3E");																					// Let's use int 0x3E!
 	}
 }

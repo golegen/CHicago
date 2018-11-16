@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:18 BRT
-// Last edited on November 02 of 2018, at 22:08 BRT
+// Last edited on November 02 of 2018, at 01:07 BRT
 
 #ifndef __CHICAGO_FILE_H__
 #define __CHICAGO_FILE_H__
@@ -18,6 +18,7 @@ typedef struct FsNodeStruct {
 	UIntPtr flags;
 	UIntPtr inode;
 	UIntPtr length;
+	UIntPtr offset;
 	Boolean (*read)(struct FsNodeStruct *, UIntPtr, UIntPtr, PUInt8);
 	Boolean (*write)(struct FsNodeStruct *, UIntPtr, UIntPtr, PUInt8);
 	Boolean (*open)(struct FsNodeStruct *);

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:29 BRT
-// Last edited on November 02 of 2018, at 22:12 BRT
+// Last edited on November 16 of 2018, at 01:46 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/debug.h>
@@ -116,6 +116,7 @@ PFsNode DevFsFindInDirectory(PFsNode dir, PChar name) {
 	}
 	
 	node->length = 0;
+	node->offset = 0;
 	node->read = DevFsReadFile;
 	node->write = DevFsWriteFile;
 	node->open = DevFsOpenFile;
@@ -177,6 +178,7 @@ Void DevFsInit(Void) {
 	root->flags = FS_FLAG_DIR;
 	root->inode = (UIntPtr)-1;
 	root->length = 0;
+	root->offset = 0;
 	root->read = Null;
 	root->write = Null;
 	root->open = DevFsOpenFile;

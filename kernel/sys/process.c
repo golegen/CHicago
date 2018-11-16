@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:59 BRT
-// Last edited on November 15 of 2018, at 16:02 BRT
+// Last edited on November 16 of 2018, at 01:21 BRT
 
 #define __CHICAGO_PROCESS__
 
@@ -56,6 +56,8 @@ PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir) {
 	proc->mem_usage = 0;
 	proc->handle_list = Null;
 	proc->global_handle_list = Null;
+	proc->files = Null;
+	proc->last_fid++;
 	
 	return proc;
 }
@@ -89,6 +91,27 @@ PProcess PsGetProcess(UIntPtr id) {
 	}
 	
 	return Null;
+}
+
+Void PsSleep(UIntPtr ms) {
+	if ((ms == 0) || (PsCurrentProcess == Null)) {																								// Sanity checks
+		return;
+	}
+	
+	TimerSleepProcess(ms);																														// Sleep!
+}
+
+Void PsWaitProcess(UIntPtr id) {
+	if ((id == 0) || (PsCurrentProcess == Null) || (PsProcessList == Null)) {																	// Sanity checks
+		return;
+	}
+	
+s:	ListForeach(PsProcessList, i) {																												// This isn't the right way to do it... but let's use it for now
+		if (((PProcess)i->data)->id == id) {
+			PsSwitchTask(Null);
+			goto s;
+		}
+	}
 }
 
 Void PsLock(PLock lock) {
@@ -146,7 +169,7 @@ Void PsExitProcess(Void) {
 	MemFree((UIntPtr)PsCurrentProcess);																											// And the current process itself
 	
 	PsUnlockTaskSwitch(old);																													// Unlock
-	PsSwitchTask(Null);																															// Switch to the next process
+	PsSwitchTask(PsDontRequeue);																												// Switch to the next process
 	ArchHalt();																																	// Halt
 }
 

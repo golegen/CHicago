@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on November 12 of 2018, at 14:40 BRT
+# Last edited on November 16 of 2018, at 10:53 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -27,26 +27,28 @@ ifneq ($(VERBOSE),true)
 NOECHO := @
 endif
 
-.PHONY: boot kernel
+.PHONY: boot kernel userspace
 
-all: toolchain/$(ARCH) boot kernel finish
+all: toolchain/$(ARCH) boot kernel userspace finish
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 
-clean: arch-clean
+clean: arch-clean sysroot-recreate
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C boot clean
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel clean
+	$(NOECHO)SYSROOT_DIR=$(PWD)/toolchain/$(ARCH)/sysroot ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C userspace clean
 
-clean-all:
+clean-all: sysroot-recreate
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C boot clean-all
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel clean-all
+	$(NOECHO)SYSROOT_DIR=$(PWD)/toolchain/$(ARCH)/sysroot ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C userspace clean-all
 	$(NOECHO)rm -rf build
 
 remake:
@@ -55,6 +57,7 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C boot remake
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel remake
+	$(NOECHO)SYSROOT_DIR=$(PWD)/toolchain/$(ARCH)/sysroot ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C userspace remake
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make finish
 
 toolchain/$(ARCH):
@@ -74,6 +77,21 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel all
+
+userspace:
+ifeq ($(UNSUPPORTED_ARCH),true)
+	$(error Unsupported architecture $(ARCH))
+endif
+	$(NOECHO)SYSROOT_DIR=$(PWD)/toolchain/$(ARCH)/sysroot ARCH=$(ARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C userspace all
+
+sysroot-recreate:
+ifeq ($(UNSUPPORTED_ARCH),true)
+	$(error Unsupported architecture $(ARCH))
+endif
+	$(NOECHO)rm -rf toolchain/$(ARCH)/sysroot/*
+	$(NOECHO)mkdir -p toolchain/$(ARCH)/sysroot/{Development,System}
+	$(NOECHO)mkdir -p toolchain/$(ARCH)/sysroot/Development/{Headers,Libraries,Programs,Sources}
+	$(NOECHO)mkdir -p toolchain/$(ARCH)/sysroot/System/{Configurations,Libraries,Programs}
 
 ifeq ($(UNSUPPORTED_ARCH),true)
 arch-clean:
@@ -99,6 +117,7 @@ endif
 	$(NOECHO)cp $(CDBOOT) build/iso/Boot/bootsect.bin
 	$(NOECHO)cp $(BOOTMGR) build/iso/Boot/bootmgr.bin
 	$(NOECHO)cp $(KERNEL) build/iso/Boot/chkrnl.elf
+	$(NOECHO)cp -RT toolchain/$(ARCH)/sysroot/ build/iso/
 	$(NOECHO)echo '"Boot from CHicago Install CD"=BootDevice,chicago' >> build/iso/Boot/bootmgr.conf
 ifeq ($(SUBARCH),)
 	$(NOECHO)xorriso -as mkisofs -R -c Boot/boot.cat -b Boot/bootsect.bin -U -no-emul-boot -o build/chicago-$(ARCH).iso build/iso 2>/dev/null

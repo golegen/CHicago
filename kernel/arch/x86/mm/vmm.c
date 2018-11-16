@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 19:19 BRT
-// Last edited on October 27 of 2018, at 15:52 BRT
+// Last edited on November 16 of 2018, at 11:31 BRT
 
 #include <chicago/arch/pmm.h>
 #include <chicago/arch/vmm.h>
@@ -186,7 +186,7 @@ Boolean MmMap(UIntPtr virt, UIntPtr phys, UInt32 flags) {
 			return False;																									// Then just return
 		}
 		
-		if (virt >= 0xC0100000) {																							// Kernel-only page directory?
+		if (virt >= 0xC0000000) {																							// Kernel-only page directory?
 			MmSetPDE(MmCurrentDirectory, virt, block, 0x03);																// Yes, so put the pde as present, writeable
 		} else {
 			MmSetPDE(MmCurrentDirectory, virt, block, 0x07);																// No, so put the pde as present, writeable and set the user bit
@@ -228,125 +228,7 @@ UIntPtr MmCreateDirectory(Void) {
 	for (UInt32 i = 0; i < 1024; i++) {																						// Let's fill the table!
 		if (((MmCurrentDirectory[i] & 0x01) != 0x01) || (i < 768) || (i == 1022)) {											// Non-present, user or temp?
 			dir[i] = 0;																										// Yes, so just zero it
-		} else if (i == (((UIntPtr)MmCurrentTables) >> 22)) {																// Recursive mapping entry?
-			dir[i] = (ret & 0xFFFFF000) | 3;																				// Yes
-		} else {																											// Normal kernel entry?
-			dir[i] = MmCurrentDirectory[i];																					// Yes
-		}
-	}
-	
-	MmUnmap((UIntPtr)dir);																									// Unmap the temp addr
-	
-	return ret;
-}
-
-UIntPtr MmCloneDirectory(Void) {
-	UIntPtr ret = MmReferencePage(0);																						// Allocate one physical page
-	PUInt32 dir = Null;
-	
-	if (ret == 0) {																											// Failed?
-		return 0;																											// Yes...
-	}
-	
-	if ((dir = (PUInt32)MmMapTemp(ret, MM_MAP_KDEF)) == 0) {																// Try to map it to an temp addr
-		MmDereferencePage(ret);																								// Failed...
-		return 0;
-	}
-	
-	for (UInt32 i = 0; i < 1024; i++) {																						// Let's fill the table!
-		if (((MmCurrentDirectory[i] & 0x01) != 0x01) || (i == 1022)) {														// Non-present or temp?
-			dir[i] = 0;																										// Yes, so just zero it
-		} else if (i < 768) {																								// User?
-			UIntPtr tabpa = MmReferencePage(0);																				// Yes, allocate new physical page
-			PUInt32 tabta = Null;
-			
-			if (tabpa == 0) {																								// Failed?
-				for (UInt32 j = 0; j < i; j++) {																			// Yes... so let's undo everything...
-					if ((dir[j] & 0x01) == 0x01) {																			// Present?
-						PUInt32 tmp = (PUInt32)MmMapTemp(dir[j] & 0xFFFFF000, MM_MAP_KDEF);									// Yes, try to map it to an temp addr
-						
-						if (tmp != 0) {																						// Failed?
-							for (UInt32 k = 0; k < 1024; k++) {																// No, so let's free (or just decrease the reference count to) all the used physical pages
-								UIntPtr addr = (j * (1024 * 1024 * 4)) + (k * MM_PAGE_SIZE);								// Get the virt addr from j and k
-								UIntPtr page = MmGetPTE(MmCurrentTables, addr);
-								
-								if (((tmp[k] & 0x01) == 0x01) && ((tmp[k] & 0x200) == 0x200)) {								// CoW?
-									MmSetPTE(MmCurrentTables, addr, page & 0xFFFFF000, (page & 0xFFF) & ~0x200);			// Yes, so undo it in the current directory
-									Asm Volatile("invlpg (%0)" :: "b"(addr) : "memory");
-									MmDereferencePage(page & 0xFFFFF000);													// And use the dereference function
-								} else if ((tmp[k] & 0x01) == 0x01) {														// Present?
-									MmDereferencePage(page & 0xFFFFF000);													// Yes, just use the dereference function
-								}
-							}
-							
-							MmUnmap((UIntPtr)tmp);																			// Unmap the temp addr
-						}
-						
-						MmDereferencePage(dir[j] & 0xFFFFF000);																// Free/dereference the physical address of the page table
-					}
-				}
-				
-				MmUnmap((UIntPtr)dir);																						// Unmap the dir temp addr
-				MmDereferencePage(ret);																						// Free/dereference it
-				
-				return 0;
-			} else if ((tabta = (PUInt32)MmMapTemp(tabpa, MM_MAP_KDEF)) == 0) {												// Let's try to map the page table to an temp addr
-				MmDereferencePage(tabpa);																					// Failed, so let's undo everything
-				
-				for (UInt32 j = 0; j < i; j++) {
-					if ((dir[j] & 0x01) == 0x01) {																			// Present?
-						PUInt32 tmp = (PUInt32)MmMapTemp(dir[j] & 0xFFFFF000, MM_MAP_KDEF);									// Yes, try to map it to an temp addr
-						
-						if (tmp != 0) {																						// Failed?
-							for (UInt32 k = 0; k < 1024; k++) {																// No, so let's free (or just decrease the reference count to) all the used physical pages
-								UIntPtr addr = (j * (1024 * 1024 * 4)) + (k * MM_PAGE_SIZE);								// Get the virt addr using j and k
-								UIntPtr page = MmGetPTE(MmCurrentTables, addr);
-								
-								if (((tmp[k] & 0x01) == 0x01) && ((tmp[k] & 0x200) == 0x200)) {								// CoW?
-									if (MmGetReferences(page & 0xFFFFF000) == 2) {											// Yes, undo in the current directory?
-										MmSetPTE(MmCurrentTables, addr, page & 0xFFFFF000, (page & 0xFFF) & ~0x200);		// Yes
-										Asm Volatile("invlpg (%0)" :: "b"(addr) : "memory");
-									}
-									MmDereferencePage(page & 0xFFFFF000);													// Use the dereference function
-								} else if ((tmp[k] & 0x01) == 0x01) {														// Present?
-									MmDereferencePage(page & 0xFFFFF000);													// Yes, just use the dereference function
-								}
-							}
-							
-							MmUnmap((UIntPtr)tmp);																			// Unmap the temp addr
-						}
-						
-						MmDereferencePage(dir[j] & 0xFFFFF000);																// Free/dereference the physical address of the page table
-					}
-				}
-				
-				MmUnmap((UIntPtr)dir);																						// Unmap the dir temp addr
-				MmDereferencePage(ret);																						// Free/dereference it
-				
-				return 0;
-			}
-			
-			dir[i] = (tabpa & 0xFFFFF000) | (MmCurrentDirectory[i] & 0xFFF);												// Set the new entry in the new page directory
-			
-			for (UInt32 j = 0; j < 1024; j++) {																				// And let's clone the table
-				UIntPtr addr = (i * (1024 * 1024 * 4)) + (j * MM_PAGE_SIZE);												// Get the virt addr using i and j
-				UIntPtr page = MmGetPTE(MmCurrentTables, addr);
-				
-				if ((page & 0x01) != 0x01) {																				// Non-present?
-					tabta[j] = 0;																							// Yes, so just zero it
-				} else if ((page & 0x02) == 0x02) {																			// Read/Write?
-					MmReferencePage(page & 0xFFFFF000);																		// Yes, for read/write we're going to use CoW (Copy-on-Write), our page fault handler will handle it for us!
-					MmSetPTEInt(tabta, addr, page & 0xFFFFF000, ((page & 0xFFF) & ~0x02) | 0x200);
-					MmSetPTE(MmCurrentTables, addr, page & 0xFFFFF000, ((page & 0xFFF) & ~0x02) | 0x200);
-					Asm Volatile("invlpg (%0)" :: "b"(addr) : "memory");
-				} else {
-					MmReferencePage(page & 0xFFFFF000);																		// Read only, we don't need CoW!
-					MmSetPTEInt(tabta, addr, page & 0xFFFFF000, page & 0xFFF);
-				}
-			}
-			
-			MmUnmap((UIntPtr)tabta);																						// Unmap the temp addr
-		} else if (i == (((UIntPtr)MmCurrentTables) >> 22)) {																// Recursive mapping entry?
+		} else if (i == 1023) {																								// Recursive mapping entry?
 			dir[i] = (ret & 0xFFFFF000) | 3;																				// Yes
 		} else {																											// Normal kernel entry?
 			dir[i] = MmCurrentDirectory[i];																					// Yes
@@ -386,14 +268,7 @@ Void MmFreeDirectory(UIntPtr dir) {
 				UIntPtr addr = (i * (1024 * 1024 * 4)) + (j * MM_PAGE_SIZE);
 				UIntPtr page = MmGetPTEInt(tabta, addr);
 				
-				if (((page & 0x01) == 0x01) && ((page & 0x200) == 0x200)) {													// CoW?
-					if (MmGetReferences(page & 0xFFFFF000) == 2) {															// Undo in the current directory?
-						MmSetPTE(MmCurrentTables, addr, page & 0xFFFFF000, (page & 0xFFF) & ~0x200);						// Yes
-						Asm Volatile("invlpg (%0)" :: "b"(addr) : "memory");
-					}
-					
-					MmDereferencePage(page & 0xFFFFF000);																	// Use the dereference function
-				} else if ((page & 0x01) == 0x01) {																			// Present?
+				if ((page & 0x01) == 0x01) {																				// Present?
 					MmDereferencePage(page & 0xFFFFF000);																	// Yes, just use the dereference function
 				}				
 			}
@@ -406,7 +281,7 @@ Void MmFreeDirectory(UIntPtr dir) {
 
 UIntPtr MmGetCurrentDirectory(Void) {
 	UIntPtr ret;
-	Asm Volatile("mov %%cr3, %0" : "=r"(ret));																				// Current page directory (physical address) is in CR3
+	Asm Volatile("mov %0, %%eax" : "=r"(ret));																				// Current page directory (physical address) is in CR3
 	return ret;
 }
 

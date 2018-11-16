@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 28 of 2018, at 09:41 BRT
-// Last edited on November 15 of 2018, at 16:01 BRT
+// Last edited on November 16 of 2018, at 01:09 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/chfs.h>
@@ -636,6 +636,7 @@ PFsNode CHFsFindInDirectory(PFsNode dir, PChar name) {
 				}
 				
 				node->length = ent->data_length;																// The length
+				node->offset = 0;
 				node->open = CHFsOpenFile;																		// The open and close function
 				node->close = CHFsCloseFile;
 				node->control = Null;
@@ -779,6 +780,7 @@ PFsMountPoint CHFsMount(PFsNode file, PChar path) {
 	mp->root->flags = FS_FLAG_DIR;
 	mp->root->inode = info->hdr.root_directory_start;
 	mp->root->length = 0;
+	mp->root->offset = 0;
 	mp->root->read = Null;
 	mp->root->write = Null;
 	mp->root->open = CHFsOpenFile;

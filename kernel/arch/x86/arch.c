@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on November 15 of 2018, at 15:54 BRT
+// Last edited on November 16 of 2018, at 00:17 BRT
 
 #include <chicago/arch/bootmgr.h>
 #include <chicago/arch/gdt.h>
@@ -24,7 +24,7 @@
 
 Void ArchHalt(Void) {
 	while (True) {
-		Asm Volatile("cli; hlt");																						// Disable interrupts and Halt!
+		Asm Volatile("hlt");																							// Halt!
 	}
 }
 

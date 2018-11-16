@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 15 of 2018, at 09:52 BRT
-// Last edited on November 15 of 2018, at 13:30 BRT
+// Last edited on November 16 of 2018, at 09:57 BRT
 
 #ifndef __CHEXEC_H__
 #define __CHEXEC_H__
@@ -50,7 +50,7 @@ typedef struct {
 } chexec64_header_t;
 
 typedef struct {
-	uint8_t flags;
+	uint32_t flags;
 	uint32_t offset;
 	uint32_t virt;
 	uint32_t size;
@@ -59,7 +59,7 @@ typedef struct {
 } chexec32_section_t;
 
 typedef struct {
-	uint8_t flags;
+	uint32_t flags;
 	uint64_t offset;
 	uint64_t virt;
 	uint64_t size;
@@ -68,14 +68,14 @@ typedef struct {
 } chexec64_section_t;
 
 typedef struct {
-	uint8_t flags;
+	uint32_t flags;
 	uint32_t virt;
 	uint32_t name_len;
 	char name[0];
 } chexec32_symbol_t;
 
 typedef struct {
-	uint8_t flags;
+	uint32_t flags;
 	uint64_t virt;
 	uint64_t name_len;
 	char name[0];

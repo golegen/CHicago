@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 10 of 2018, at 19:00 BRT
-// Last edited on November 10 of 2018, at 21:13 BRT
+// Last edited on November 16 of 2018, at 10:00 BRT
 
 #ifndef __CHICAGO_CHEXEC_H__
 #define __CHICAGO_CHEXEC_H__
@@ -40,7 +40,7 @@ typedef struct {
 } CHExecHeader, *PCHExecHeader;
 
 typedef struct {
-	UIntPtr flags;
+	UInt32 flags;
 	UIntPtr offset;
 	UIntPtr virt;
 	UIntPtr size;
@@ -49,14 +49,14 @@ typedef struct {
 } CHExecSection, *PCHExecSection;
 
 typedef struct {
-	UIntPtr flags;
+	UInt32 flags;
 	UIntPtr virt;
 	UIntPtr name_len;
 	Char name[0];
 } CHExecSymbol, *PCHExecSymbol;
 
 typedef struct {
-	UInt8 op;
+	UInt32 op;
 	UIntPtr virt;
 	UIntPtr name_len;
 	Char name[0];
@@ -69,6 +69,5 @@ typedef struct {
 
 Boolean CHExecValidateHeader(PUInt8 buf, Boolean exec);
 UIntPtr CHExecLoadSections(PUInt8 buf);
-
 
 #endif		// __CHICAGO_CHEXEC_H__

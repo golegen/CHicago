@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on May 11 of 2018, at 13:14 BRT
-# Last edited on November 13 of 2018, at 17:53 BRT
+# Last edited on November 16 of 2018, at 10:51 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -11,7 +11,7 @@ PATH := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))/../toolchain/$
 SHELL := env PATH=$(PATH) /bin/bash
 
 ifeq ($(ARCH),x86)
-	PREFIX ?= i686-chicago
+	TARGET ?= i686-chicago
 	ARCH_CFLAGS := -DCHEXEC_ARCH=CHEXEC_HEADER_FLAGS_ARCH_X86
 	
 	ifneq ($(SUBARCH),)
@@ -22,7 +22,7 @@ ifeq ($(ARCH),x86)
 	ARCH_OBJECTS += arch.c.o
 	ARCH_OBJECTS += io/debug.c.o io/ide.c.o io/keyboard.c.o io/mouse.c.o
 	ARCH_OBJECTS += sys/gdt.c.o sys/idt.c.o sys/panic.c.o sys/pit.c.o
-	ARCH_OBJECTS += sys/process.c.o
+	ARCH_OBJECTS += sys/process.c.o sys/sc.c.o
 	ARCH_OBJECTS += mm/pmm.c.o mm/vmm.c.o
 	
 	OBJCOPY_FORMAT := elf32-i386
@@ -43,7 +43,8 @@ OBJECTS += io/dev/zero.c.o
 OBJECTS += io/fs/chfs.c.o io/fs/devfs.c.o io/fs/iso9660.c.o
 OBJECTS += mm/alloc.c.o mm/heap.c.o mm/pmm.c.o mm/ualloc.c.o
 OBJECTS += mm/virt.c.o
-OBJECTS += sys/panic.c.o sys/process.c.o sys/rand.c.o sys/string.c.o
+OBJECTS += sys/ipc.c.o sys/panic.c.o sys/process.c.o sys/rand.c.o
+OBJECTS += sys/sc.c.o sys/string.c.o
 
 OTHER_OBJECTS := splash.bmp
 

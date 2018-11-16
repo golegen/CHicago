@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:15 BRT
-// Last edited on November 15 of 2018, at 15:56 BRT
+// Last edited on November 16 of 2018, at 01:42 BRT
 
 #ifndef __CHICAGO_ARCH_H__
 #define __CHICAGO_ARCH_H__
@@ -10,6 +10,7 @@
 
 Void ArchHalt(Void);
 Void ArchInit(Void);
+Void ArchInitSc(Void);
 Void ArchInitFPU(Void);
 Void ArchInitPMM(Void);
 Void ArchInitVMM(Void);

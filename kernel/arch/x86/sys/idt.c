@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 26 of 2018, at 22:00 BRT
-// Last edited on October 27 of 2018, at 22:17 BRT
+// Last edited on November 16 of 2018, at 10:41 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
@@ -75,49 +75,15 @@ Void ISRDefaultHandler(PRegisters regs) {
 			Asm Volatile("mov %%cr2, %0" : "=r"(faddr));											// CR2 contains the fault addr
 			
 			if ((MmGetPDE(MmCurrentDirectory, faddr) & 0x01) != 0x01) {								// Present?
-				DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);					// No, so it's a normal page fault
+				DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);					// No
 				ArchPanic(PANIC_MM_READWRITE_TO_NONPRESENT_AREA, regs);
 			} else if ((MmGetPTE(MmCurrentTables, faddr) & 0x01) != 0x01) {							// Same as above
 				DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);
 				ArchPanic(PANIC_MM_READWRITE_TO_NONPRESENT_AREA, regs);
-			} else if ((MmGetPTE(MmCurrentTables, faddr) & 0x200) != 0x200) {						// CoW?
-				DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);					// No, so it's a normal page fault
-				ArchPanic(PANIC_MM_WRITE_TO_READONLY_AREA, regs);
 			}
 			
-			UInt32 oldp = MmGetPTE(MmCurrentTables, faddr) & 0xFFFFF000;							// Get the old physical address
-			UInt32 oldf = MmGetPTE(MmCurrentTables, faddr) & 0xFFF;									// And the old flags
-			
-			if (MmGetReferences(oldp) == 1) {														// Only one ref?
-				MmSetPTE(MmCurrentTables, faddr, oldp, oldf | 2);									// Yes, we can use the same phys addr!
-				Asm Volatile("invlpg (%0)" :: "b"(faddr) : "memory");
-				return;
-			}
-			
-			UIntPtr newp = MmReferencePage(0);														// No, let's copy the old data
-			
-			if (newp == 0) {																		// Failed?
-				DbgWriteFormated("PANIC! Couldn't alloc page for CoW\r\n", faddr);					// Yes...
-				ArchPanic(PANIC_MM_WRITE_TO_READONLY_AREA, regs);
-			}
-			
-			MmSetPTE(MmCurrentTables, faddr, oldp, oldf | 2);										// Map the old physical address as r/w
-			Asm Volatile("invlpg (%0)" :: "b"(faddr) : "memory");
-			
-			PUIntPtr tmp = (PUIntPtr)MmMapTemp(newp, MM_MAP_KDEF);									// And map the new one
-			
-			if (tmp == Null) {																		// Failed?
-				MmSetPTE(MmCurrentTables, faddr, oldp, oldf);										// Yes
-				Asm Volatile("invlpg (%0)" :: "b"(faddr) : "memory");
-				DbgWriteFormated("PANIC! Couldn't map temp page for CoW\r\n", faddr);
-				ArchPanic(PANIC_MM_WRITE_TO_READONLY_AREA, regs);
-			}
-			
-			StrCopyMemory(tmp, (PVoid)faddr, MM_PAGE_SIZE);											// Let's copy!
-			
-			MmSetPTE(MmCurrentTables, faddr, newp, oldf | 2);										// Unset the write flag
-			Asm Volatile("invlpg (%0)" :: "b"(faddr) : "memory");
-			MmDereferencePage(oldp);																// And decrement the references to the phys page (now we can return!)
+			DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);						// Write fault?
+			ArchPanic(PANIC_MM_WRITE_TO_READONLY_AREA, regs);										// Yes
 		} else {
 			DbgWriteFormated("PANIC! %s exception\r\n", ExceptionStrings[regs->int_num]);			// No
 			ArchPanic(PANIC_KERNEL_UNEXPECTED_ERROR, regs);
