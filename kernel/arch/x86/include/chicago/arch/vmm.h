@@ -1,26 +1,25 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 19:26 BRT
-// Last edited on September 17 of 2018, at 19:22 BRT
+// Last edited on November 17 of 2018, at 11:43 BRT
 
 #ifndef __CHICAGO_ARCH_VMM_H__
 #define __CHICAGO_ARCH_VMM_H__
 
 #include <chicago/types.h>
 
-#define MmGetPDE(pd, i) ((PUInt32)(pd))[((i) & 0xFFFFF000) >> 22]
-#define MmSetPDE(pd, i, p, f) ((PUInt32)(pd))[((i) & 0xFFFFF000) >> 22] = ((p) & 0xFFFFF000) | ((f) & 0xFFF)
+#define MmGetPDEInt(pd, i) ((PUInt32)(pd))[((i) & ~0xFFF) >> 22]
+#define MmSetPDEInt(pd, i, p, f) ((PUInt32)(pd))[((i) & ~0xFFF) >> 22] = ((p) & ~0xFFF) | ((f) & 0xFFF)
 
-#define MmGetPTE(pt, i) ((PUInt32)(pt))[((i) & 0xFFFFF000) >> 12]
-#define MmSetPTE(pt, i, p, f) ((PUInt32)(pt))[((i) & 0xFFFFF000) >> 12] = ((p) & 0xFFFFF000) | ((f) & 0xFFF)
+#define MmGetPTEInt(pt, i) ((PUInt32)((pt) + ((((i) & ~0xFFF) >> 22) * 0x1000)))[(((i) & ~0xFFF) << 10) >> 22]
+#define MmSetPTEInt(pt, i, p, f) ((PUInt32)((pt) + ((((i) & ~0xFFF) >> 22) * 0x1000)))[(((i) & ~0xFFF) << 10) >> 22] = ((p) & ~0xFFF) | ((f) & 0xFFF)
 
-#define MmGetPTEInt(pt, i) ((PUInt32)(pt))[((i) & 0xFFFFF000) / (MM_PAGE_SIZE * 1024)]
-#define MmSetPTEInt(pt, i, p, f) ((PUInt32)(pt))[((i) & 0xFFFFF000) / (MM_PAGE_SIZE * 1024)] = ((p) & 0xFFFFF000) | ((f) & 0xFFF)
+#define MmGetPDE(i) MmGetPDEInt(0xFFFFF000, i)
+#define MmSetPDE(i, p, f) MmSetPDEInt(0xFFFFF000, i, p, f)
 
-#ifndef __CHICAGO_VMM__
-extern PUInt32 MmCurrentDirectory;
-extern PUInt32 MmCurrentTables;
-extern PUInt32 MmTempAddresses;
-#endif
+#define MmGetPTE(i) MmGetPTEInt(0xFFC00000, i)
+#define MmSetPTE(i, p, f) MmSetPTEInt(0xFFC00000, i, p, f)
+
+#define MmInvlpg(i) Asm Volatile("invlpg %0" :: "m"(*((PChar)((i) & ~0xFFF))))
 
 #endif		// __CHICAGO_ARCH_VMM_H__

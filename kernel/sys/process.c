@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:59 BRT
-// Last edited on November 16 of 2018, at 16:12 BRT
+// Last edited on November 17 of 2018, at 11:50 BRT
 
 #define __CHICAGO_PROCESS__
 
@@ -115,8 +115,7 @@ PThread PsCreateThread(UIntPtr entry) {
 }
 
 PProcess PsCreateProcess(PChar name, UIntPtr entry) {
-	return PsCreateProcessInt(name, entry, MmKernelDirectory);																					// Use our PsCreateProcessInt function
-																																				// TODO: Fix the MmCreateDirectory function
+	return PsCreateProcessInt(name, entry, 0);																									// Use our PsCreateProcessInt function
 }
 
 Void PsAddThread(PThread th) {

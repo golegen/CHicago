@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 26 of 2018, at 22:00 BRT
-// Last edited on November 16 of 2018, at 10:41 BRT
+// Last edited on November 17 of 2018, at 11:45 BRT
 
 #include <chicago/arch/idt-int.h>
 #include <chicago/arch/port.h>
@@ -74,10 +74,10 @@ Void ISRDefaultHandler(PRegisters regs) {
 			
 			Asm Volatile("mov %%cr2, %0" : "=r"(faddr));											// CR2 contains the fault addr
 			
-			if ((MmGetPDE(MmCurrentDirectory, faddr) & 0x01) != 0x01) {								// Present?
+			if ((MmGetPDE(faddr) & 0x01) != 0x01) {													// Present?
 				DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);					// No
 				ArchPanic(PANIC_MM_READWRITE_TO_NONPRESENT_AREA, regs);
-			} else if ((MmGetPTE(MmCurrentTables, faddr) & 0x01) != 0x01) {							// Same as above
+			} else if ((MmGetPTE(faddr) & 0x01) != 0x01) {											// Same as above
 				DbgWriteFormated("PANIC! Page fault at address 0x%x\r\n", faddr);
 				ArchPanic(PANIC_MM_READWRITE_TO_NONPRESENT_AREA, regs);
 			}

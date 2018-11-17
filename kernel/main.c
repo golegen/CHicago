@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on November 16 of 2018, at 16:39 BRT
+// Last edited on November 17 of 2018, at 11:50 BRT
 
 #include <chicago/arch.h>
 #include <chicago/console.h>
@@ -9,6 +9,7 @@
 #include <chicago/display.h>
 #include <chicago/file.h>
 #include <chicago/ipc.h>
+#include <chicago/mm.h>
 #include <chicago/version.h>
 
 Void KernelMain(Void) {
@@ -64,12 +65,30 @@ Void KernelMainLate(Void) {
 	DbgWriteFormated("[Kernel] IPC initialized\r\n");
 	
 	DispFillProgressBar();																									// Kernel initialized
-	DbgWriteFormated("[Kernel] Kernel initialized\r\n");
+	DbgWriteFormated("[Kernel] Kernel initialized\r\n\r\n");
 	
 	ConClearScreen();																										// Clear the screen
 	ConWriteFormated("CHicago Operating System for %s\r\n", CHICAGO_ARCH);													// Print some system informations
 	ConWriteFormated("Codename '%s'\r\n", CHICAGO_CODENAME);
 	ConWriteFormated("%s\r\n\r\n", CHICAGO_VSTR);
+	
+	UIntPtr oldd = MmGetCurrentDirectory();																					// Save the current directory
+	UIntPtr dir1 = MmCreateDirectory();																						// Alloc 4 new directories
+	UIntPtr dir2 = MmCreateDirectory();
+	UIntPtr dir3 = MmCreateDirectory();
+	UIntPtr dir4 = MmCreateDirectory();
+	
+	DbgWriteFormated("Current directory is 0x%x\r\n", MmGetCurrentDirectory());												// Print the current one
+	MmSwitchDirectory(dir1);																								// Switch to dir1
+	DbgWriteFormated("Current directory is 0x%x\r\n", MmGetCurrentDirectory());												// Print the current one
+	MmSwitchDirectory(dir2);																								// Switch to dir2
+	DbgWriteFormated("Current directory is 0x%x\r\n", MmGetCurrentDirectory());												// Print the current one
+	MmSwitchDirectory(dir3);																								// Switch to dir3
+	DbgWriteFormated("Current directory is 0x%x\r\n", MmGetCurrentDirectory());												// Print the current one
+	MmSwitchDirectory(dir4);																								// Switch to dir4
+	DbgWriteFormated("Current directory is 0x%x\r\n", MmGetCurrentDirectory());												// Print the current one
+	MmSwitchDirectory(oldd);																								// Switch to the saved directory
+	DbgWriteFormated("Current directory is 0x%x\r\n", MmGetCurrentDirectory());												// Print the current one
 	
 	ArchHalt();																												// Halt
 }
