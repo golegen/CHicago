@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:21 BRT
-// Last edited on November 03 of 2018, at 12:32 BRT
+// Last edited on November 17 of 2018, at 13:07 BRT
 
 .section .text
 
@@ -101,6 +101,24 @@ CPUIDCheck:
 0:
 	mov $0x01, %eax
 	ret
+
+.global ArchUserJump
+ArchUserJump:
+	mov %esp, %ebp																										// Save the start of the arguments
+	
+	mov $0x23, %ax																										// Setup the segments to 0x23 (user mode data segment)
+	mov %ax, %ds
+	mov %ax, %es
+	mov %ax, %fs
+	mov %ax, %gs
+	
+	push $0x23																											// SS should be 0x23
+	pushl 8(%ebp)																										// This is the user stack
+	pushf																												// Push the EFLAGS
+	push $0x1B																											// EIP should be 0x1B (user mode code segment)
+	pushl 4(%ebp)																										// This is the user code entry
+	
+	iret																												// GO!
 
 GDTPointerLimit:
 	.word 0																												// GDT limit storage

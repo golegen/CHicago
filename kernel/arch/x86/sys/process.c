@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 28 of 2018, at 01:09 BRT
-// Last edited on November 16 of 2018, at 16:15 BRT
+// Last edited on November 17 of 2018, at 12:53 BRT
 
 #define __CHICAGO_ARCH_PROCESS__
 
@@ -22,7 +22,7 @@
 Aligned(16) UInt8 PsFPUStateSave[512];
 Aligned(16) UInt8 PsFPUDefaultState[512];
 
-PContext PsCreateContext(UIntPtr entry) {
+PContext PsCreateContext(UIntPtr entry, UIntPtr userstack, Boolean user) {
 	PContext ctx = (PContext)MemAllocate(sizeof(Context));															// Alloc some space for the context struct
 	
 	if (ctx == Null) {
@@ -31,10 +31,10 @@ PContext PsCreateContext(UIntPtr entry) {
 	
 	PUIntPtr kstack = (PUIntPtr)(ctx->kstack + PS_STACK_SIZE - 1);													// Let's setup the context registers!
 	
-	*kstack-- = 0x10;																								// Push what we need for using the IRET in the first schedule
-	*kstack-- = (UIntPtr)(ctx->kstack + PS_STACK_SIZE - 1);
+	*kstack-- = user ? 0x23 : 0x10;																					// Push what we need for using the IRET in the first schedule
+	*kstack-- = user ? userstack : (UIntPtr)(ctx->kstack + PS_STACK_SIZE - 1);
 	*kstack-- = 0x202;
-	*kstack-- = 0x08;
+	*kstack-- = user ? 0x1B : 0x08;
 	*kstack-- = entry;
 	*kstack-- = 0;																									// And all the other registers that we need
 	*kstack-- = 0;
@@ -42,14 +42,14 @@ PContext PsCreateContext(UIntPtr entry) {
 	*kstack-- = 0;
 	*kstack-- = 0;
 	*kstack-- = 0;
-	*kstack-- = (UIntPtr)(ctx->kstack + PS_STACK_SIZE - 1);
+	*kstack-- = user ? userstack : (UIntPtr)(ctx->kstack + PS_STACK_SIZE - 1);
 	*kstack-- = 0;
 	*kstack-- = 0;
 	*kstack-- = 0;
-	*kstack-- = 0x10;
-	*kstack-- = 0x10;
-	*kstack-- = 0x10;
-	*kstack = 0x10;
+	*kstack-- = user ? 0x23 : 0x10;
+	*kstack-- = user ? 0x23 : 0x10;
+	*kstack-- = user ? 0x23 : 0x10;
+	*kstack = user ? 0x23 : 0x10;
 	
 	ctx->esp = (UIntPtr)kstack;
 	

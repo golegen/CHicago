@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 16 of 2018, at 01:14 BRT
-// Last edited on November 16 of 2018, at 16:35 BRT
+// Last edited on November 17 of 2018, at 13:03 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/mm.h>
@@ -118,10 +118,17 @@ UIntPtr ScVirtGetUsage(Void) {
 }
 
 UIntPtr ScPsCreateThread(UIntPtr entry) {
-	PThread th = PsCreateThread(entry);																														// Create a new thread
+	UIntPtr stack = VirtAllocAddress(0, 0x8000, VIRT_PROT_READ | VIRT_PROT_WRITE | VIRT_FLAGS_HIGHEST);														// Alloc the stack
+	
+	if (stack == 0) {
+		return 0;
+	}
+	
+	PThread th = PsCreateThread(entry, stack, True);																										// Create a new thread
 	
 	if (th == Null) {
-		return 0;																																			// Failed
+		VirtFreeAddress(stack, 0x8000);																														// Failed
+		return 0;
 	}
 	
 	PsAddThread(th);																																		// Try to add it

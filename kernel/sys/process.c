@@ -1,9 +1,11 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:59 BRT
-// Last edited on November 17 of 2018, at 11:50 BRT
+// Last edited on November 17 of 2018, at 14:01 BRT
 
 #define __CHICAGO_PROCESS__
+
+#include <chicago/arch/process.h>
 
 #include <chicago/alloc.h>
 #include <chicago/arch.h>
@@ -25,12 +27,16 @@ PQueue PsThreadQueue = Null;
 PList PsProcessList = Null;
 UIntPtr PsNextID = 0;
 
-PThread PsCreateThreadInt(UIntPtr entry) {
+PThread PsCreateThreadInt(UIntPtr entry, UIntPtr userstack, Boolean user) {
+	if (user && (userstack == 0)) {																												// Valid user stack?
+		return Null;																															// Nope
+	}
+	
 	PThread th = (PThread)MemAllocate(sizeof(Thread));																							// Let's try to allocate the process struct!
 	
 	if (th == Null) {
 		return Null;																															// Failed
-	} else if ((th->ctx = PsCreateContext(entry)) == Null) {																					// Create the thread context
+	} else if ((th->ctx = PsCreateContext(entry, userstack, user)) == Null) {																	// Create the thread context
 		MemFree((UIntPtr)th);																													// Failed
 		return Null;
 	}
@@ -60,7 +66,9 @@ PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir) {
 			
 			return Null;
 		}
-	} else if ((proc->threads = ListNew(False, False)) == Null) {																				// Create the thread list
+	}
+	
+	if ((proc->threads = ListNew(False, False)) == Null) {																						// Create the thread list
 		MmFreeDirectory(proc->dir);																												// Failed...
 		MemFree((UIntPtr)proc->name);
 		MemFree((UIntPtr)proc);
@@ -73,16 +81,17 @@ PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir) {
 	proc->global_handle_list = Null;
 	proc->files = ListNew(False, False);																										// Init our process file list
 	proc->last_fid = 0;
+	proc->exec_path = Null;
 	
 	if (proc->files == Null) {
-		ListFree(proc->threads);																													// Failed...
+		ListFree(proc->threads);																												// Failed...
 		MmFreeDirectory(proc->dir);
 		MemFree((UIntPtr)proc->name);
 		MemFree((UIntPtr)proc);
 		return Null;
 	}
 	
-	PThread th = PsCreateThreadInt(entry);																										// Create the first thread
+	PThread th = PsCreateThreadInt(entry, 0, False);																							// Create the first thread
 	
 	if (th == Null) {
 		ListFree(proc->files);																													// Failed...
@@ -110,8 +119,8 @@ PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir) {
 	return proc;
 }
 
-PThread PsCreateThread(UIntPtr entry) {
-	return PsCreateThreadInt(entry);																											// Use our PsCreateThreadInt function
+PThread PsCreateThread(UIntPtr entry, UIntPtr userstack, Boolean user) {
+	return PsCreateThreadInt(entry, userstack, user);																							// Use our PsCreateThreadInt function
 }
 
 PProcess PsCreateProcess(PChar name, UIntPtr entry) {
@@ -275,6 +284,8 @@ Void PsExitProcess(Void) {
 	}
 	
 	PsLockTaskSwitch(old);																														// Lock
+	MmSwitchDirectory(MmKernelDirectory);																										// Switch to the kernel directory
+	ArchSwitchToKernelStack();																													// Switch to the kernel stack
 	
 	ListForeach(PsCurrentProcess->files, i) {																									// Close all the files that this process used
 		PProcessFile pf = (PProcessFile)i->data;
@@ -302,10 +313,10 @@ Void PsExitProcess(Void) {
 			if (found) {																														// Found?
 				ListRemove(PsThreadQueue, idx);																									// Yes, remove it!
 			}
+			
+			PsFreeContext(th->ctx);																												// Free the context
+			MemFree((UIntPtr)th);																												// And the thread struct itself
 		}
-		
-		PsFreeContext(th->ctx);																													// Free the context
-		MemFree((UIntPtr)th);																													// And the thread struct itself
 	}
 	
 	UIntPtr idx = 0;
@@ -328,6 +339,8 @@ Void PsExitProcess(Void) {
 	MmFreeDirectory(PsCurrentProcess->dir);																										// Free the directory
 	MemFree((UIntPtr)PsCurrentProcess->name);																									// Free the name
 	MemFree((UIntPtr)PsCurrentProcess);																											// And the current process itself
+//	PsFreeContext(PsCurrentThread->ctx);																										// BUG: When we try to free the current thread context, we get a page fault
+	MemFree((UIntPtr)PsCurrentThread);																											// Free the thread struct
 	
 	PsUnlockTaskSwitch(old);																													// Unlock
 	PsSwitchTask(PsDontRequeue);																												// Switch to the next process

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 27 of 2018, at 14:42 BRT
-// Last edited on November 16 of 2018, at 16:05 BRT
+// Last edited on November 17 of 2018, at 12:55 BRT
 
 #ifndef __CHICAGO_PROCESS_H__
 #define __CHICAGO_PROCESS_H__
@@ -30,6 +30,7 @@ typedef struct {
 	PList global_handle_list;
 	PList files;
 	IntPtr last_fid;
+	PChar exec_path;
 } Process, *PProcess;
 
 typedef struct {
@@ -50,9 +51,9 @@ extern PQueue PsThreadQueue;
 extern PList PsProcessList;
 #endif
 
-PThread PsCreateThreadInt(UIntPtr entry);
+PThread PsCreateThreadInt(UIntPtr entry, UIntPtr userstack, Boolean user);
 PProcess PsCreateProcessInt(PChar name, UIntPtr entry, UIntPtr dir);
-PThread PsCreateThread(UIntPtr entry);
+PThread PsCreateThread(UIntPtr entry, UIntPtr userstack, Boolean user);
 PProcess PsCreateProcess(PChar name, UIntPtr entry);
 Void PsAddThread(PThread th);
 Void PsAddProcess(PProcess proc);
@@ -65,7 +66,7 @@ Void PsWaitThread(UIntPtr thid);
 Void PsWaitProcess(UIntPtr pid);
 Void PsLock(PLock lock);
 Void PsUnlock(PLock lock);
-PContext PsCreateContext(UIntPtr entry);
+PContext PsCreateContext(UIntPtr entry, UIntPtr userstack, Boolean user);
 Void PsFreeContext(PContext context);
 Void PsSwitchTask(PVoid priv);
 Void PsInit(Void);

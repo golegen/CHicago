@@ -1,15 +1,16 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on May 11 of 2018, at 13:14 BRT
-// Last edited on November 17 of 2018, at 11:50 BRT
+// Last edited on November 17 of 2018, at 13:06 BRT
 
 #include <chicago/arch.h>
 #include <chicago/console.h>
 #include <chicago/debug.h>
 #include <chicago/display.h>
+#include <chicago/exec.h>
 #include <chicago/file.h>
 #include <chicago/ipc.h>
-#include <chicago/mm.h>
+#include <chicago/panic.h>
 #include <chicago/version.h>
 
 Void KernelMain(Void) {
@@ -72,23 +73,17 @@ Void KernelMainLate(Void) {
 	ConWriteFormated("Codename '%s'\r\n", CHICAGO_CODENAME);
 	ConWriteFormated("%s\r\n\r\n", CHICAGO_VSTR);
 	
-	UIntPtr oldd = MmGetCurrentDirectory();																					// Save the current directory
-	UIntPtr dir1 = MmCreateDirectory();																						// Alloc 4 new directories
-	UIntPtr dir2 = MmCreateDirectory();
-	UIntPtr dir3 = MmCreateDirectory();
-	UIntPtr dir4 = MmCreateDirectory();
+	PProcess proc = ExecCreateProcess("\\System\\Programs\\sesmgr.che");													// Let's create the session manager process!
 	
-	DbgWriteFormated("Current directory is 0x%x\r\n", MmGetCurrentDirectory());												// Print the current one
-	MmSwitchDirectory(dir1);																								// Switch to dir1
-	DbgWriteFormated("Current directory is 0x%x\r\n", MmGetCurrentDirectory());												// Print the current one
-	MmSwitchDirectory(dir2);																								// Switch to dir2
-	DbgWriteFormated("Current directory is 0x%x\r\n", MmGetCurrentDirectory());												// Print the current one
-	MmSwitchDirectory(dir3);																								// Switch to dir3
-	DbgWriteFormated("Current directory is 0x%x\r\n", MmGetCurrentDirectory());												// Print the current one
-	MmSwitchDirectory(dir4);																								// Switch to dir4
-	DbgWriteFormated("Current directory is 0x%x\r\n", MmGetCurrentDirectory());												// Print the current one
-	MmSwitchDirectory(oldd);																								// Switch to the saved directory
-	DbgWriteFormated("Current directory is 0x%x\r\n", MmGetCurrentDirectory());												// Print the current one
+	if (proc == Null) {
+		DbgWriteFormated("PANIC! Failed to run \\System\\Programs\\sesmgr.che\r\n");
+		Panic(PANIC_KERNEL_INIT_FAILED);
+	}
 	
-	ArchHalt();																												// Halt
+	UIntPtr pid = proc->id;																									// Save the pid of the session manager process
+	
+	PsAddProcess(proc);																										// RUN!
+	PsWaitProcess(pid);																										// Session manager is not supposed to exit, so this function should never return
+	DbgWriteFormated("PANIC! The \\System\\Programs\\sesmgr.che program closed\r\n");										// ...
+	Panic(PANIC_KERNEL_UNEXPECTED_ERROR);																					// Panic
 }

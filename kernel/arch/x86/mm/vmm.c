@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on June 28 of 2018, at 19:19 BRT
-// Last edited on November 17 of 2018, at 11:49 BRT
+// Last edited on November 17 of 2018, at 14:01 BRT
 
 #include <chicago/arch/vmm.h>
 
@@ -216,7 +216,7 @@ UIntPtr MmCreateDirectory(Void) {
 		if (((MmGetPDE(i << 22) & 0x01) != 0x01) || (i < 768) || (i == 1022)) {							// Non-present, user or temp?
 			dir[i] = 0;																					// Yes, so just zero it
 		} else if (i == 1023) {																			// Recursive mapping entry?
-			dir[i] = (ret & 0xFFFFF000) | 3;															// Yes
+			dir[i] = (ret & ~0xFFF) | 3;																// Yes
 		} else {																						// Normal kernel entry?
 			dir[i] = MmGetPDE(i << 22);																	// Yes
 		}
@@ -239,7 +239,7 @@ Void MmFreeDirectory(UIntPtr dir) {
 		return;
 	}
 	
-	for (UInt32 i = 0; i < 768; i++) {																	// Let's free the user tables
+	for (UInt32 i = 0; i < 767; i++) {																	// Let's free the user tables (BUG: We get a page fault if 'i' is 768 (the right value))
 		if ((tmp[i] & 0x01) == 0x01) {																	// Present?
 			UIntPtr tabpa = tmp[i] & ~0xFFF;															// Yes
 			PUInt32 tabta = Null;
@@ -253,7 +253,7 @@ Void MmFreeDirectory(UIntPtr dir) {
 				UIntPtr page = MmGetPTEInt(tabta, (i << 22) + (j << 12));
 				
 				if ((page & 0x01) == 0x01) {															// Present?
-					MmDereferencePage(page & 0xFFFFF000);												// Yes, just use the dereference function
+					MmDereferencePage(page & ~0xFFF);													// Yes, just use the dereference function
 				}				
 			}
 			
