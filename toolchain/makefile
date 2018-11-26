@@ -70,4 +70,4 @@ endif
 	$(NOECHO)echo Compiling GCC
 	$(NOECHO)mkdir build/gcc-7.2.0/build && cd build/gcc-7.2.0/build && ../configure --target=$(TARGET) --prefix=$(ROOT_DIR)/$@ --with-sysroot=$(ROOT_DIR)/$@/sysroot --enable-languages=c,c++ --enable-default-pie --with-linker-hash-style=sysv --disable-nls --disable-werror 1>/dev/null 2>1 && make all-gcc all-target-libgcc -j$(BUILD_CORES) 1>/dev/null 2>1 && make install-gcc install-target-libgcc 1>/dev/null 2>1
 	$(NOECHO)echo Compiling Objconv
-	$(NOECHO)gcc -Iobjconv/include -o $@ objconv/*.c
+	$(NOECHO)gcc -std=gnu11 -Iobjconv/include -o $@ objconv/*.c
