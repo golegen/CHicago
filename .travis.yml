@@ -1,0 +1,7 @@
+language: c
+script:
+ - make
+ - make -C toolchain/chir
+before_install:
+ - sudo apt-get -qq update
+ - sudo apt-get install -y xorriso

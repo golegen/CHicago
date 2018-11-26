@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 24 of 2018, at 09:26 BRT
-// Last edited on November 24 of 2018, at 15:32 BRT
+// Last edited on November 25 of 2018, at 14:41 BRT
 
 #include <ir-int.h>
 #include <limits.h>
@@ -18,11 +18,18 @@ ir_lexer_t *ir_create_lexer(char *text) {
 	ir_lexer_t *lexer = calloc(1, sizeof(ir_lexer_t));																		// Alloc space
 	
 	if (lexer != NULL) {																									// Failed?
-		lexer->text = text;																									// No! Set the input
+		lexer->text = strdup(text);																							// No! Set the input
 		lexer->length = strlen(text);																						// And set the input length
 	}
 	
 	return lexer;
+}
+
+void ir_free_lexer(ir_lexer_t *lexer) {
+	if (lexer != NULL) {																									// Check if our argument is valid
+		free(lexer->text);																									// Free everything!
+		free(lexer);
+	}
 }
 
 ir_tok_t *ir_get_cur_tok(ir_lexer_t *lexer) {

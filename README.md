@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/CHOSTeam/CHicago.svg?branch=master)](https://travis-ci.org/CHOSTeam/CHicago)
 # CHicago
 
 ## Building the ISO

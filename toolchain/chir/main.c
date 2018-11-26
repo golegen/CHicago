@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 19 of 2018, at 12:17 BRT
-// Last edited on November 25 of 2018, at 13:00 BRT
+// Last edited on November 25 of 2018, at 14:40 BRT
 
 #include <ir.h>
 #include <stdio.h>
@@ -89,15 +89,6 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	
-	code = ir_module_to_text(module);																	// Try to recreate the source code from the module
-	
-	if (code == NULL) {
-		printf("Error: couldn't recreate the source code\r\n");											// Failed to parse...
-		return 1;
-	}
-	
-	printf("%s", code);																					// Print the generated code
-	free(code);																							// Free it
 	ir_free_module(module);																				// Free the module
 	
 	return 0;

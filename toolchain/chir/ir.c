@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 19 of 2018, at 14:49 BRT
-// Last edited on November 25 of 2018, at 13:09 BRT
+// Last edited on November 25 of 2018, at 14:45 BRT
 
 #define _DEFAULT_SOURCE
 
@@ -17,7 +17,7 @@ static char *ir_types[] = {
 	"Int8", "UInt8",
 	"Int16", "UInt16",
 	"Int32", "UInt32",
-	"Int8*", "Local", "Global"
+	"Int8*", "Local", "Global", "Method"
 };
 
 static char *ir_instrs[] = {
@@ -243,7 +243,8 @@ ir_module_t *ir_module_from_text(char *text) {
 	ir_module_t *module = ir_create_module(globals);																// Create our module!
 	
 	if (module == NULL) {
-		return NULL;																								// Failed :(
+		ir_free_lexer(lexer);																						// Failed :(
+		return NULL;
 	}
 	
 	ir_reset_lexer(lexer);																							// Reset the lexer
@@ -255,10 +256,12 @@ ir_module_t *ir_module_from_text(char *text) {
 			if ((tok = ir_lex_next_tok(lexer)) == NULL || tok->type != IR_TTYPE_PAREN || tok->char_val != '(') {	// Check if we have our type start (open parentheses)
 				free(name);
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			} else if ((tok = ir_lex_next_tok(lexer)) == NULL || tok->type != IR_TTYPE_IDENT) {						// Check if we have a valid type... type
 				free(name);
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			}
 			
@@ -268,6 +271,7 @@ ir_module_t *ir_module_from_text(char *text) {
 				free(type);
 				free(name);
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			}
 			
@@ -277,6 +281,7 @@ ir_module_t *ir_module_from_text(char *text) {
 				free(type);
 				free(name);
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			} else if (tok->type == IR_TTYPE_ASSIGN) {																// Found default assign?
 				if ((tok = ir_lex_next_tok(lexer)) == NULL || (tok->type != IR_TTYPE_GVARIABLE &&
@@ -285,6 +290,7 @@ ir_module_t *ir_module_from_text(char *text) {
 					free(type);																						// No >:(
 					free(name);
 					ir_free_module(module);
+					ir_free_lexer(lexer);
 					return NULL;
 				} else if (tok->type == IR_TTYPE_GVARIABLE) {														// Default value = Global variable value?
 					assign = ir_create_oper(IR_TYPE_GLOBAL);														// Yes! Let's create our assign
@@ -294,6 +300,7 @@ ir_module_t *ir_module_from_text(char *text) {
 						free(type);
 						free(name);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -306,6 +313,7 @@ ir_module_t *ir_module_from_text(char *text) {
 						free(type);
 						free(name);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -318,6 +326,7 @@ ir_module_t *ir_module_from_text(char *text) {
 						free(type);
 						free(name);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -328,11 +337,13 @@ ir_module_t *ir_module_from_text(char *text) {
 						free(type);																					// Nope...
 						free(name);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					} else if ((tok = ir_lex_next_tok(lexer)) == NULL) {											// Try to get the next token
 						free(type);
 						free(name);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -342,6 +353,7 @@ ir_module_t *ir_module_from_text(char *text) {
 						free(type);																					// Failed...
 						free(name);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -366,6 +378,7 @@ ir_module_t *ir_module_from_text(char *text) {
 						free(type);
 						free(name);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -375,6 +388,7 @@ ir_module_t *ir_module_from_text(char *text) {
 						free(type);
 						free(name);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 				}
@@ -384,6 +398,7 @@ ir_module_t *ir_module_from_text(char *text) {
 					free(type);
 					free(name);
 					ir_free_module(module);
+					ir_free_lexer(lexer);
 					return NULL;
 				}
 			}
@@ -393,6 +408,7 @@ ir_module_t *ir_module_from_text(char *text) {
 				free(type);
 				free(name);
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			}
 			
@@ -403,6 +419,7 @@ ir_module_t *ir_module_from_text(char *text) {
 				free(type);
 				free(name);
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			}
 			
@@ -414,6 +431,7 @@ ir_module_t *ir_module_from_text(char *text) {
 				free(type);																							// Failed
 				free(name);
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			}
 			
@@ -427,6 +445,7 @@ ir_module_t *ir_module_from_text(char *text) {
 			if ((tok = ir_lex_next_tok(lexer)) == NULL || tok->type != IR_TTYPE_PAREN || tok->char_val != '(') {	// We need an open parentheses
 				free(name);
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			}
 			
@@ -446,6 +465,7 @@ ir_module_t *ir_module_from_text(char *text) {
 							
 						free(name);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					} else if ((tok = ir_lex_next_tok(lexer)) == NULL || tok->type != IR_TTYPE_IDENT) {				// Now the type of this argument
 						if (type != NULL) {																			// ...
@@ -454,6 +474,7 @@ ir_module_t *ir_module_from_text(char *text) {
 							
 						free(name);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					} else if ((tok = ir_lex_next_tok(lexer)) == NULL || tok->type != IR_TTYPE_PAREN ||
 							   tok->char_val != ')') {																// Now we need the closing parentheses
@@ -463,6 +484,7 @@ ir_module_t *ir_module_from_text(char *text) {
 							
 						free(name);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -484,6 +506,7 @@ ir_module_t *ir_module_from_text(char *text) {
 				
 				free(name);
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			}
 			
@@ -496,6 +519,7 @@ ir_module_t *ir_module_from_text(char *text) {
 				
 				free(name);
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			}
 			
@@ -509,6 +533,7 @@ ir_module_t *ir_module_from_text(char *text) {
 			
 			if (method == NULL) {
 				ir_free_module(module);																				// Failed to create the method :(
+				ir_free_lexer(lexer);
 				return NULL;
 			}
 			
@@ -525,11 +550,13 @@ ir_module_t *ir_module_from_text(char *text) {
 						free(name);																					// ...
 						ir_free_method(method);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					} else if ((tok = ir_lex_next_tok(lexer)) == NULL || tok->type != IR_TTYPE_IDENT) {				// Now the type of this argument
 						free(name);																					// ...
 						ir_free_method(method);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -541,6 +568,7 @@ ir_module_t *ir_module_from_text(char *text) {
 						free(name);
 						ir_free_method(method);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -553,6 +581,7 @@ ir_module_t *ir_module_from_text(char *text) {
 						free(name);
 						ir_free_method(method);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -563,6 +592,7 @@ ir_module_t *ir_module_from_text(char *text) {
 					if (method->args[curarg++] == NULL) {
 						ir_free_method(method);																		// Failed to create the arg...
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -580,11 +610,13 @@ ir_module_t *ir_module_from_text(char *text) {
 			if (tok == NULL || tok->type != IR_TTYPE_PAREN || tok->char_val != ')') {								// End of file?
 				ir_free_method(method);																				// Yes...
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			} else if ((tok = ir_lex_next_tok(lexer)) == NULL || tok->type != IR_TTYPE_BRACE ||
 					   tok->char_val != '{') {																		// Now, we need the starting brace!
 				ir_free_method(method);																				// ...
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			}
 			
@@ -609,12 +641,14 @@ ir_module_t *ir_module_from_text(char *text) {
 								free(name);																			// ...
 								ir_free_method(method);
 								ir_free_module(module);
+								ir_free_lexer(lexer);
 								return NULL;
 							} else if ((tok = ir_lex_next_tok(lexer)) == NULL ||
 									   (tok->type != IR_TTYPE_SNUMBER && tok->type != IR_TTYPE_UNUMBER)) {			// Valid argument?
 								free(name);																			// ...
 								ir_free_method(method);
 								ir_free_module(module);
+								ir_free_lexer(lexer);
 								return NULL;
 							}
 							
@@ -629,15 +663,17 @@ ir_module_t *ir_module_from_text(char *text) {
 								free(name);																			// ...
 								ir_free_method(method);
 								ir_free_module(module);
+								ir_free_lexer(lexer);
 								return NULL;
 							}
 							
 							tok = ir_lex_next_tok(lexer);															// Go to the next token!
 						} else if (tok->type == IR_TTYPE_LVARIABLE || tok->type == IR_TTYPE_GVARIABLE ||
-								   tok->type == IR_TTYPE_STRING) {													// Valid arg?
+								   tok->type == IR_TTYPE_METHOD || tok->type == IR_TTYPE_STRING) {					// Valid arg?
 							opers++;																				// Yes, increase the operand count
 							
-							if (tok->type == IR_TTYPE_GVARIABLE || tok->type == IR_TTYPE_STRING) {					// Free the str val?
+							if (tok->type == IR_TTYPE_GVARIABLE || tok->type == IR_TTYPE_METHOD ||
+								tok->type == IR_TTYPE_STRING) {														// Free the str val?
 								free(tok->str_val);																	// Yes
 							}
 							
@@ -646,6 +682,7 @@ ir_module_t *ir_module_from_text(char *text) {
 							free(name);																				// Invalid...
 							ir_free_method(method);
 							ir_free_module(module);
+							ir_free_lexer(lexer);
 							return NULL;
 						}
 						
@@ -658,6 +695,7 @@ ir_module_t *ir_module_from_text(char *text) {
 						free(name);																					// Yes...
 						ir_free_method(method);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -667,6 +705,7 @@ ir_module_t *ir_module_from_text(char *text) {
 						free(name);																					// Failed...
 						ir_free_method(method);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -677,6 +716,7 @@ ir_module_t *ir_module_from_text(char *text) {
 					if (instr == NULL) {
 						ir_free_method(method);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -693,6 +733,7 @@ ir_module_t *ir_module_from_text(char *text) {
 							if (ttype == -1) {
 								ir_free_method(method);																// ...
 								ir_free_module(module);
+								ir_free_lexer(lexer);
 								return NULL;
 							}
 							
@@ -701,16 +742,19 @@ ir_module_t *ir_module_from_text(char *text) {
 							if (instr->operands[curoper] == NULL) {													// Failed?
 								ir_free_method(method);																// Yes...
 								ir_free_module(module);
+								ir_free_lexer(lexer);
 								return NULL;
 							} else if ((tok = ir_lex_next_tok(lexer)) == NULL || tok->type != IR_TTYPE_PAREN ||
 								tok->char_val != '(') {																// Ok, we need a opening parentheses
 								ir_free_method(method);																// ...
 								ir_free_module(module);
+								ir_free_lexer(lexer);
 								return NULL;
 							} else if ((tok = ir_lex_next_tok(lexer)) == NULL ||
 									   (tok->type != IR_TTYPE_SNUMBER && tok->type != IR_TTYPE_UNUMBER)) {			// Valid argument?
 								ir_free_method(method);																// ...
 								ir_free_module(module);
+								ir_free_lexer(lexer);
 								return NULL;
 							}
 							
@@ -734,6 +778,7 @@ ir_module_t *ir_module_from_text(char *text) {
 								ir_free_oper(instr->operands[curoper]);												// Invalid...
 								ir_free_method(method);
 								ir_free_module(module);
+								ir_free_lexer(lexer);
 								return NULL;
 							}
 							
@@ -742,6 +787,7 @@ ir_module_t *ir_module_from_text(char *text) {
 								ir_free_oper(instr->operands[curoper]);
 								ir_free_method(method);																// ...
 								ir_free_module(module);
+								ir_free_lexer(lexer);
 								return NULL;
 							}
 							
@@ -754,6 +800,7 @@ ir_module_t *ir_module_from_text(char *text) {
 								ir_free_instr(instr);																// Yes...
 								ir_free_method(method);
 								ir_free_module(module);
+								ir_free_lexer(lexer);
 								return NULL;
 							}
 							
@@ -767,10 +814,25 @@ ir_module_t *ir_module_from_text(char *text) {
 								ir_free_instr(instr);
 								ir_free_method(method);
 								ir_free_module(module);
+								ir_free_lexer(lexer);
 								return NULL;
 							}
 							
 							instr->operands[curoper++]->val.str_val = tok->str_val;									// Set the variable name!
+							tok = ir_lex_next_tok(lexer);															// Go to the next token!
+						} else if (tok->type == IR_TTYPE_METHOD) {													// Method
+							instr->operands[curoper] = ir_create_oper(IR_TYPE_METHOD);								// Yes! Let's add this operand!
+							
+							if (instr->operands[curoper] == NULL) {													// Failed?
+								free(tok->str_val);																	// Yes...
+								ir_free_instr(instr);
+								ir_free_method(method);
+								ir_free_module(module);
+								ir_free_lexer(lexer);
+								return NULL;
+							}
+							
+							instr->operands[curoper++]->val.str_val = tok->str_val;									// Set the method name!
 							tok = ir_lex_next_tok(lexer);															// Go to the next token!
 						} else if (tok->type == IR_TTYPE_STRING) {													// String
 							instr->operands[curoper] = ir_create_oper(IR_TYPE_STRING);								// Yes! Let's add this operand!
@@ -780,6 +842,7 @@ ir_module_t *ir_module_from_text(char *text) {
 								ir_free_instr(instr);
 								ir_free_method(method);
 								ir_free_module(module);
+								ir_free_lexer(lexer);
 								return NULL;
 							}
 							
@@ -789,6 +852,7 @@ ir_module_t *ir_module_from_text(char *text) {
 							ir_free_instr(instr);																	// Invalid...
 							ir_free_method(method);
 							ir_free_module(module);
+							ir_free_lexer(lexer);
 							return NULL;
 						}
 						
@@ -801,6 +865,7 @@ ir_module_t *ir_module_from_text(char *text) {
 						ir_free_instr(instr);																		// Yes...
 						ir_free_method(method);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 					
@@ -808,11 +873,13 @@ ir_module_t *ir_module_from_text(char *text) {
 						ir_free_instr(instr);																		// ...
 						ir_free_method(method);
 						ir_free_module(module);
+						ir_free_lexer(lexer);
 						return NULL;
 					}
 				} else {
 					ir_free_method(method);																			// Invalid...
 					ir_free_module(module);
+					ir_free_lexer(lexer);
 					return NULL;
 				}
 			}
@@ -820,12 +887,14 @@ ir_module_t *ir_module_from_text(char *text) {
 			if (tok == NULL || tok->type != IR_TTYPE_BRACE || tok->char_val != '}') {								// End of file?
 				ir_free_method(method);																				// Yes...
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			}
 			
 			if (!ir_add_method(module, method)) {																	// Try to add this method!
 				ir_free_method(method);																				// Failed...
 				ir_free_module(module);
+				ir_free_lexer(lexer);
 				return NULL;
 			}
 		} else {
@@ -834,9 +903,12 @@ ir_module_t *ir_module_from_text(char *text) {
 			}
 			
 			ir_free_module(module);
+			ir_free_lexer(lexer);
 			return NULL;
 		}
 	}
+	
+	ir_free_lexer(lexer);																							// Free the lexer!
 	
 	return module;
 }
@@ -995,6 +1067,11 @@ char *ir_module_to_text(ir_module_t *module) {
 					}
 				} else if (oper->type == IR_TYPE_GLOBAL) {															// Append global variable name?
 					if (!str_append_formated(str, "$%s", oper->val.str_val)) {										// Yes
+						str_free(str);
+						return NULL;
+					}
+				} else if (oper->type == IR_TYPE_METHOD) {															// Append method name?
+					if (!str_append_formated(str, "@%s", oper->val.str_val)) {										// Yes
 						str_free(str);
 						return NULL;
 					}

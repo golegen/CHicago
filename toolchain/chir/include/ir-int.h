@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 24 of 2018, at 09:24 BRT
-// Last edited on November 24 of 2018, at 14:22 BRT
+// Last edited on November 25 of 2018, at 14:42 BRT
 
 #ifndef __IR_INT_H__
 #define __IR_INT_H__
@@ -40,6 +40,7 @@ typedef struct {
 } ir_lexer_t;
 
 ir_lexer_t *ir_create_lexer(char *text);
+void ir_free_lexer(ir_lexer_t *lexer);
 int ir_lex_check(ir_lexer_t *lexer);
 ir_tok_t *ir_get_cur_tok(ir_lexer_t *lexer);
 ir_tok_t *ir_lex_next_tok(ir_lexer_t *lexer);

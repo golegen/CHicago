@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 19 of 2018, at 13:44 BRT
-// Last edited on November 24 of 2018, at 09:26 BRT
+// Last edited on November 25 of 2018, at 14:21 BRT
 
 #ifndef __IR_H__
 #define __IR_H__
@@ -18,6 +18,7 @@
 #define IR_TYPE_STRING 0x07
 #define IR_TYPE_LOCAL 0x08
 #define IR_TYPE_GLOBAL 0x09
+#define IR_TYPE_METHOD 0x0A
 
 #define IR_INSTR_MOV 0x00
 #define IR_INSTR_ADD 0x01
