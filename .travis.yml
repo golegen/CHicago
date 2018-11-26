@@ -1,6 +1,6 @@
 language: c
 script:
- - travis_wait 60 BUILD_CORES=3 make
+ - BUILD_CORES=3 travis_wait 60 make
  - make -C toolchain/chir
 before_install:
  - sudo apt-get -qq update
