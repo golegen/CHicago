@@ -113,7 +113,8 @@ else
 endif
 	$(NOECHO)if [ ! -d build ]; then mkdir -p build; fi
 	$(NOECHO)if [ -d build/iso ]; then rm -rf build/iso; fi
-	$(NOECHO)mkdir -p build/iso/{Boot,MountPoint}
+	$(NOECHO)mkdir -p build/iso/Boot
+	$(NOECHO)mkdir -p build/iso/MountPoint
 	$(NOECHO)cp $(CDBOOT) build/iso/Boot/bootsect.bin
 	$(NOECHO)cp $(BOOTMGR) build/iso/Boot/bootmgr.bin
 	$(NOECHO)cp $(KERNEL) build/iso/Boot/chkrnl.elf
