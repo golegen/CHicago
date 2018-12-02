@@ -1,12 +1,12 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on November 19 of 2018, at 17:52 BRT
-# Last edited on November 24 of 2018, at 09:27 BRT
+# Last edited on November 24 of 2018, at 10:25 BRT
 
 VERBOSE ?= false
 DEBUG ?= false
 
-OBJECTS := main.c.o ir.c.o ir-int.c.o str.c.o
+OBJECTS := codegen.c.o main.c.o ir.c.o ir-int.c.o str.c.o x86.c.o
 
 OBJECTS := $(addprefix build/,$(OBJECTS))
 OUTPUT := build/chir

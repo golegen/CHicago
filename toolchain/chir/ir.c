@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 19 of 2018, at 14:49 BRT
-// Last edited on November 25 of 2018, at 14:45 BRT
+// Last edited on December 02 of 2018, at 08:28 BRT
 
 #define _DEFAULT_SOURCE
 
@@ -29,7 +29,7 @@ static char *ir_instrs[] = {
 	"return"
 };
 
-ir_oper_t *ir_create_oper(uint8_t type) {
+ir_oper_t *ir_create_oper(uint16_t type) {
 	ir_oper_t *oper = calloc(1, sizeof(ir_oper_t));																	// Alloc space
 	
 	if (oper != NULL) {																								// Failed?
@@ -45,7 +45,7 @@ void ir_free_oper(ir_oper_t *oper) {
 	}
 }
 
-ir_arg_t *ir_create_arg(uint8_t type, char *name) {
+ir_arg_t *ir_create_arg(uint16_t type, char *name) {
 	ir_arg_t *arg = calloc(1, sizeof(ir_arg_t));																	// Alloc space
 	
 	if (arg != NULL) {																								// Failed?
@@ -99,7 +99,116 @@ void ir_free_instr(ir_instr_t *instr) {
 	}
 }
 
-ir_method_t *ir_create_method(char *name, uint32_t args, uint32_t locals, uint8_t type) {
+static int ir_check_global(ir_module_t *module, char *name) {
+	for (uint32_t i = 0; i < module->global_count; i++) {															// Let's search!
+		ir_arg_t *g = module->globals[i];
+		
+		if ((strlen(g->name) == strlen(name)) && !strcmp(g->name, name)) {											// Found?
+			return 1;																								// Yes :)
+		}
+	}
+	
+	return 0;
+}
+
+int ir_check_instr(ir_module_t *module, ir_method_t *method, ir_instr_t *instr) {
+	if (instr == NULL) {																							// Sanity check
+		return 0;
+	}
+	
+	int varg1 = 0;
+	int varg2 = 0;
+	int varg3 = 0;
+	int vargv = 0;
+	
+	if (instr->op == IR_INSTR_MOV || instr->op == IR_INSTR_CMP || instr->op == IR_INSTR_BRC ||						// This instruction have 2 operands?
+		instr->op == IR_INSTR_CALLC) {
+		if (instr->operand_count != 2) {																			// Yes, but we have a valid amount of operands?
+			if (!((instr->op == IR_INSTR_BRC || instr->op == IR_INSTR_CALLC) && instr->operand_count > 2)) {		// No, but this is a jump/call?
+				return 0;																							// No...
+			}
+		}
+		
+		varg1 = (instr->op == IR_INSTR_MOV) ? (IR_TYPE_LOCAL | IR_TYPE_GLOBAL) :									// Set the valid types for the first op
+				((instr->op == IR_INSTR_CMP) ? (IR_TYPE_INT8 | IR_TYPE_UINT8 | IR_TYPE_INT16 | IR_TYPE_UINT16 |
+												IR_TYPE_INT32 | IR_TYPE_UINT32 | IR_TYPE_STRING |
+												IR_TYPE_LOCAL | IR_TYPE_GLOBAL) : IR_TYPE_METHOD);
+		
+		varg2 = (instr->op == IR_INSTR_BRC || instr->op == IR_INSTR_CALLC) ? varg2 :								// For the second op
+				(IR_TYPE_INT8 | IR_TYPE_UINT8 | IR_TYPE_INT16 | IR_TYPE_UINT16 |
+				 IR_TYPE_INT32 | IR_TYPE_UINT32 | IR_TYPE_STRING |
+				 IR_TYPE_LOCAL | IR_TYPE_GLOBAL);
+		
+		varg3 = (instr->op == IR_INSTR_BRC || instr->op == IR_INSTR_CALLC) ?										// For the third op
+				(IR_TYPE_INT8 | IR_TYPE_UINT8 | IR_TYPE_INT16 | IR_TYPE_UINT16 |
+				 IR_TYPE_INT32 | IR_TYPE_UINT32 | IR_TYPE_STRING |
+				 IR_TYPE_LOCAL | IR_TYPE_GLOBAL) : varg3;
+		
+		vargv = (instr->op == IR_INSTR_BRC || instr->op == IR_INSTR_CALLC) ?										// And for everything else
+				(IR_TYPE_INT8 | IR_TYPE_UINT8 | IR_TYPE_INT16 | IR_TYPE_UINT16 |
+				 IR_TYPE_INT32 | IR_TYPE_UINT32 | IR_TYPE_STRING |
+				 IR_TYPE_LOCAL | IR_TYPE_GLOBAL) : vargv;
+	} else if (instr->op == IR_INSTR_BR || instr->op == IR_INSTR_CALL || instr->op == IR_INSTR_RETURN) {			// 1 operand?
+		if (instr->operand_count != 1) {																			// Yes, but we have a valid amount of operands?
+			if (!(instr->op == IR_INSTR_RETURN && instr->operand_count == 0) &&										// No, but jump/call can have more than 1 argument, and return can have 0 arguments
+			   	!((instr->op == IR_INSTR_BR || instr->op == IR_INSTR_CALL) && instr->operand_count > 1)) {
+				return 0;																							// ...
+			}
+		}
+		
+		varg1 = (instr->op == IR_INSTR_BR || instr->op == IR_INSTR_CALL) ? IR_TYPE_METHOD :							// Set the valid types for the first op
+				(IR_TYPE_INT8 | IR_TYPE_UINT8 | IR_TYPE_INT16 | IR_TYPE_UINT16 |
+				 IR_TYPE_INT32 | IR_TYPE_UINT32 | IR_TYPE_STRING |
+				 IR_TYPE_LOCAL | IR_TYPE_GLOBAL);
+		
+		varg2 = (instr->op == IR_INSTR_BR || instr->op == IR_INSTR_CALL) ?											// For the second op
+				(IR_TYPE_INT8 | IR_TYPE_UINT8 | IR_TYPE_INT16 | IR_TYPE_UINT16 |
+				 IR_TYPE_INT32 | IR_TYPE_UINT32 | IR_TYPE_STRING |
+				 IR_TYPE_LOCAL | IR_TYPE_GLOBAL) : varg2;
+		
+		varg3 = (instr->op == IR_INSTR_BR || instr->op == IR_INSTR_CALL) ?											// For the third op
+				(IR_TYPE_INT8 | IR_TYPE_UINT8 | IR_TYPE_INT16 | IR_TYPE_UINT16 |
+				 IR_TYPE_INT32 | IR_TYPE_UINT32 | IR_TYPE_STRING |
+				 IR_TYPE_LOCAL | IR_TYPE_GLOBAL) : varg3;
+		
+		vargv = (instr->op == IR_INSTR_BR || instr->op == IR_INSTR_CALL) ?											// And for everything else
+				(IR_TYPE_INT8 | IR_TYPE_UINT8 | IR_TYPE_INT16 | IR_TYPE_UINT16 |
+				 IR_TYPE_INT32 | IR_TYPE_UINT32 | IR_TYPE_STRING |
+				 IR_TYPE_LOCAL | IR_TYPE_GLOBAL) : vargv;
+	} else {
+		if (instr->operand_count != 3) {																			// Ok, this is a 3-operands instruction, we have a valid amount of ops?
+			return 0;																								// Nope
+		}
+		
+		varg1 = IR_TYPE_LOCAL | IR_TYPE_GLOBAL;																		// Set the vaiid types for the first op
+		
+		varg2 = (IR_TYPE_INT8 | IR_TYPE_UINT8 | IR_TYPE_INT16 | IR_TYPE_UINT16 |									// For the second op
+				 IR_TYPE_INT32 | IR_TYPE_UINT32 | IR_TYPE_STRING |
+				 IR_TYPE_LOCAL | IR_TYPE_GLOBAL);
+		
+		varg3 = (IR_TYPE_INT8 | IR_TYPE_UINT8 | IR_TYPE_INT16 | IR_TYPE_UINT16 |									// And for the third op
+				 IR_TYPE_INT32 | IR_TYPE_UINT32 | IR_TYPE_STRING |
+				 IR_TYPE_LOCAL | IR_TYPE_GLOBAL);
+	}
+	
+	for (uint32_t i = 0; i < instr->operand_count; i++) {															// Now, check all the operands!
+		ir_oper_t *oper = instr->operands[i];
+		
+		if (!(oper->type & ((i == 0) ? varg1 : ((i == 1) ? varg2 : ((i == 2) ? varg3 : vargv))))) {					// Valid op?
+			return 0;																								// Invalid...
+		} else if (oper->type == IR_TYPE_LOCAL && method != NULL &&													// Increase the local variable count?
+				   method->local_count <= oper->val.uint32_val) {
+			method->local_count = oper->val.uint32_val + 1;															// Yes
+		} else if (oper->type == IR_TYPE_GLOBAL && module != NULL &&												// Invalid global?
+				   !ir_check_global(module, oper->val.str_val)) {
+			return 0;																								// Yes :(
+		}
+	}
+	
+	return 1;
+}
+
+ir_method_t *ir_create_method(char *name, uint32_t args, uint32_t locals, uint16_t type) {
 	if (name == NULL) {																								// Valid name?
 		return NULL;																								// Nope
 	}
@@ -142,6 +251,18 @@ void ir_free_method(ir_method_t *method) {
 		free(method->name);																							// Free the name
 		free(method);																								// And the method struct itself
 	}
+}
+
+int ir_check_method(ir_module_t *module, ir_method_t *method) {
+	if (method != NULL) {																							// Sanity check
+		for (uint32_t i = 0; i < method->body_count; i++) {															// Just check all the instructions in this method
+			if (!ir_check_instr(module, method, method->body[i])) {
+				return 0;
+			}
+		}
+	}
+	
+	return 1;
 }
 
 int ir_add_instr(ir_method_t *method, ir_instr_t *instr) {
@@ -1110,6 +1231,42 @@ void ir_free_module(ir_module_t *module) {
 		
 		free(module);																								// And the module struct itself
 	}
+}
+
+static int ir_search_global(ir_module_t *module, char *name) {
+	int found = 0;
+	
+	for (uint32_t i = 0; i < module->global_count; i++) {															// Let's search!
+		ir_arg_t *g = module->globals[i];
+		
+		if ((strlen(g->name) == strlen(name)) && !strcmp(g->name, name)) {											// Found?
+			if (found) {																							// Yes, skip it?
+				return 1;																							// No...
+			} else {
+				found = 1;																							// Yes :)
+			}
+		}
+	}
+	
+	return 0;																										// Not found!
+}
+
+int ir_check_module(ir_module_t *module) {
+	if (module != NULL) {																							// Sanity check
+		for (uint32_t i = 0; i < module->global_count; i++) {														// Check the globals
+			if (ir_search_global(module, module->globals[i]->name)) {
+				return 0;
+			}
+		}
+		
+		for (uint32_t i = 0; i < module->method_count; i++) {														// And check the methods
+			if (!ir_check_method(module, module->methods[i])) {
+				return 0;
+			}
+		}
+	}
+	
+	return 1;
 }
 
 int ir_add_method(ir_module_t *module, ir_method_t *method) {

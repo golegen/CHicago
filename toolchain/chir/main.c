@@ -1,13 +1,14 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on November 19 of 2018, at 12:17 BRT
-// Last edited on November 25 of 2018, at 14:40 BRT
+// Last edited on December 01 of 2018, at 11:52 BRT
 
 #include <ir.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <codegen.h>
 
 void *read_file(char *fname) {
 	FILE *file = fopen(fname, "rb");																	// Try to open the file
@@ -40,7 +41,9 @@ void *read_file(char *fname) {
 }
 
 int main(int argc, char **argv) {
+	char *output = NULL;
 	char *input = NULL;
+	char *arch = NULL;
 	
 	if (argc < 2) {																						// Check if we have any arguments
 		printf("Usage: %s [options] file\r\n", argv[0]);												// We don't have any, just print the usage
@@ -53,11 +56,27 @@ int main(int argc, char **argv) {
 			printf("Options:\n");
 			printf("    -h or --help          Show this help dialog\r\n");
 			printf("    -v or --version       Show the version of this program\r\n");
+			printf("    -o or --output        Set the output filename\r\n");
+			printf("    -a or --arch          Set the output processor architecture\r\n");
 			return 0;
 		} else if ((!strcmp(argv[i], "-v")) || (!strcmp(argv[i], "--version"))) {						// Version
 			printf("CHicago Operating System Project\r\n");
 			printf("CHicago Intermediate Language Compiler Version 1.0\r\n");
 			return 0;
+		} else if ((!strcmp(argv[i], "-o")) || (!strcmp(argv[i], "--output"))) {						// Set the output
+			if ((i + 1) >= argc) {
+				printf("Expected filename after '%s'\n", argv[i]);
+				return 1;
+			} else {
+				output = argv[++i];
+			}
+		} else if ((!strcmp(argv[i], "-a")) || (!strcmp(argv[i], "--arch"))) {							// Set output process architecture
+			if ((i + 1) >= argc) {
+				printf("Expected filename after '%s'\n", argv[i]);
+				return 1;
+			} else {
+				arch = argv[++i];
+			}
 		} else {
 			if (input == NULL) {																		// It's the input?
 				input = argv[i];																		// Yes!
@@ -70,6 +89,9 @@ int main(int argc, char **argv) {
 	
 	if (input == NULL) {																				// We have any input file?
 		printf("Error: expected input file\r\n");														// No...
+		return 1;
+	} else if (!codegen_select_arch(arch == NULL ? "x86" : arch)) {										// Try to select the codegen arch
+		printf("Error: invalid arch '%s'\r\n", arch == NULL ? "x86" : arch);							// Failed...
 		return 1;
 	}
 	
@@ -87,8 +109,22 @@ int main(int argc, char **argv) {
 	if (module == NULL) {
 		printf("Error: couldn't parse '%s'\r\n", input);												// Failed to parse...
 		return 1;
+	} else if (!ir_check_module(module)) {																// Semantic analysis
+		printf("Error: couldn't check '%s'\r\n", input);												// ...
+		ir_free_module(module);
+		return 1;
 	}
 	
+	char *out = codegen_gen_module(module);																// Try to generate!
+	
+	if (out == NULL) {
+		printf("Error: couldn't generate '%s'\r\n", input);												// Failed...
+		ir_free_module(module);
+		return 1;
+	}
+	
+	printf("%s\n", out);
+	free(out);
 	ir_free_module(module);																				// Free the module
 	
 	return 0;
