@@ -1,0 +1,9 @@
+[submodule "boot"]
+	path = boot
+	url = https://github.com/CHOSTeam/CHicago-Boot.git
+[submodule "kernel"]
+	path = kernel
+	url = https://github.com/CHOSTeam/CHicago-Kernel.git
+[submodule "toolchain"]
+	path = toolchain
+	url = https://github.com/CHOSTeam/CHicago-Toolchain.git

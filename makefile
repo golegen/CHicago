@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on November 16 of 2018, at 10:53 BRT
+# Last edited on December 02 of 2018, at 11:38 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -27,9 +27,9 @@ ifneq ($(VERBOSE),true)
 NOECHO := @
 endif
 
-.PHONY: boot kernel userspace
+.PHONY: boot kernel
 
-all: toolchain/$(ARCH) boot kernel userspace finish
+all: toolchain/$(ARCH) boot kernel finish
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
@@ -40,7 +40,6 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C boot clean
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel clean
-	$(NOECHO)SYSROOT_DIR=$(PWD)/toolchain/$(ARCH)/sysroot ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C userspace clean
 
 clean-all: sysroot-recreate
 ifeq ($(UNSUPPORTED_ARCH),true)
@@ -48,7 +47,6 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C boot clean-all
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel clean-all
-	$(NOECHO)SYSROOT_DIR=$(PWD)/toolchain/$(ARCH)/sysroot ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C userspace clean-all
 	$(NOECHO)rm -rf build
 
 remake:
@@ -57,7 +55,6 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C boot remake
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel remake
-	$(NOECHO)SYSROOT_DIR=$(PWD)/toolchain/$(ARCH)/sysroot ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C userspace remake
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make finish
 
 toolchain/$(ARCH):
@@ -77,12 +74,6 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel all
-
-userspace:
-ifeq ($(UNSUPPORTED_ARCH),true)
-	$(error Unsupported architecture $(ARCH))
-endif
-	$(NOECHO)SYSROOT_DIR=$(PWD)/toolchain/$(ARCH)/sysroot ARCH=$(ARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C userspace all
 
 sysroot-recreate:
 ifeq ($(UNSUPPORTED_ARCH),true)
