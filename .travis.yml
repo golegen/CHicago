@@ -2,6 +2,7 @@ language: c
 script:
  - BUILD_CORES=3 travis_wait 60 make
  - travis_wait 60 make -C toolchain/chir
+ - travis_wait 60 make -C toolchain/chasm
 before_install:
  - sudo apt-get -qq update
  - sudo apt-get install -y build-essential bison flex libgmp3-dev libmpc-dev libmpfr-dev texinfo autoconf automake xorriso
