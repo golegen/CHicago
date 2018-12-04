@@ -16,4 +16,4 @@ deploy:
     secure: CrA8mBBwP9O2CHBNdfS/jziNtk2iiR+5rr0Z+Mjoip0olJjsZ5Rv8KbLQF5Q/TapSAfSxr3YpV3SQTR5nLF8K/t7VqeWBh59tKzjWY2qKkHcCNdnKLjy3KSWKEIURIGosYL90klxGlibLeWm+PCyaFmMMXXtf/kCaNmjPro8TYzZHqY12vc686rkKTggvEXNQ7XFSn5qhs0Dxnz2/xgpcn2bjOLu0DEFcsJX+NBryTOQnQxbVT+oCv2ktMqhByUEr2Uje1UC97+M2+oixLxCnS9cnL6QVBkmccNaIJNhYNrA3LpgNC3/RWKpoLHraOJrDSEz4d51vuNfinHubTA50iSv1aTJtr9y38UgkCe6+klCNw1ilaOUivQ+L5Bn9hV0PrngItz+YlOy+bDjisXomTE4nwdHDnHd8UENRGqSi4XGzB+pdhgAHO+jz+1hGRxc0Bsy5HH5ZlZTb6MOBo7J9Oc4N+B8rehL9Zon8gmDCZsYywrfnnrQZ1bBF8K3PYTGd7qRYwfJ6cIwbE4JgkS49JZ8Q3YvPHG1XkN7zcM0Bv8JnG+iEUpSELydyyp1B97GfJhB86FxiYtvhnvdiklpL3cLc+UUZDV5vKsBfgylA/PhXJ3iJRZTg0257wzD/nV4gfvnNZqyUb3xuD+VqvfmaK+v066z/fXIQOg0mGEyBk0=
   skip_cleanup: true
   file_glob: true
-  file: "$(DEPLOY_ISOS)"
+  file: "$DEPLOY_ISOS"
