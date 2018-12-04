@@ -6,7 +6,7 @@ before_install:
 before_deploy:
  - git config --local user.name "CHOSTeam"
  - git config --local user.email "italolmm2018@outlook.com"
- - export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
+ - export TRAVIS_TAG=nightly-$(date +'%Y%m%d%H%M%S')
  - git tag $TRAVIS_TAG
 deploy:
   provider: releases
