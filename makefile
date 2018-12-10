@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on December 02 of 2018, at 11:38 BRT
+# Last edited on December 10 of 2018, at 16:39 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -106,6 +106,8 @@ endif
 	$(NOECHO)if [ -d build/iso ]; then rm -rf build/iso; fi
 	$(NOECHO)mkdir -p build/iso/Boot
 	$(NOECHO)mkdir -p build/iso/MountPoint
+	$(NOECHO)echo -e 'Hello, World! This is a test file!\r' > build/iso/TestEn.txt
+	$(NOECHO)echo -e 'Olá Mundo! Este é um arquivo de teste!\r' > build/iso/TestBr.txt
 	$(NOECHO)cp $(CDBOOT) build/iso/Boot/bootsect.bin
 	$(NOECHO)cp $(BOOTMGR) build/iso/Boot/bootmgr.bin
 	$(NOECHO)cp $(KERNEL) build/iso/Boot/chkrnl.elf
