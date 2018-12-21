@@ -15,6 +15,8 @@ For building the ISO from scratch, you need:
 	MPC
 	Texinfo
 	Xorriso
+	GNU-EFI (for the EFI version)
+	MTools (for the EFI version)
 
 To build it, go to the root directory and type:
 
@@ -22,22 +24,4 @@ To build it, go to the root directory and type:
 
 You can append ARCH=\<ARCH\> and SUBARCH=\<SUBARCH\> to change the system architecture, BUILD_CORES=\<CORES_AMOUNT\> to build the toolchain with multiple cores, VERBOSE=true to enable verbose build (good for finding compilation errors) and DEBUG=yes to disable optimizations and make a debug build.
 
-After building everything, you should have your toolchain inside of the toolchain/\<ARCH\> folder and the bootable iso inside of the build folder.
-
-## Building the CHIR tool
-
-For building the CHIR tool, you only need GCC.
-Go to the toolchain/chir folder and type:
-
-	make
-
-Now you should have the executable of the tool inside of the build folder.
-
-## Building the CHicago Assembler
-
-For building the CHicago Assembler, you only need GCC.
-Go to the toolchain/chasm folder and type:
-
-	make
-
-Now you should have the executable of the tool inside of the build folder.
+After building everything, you should have your toolchain inside of the toolchain/\<ARCH\> folder and the bootable iso inside of the build folder (chicago-\<ARCH\>_\<SUBARCH\>.iso).

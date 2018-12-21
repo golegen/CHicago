@@ -1,8 +1,9 @@
 language: c
 script:
- - BUILD_CORES=3 travis_wait 60 make && make -C toolchain/chir && make -C toolchain/chasm
+ - BUILD_CORES=3 ARCH=x86 SUBARCH=pc travis_wait 120 make
+ - BUILD_CORES=3 ARCH=x86 SUBARCH=efi travis_wait 120 make
 before_install:
- - sudo apt-get -qq update && sudo apt-get install -y build-essential bison flex libgmp3-dev libmpc-dev libmpfr-dev texinfo autoconf automake xorriso
+ - sudo apt-get -qq update && sudo apt-get install -y build-essential bison flex libgmp3-dev libmpc-dev libmpfr-dev texinfo autoconf automake xorriso gnu-efi mtools
 before_deploy:
  - git config --local user.name "CHOSTeam"
  - git config --local user.email "italolmm2018@outlook.com"
