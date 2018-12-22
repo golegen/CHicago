@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on December 19 of 2018, at 16:12 BRT
-# Last edited on December 20 of 2018, at 18:19 BRT
+# Last edited on December 21 of 2018, at 23:59 BRT
 
 SUBARCH ?= pc
 DEBUG ?= false
@@ -18,17 +18,21 @@ ifeq ($(SUBARCH),efi)
 	SUBARCH_OBJECTS += io/console.c.o
 	SUBARCH_OBJECTS += mm/alloc.c.o
 else
-	SUBARCH_OBJECTS := start.s.o subarch.c.o
-	SUBARCH_OBJECTS += io/console.c.o
+	SUBARCH_OBJECTS := start.s.o int86.s.o
+	SUBARCH_OBJECTS += subarch.c.o
+	SUBARCH_OBJECTS += io/console.c.o io/ide.c.o
 	SUBARCH_OBJECTS += mm/alloc.c.o mm/heap.c.o
+	SUBARCH_OBJECTS += sys/idt.c.o
 endif
 
-OBJECTS := main.c.o
+OBJECTS := jump.s.o
+OBJECTS += main.c.o
 OBJECTS += ds/list.c.o
-OBJECTS += io/console.c.o io/device.c.o io/file.c.o io/fs/devfs.c.o
+OBJECTS += io/console.c.o io/device.c.o io/file.c.o io/keyboard.c.o
+OBJECTS += io/fs/devfs.c.o
 OBJECTS += io/fs/iso9660.c.o
 OBJECTS += mm/alloc.c.o
-OBJECTS += sys/string.c.o
+OBJECTS += sys/config.c.o sys/string.c.o sys/menu.c.o
 
 SUBARCH_OBJECTS := $(addprefix build/$(SUBARCH)/subarch/$(SUBARCH)/,$(SUBARCH_OBJECTS))
 OBJECTS := $(addprefix build/$(SUBARCH)/,$(OBJECTS))
@@ -64,16 +68,20 @@ $(BOOTMGR): $(SUBARCH_OBJECTS) $(OBJECTS)
 	$(NOECHO)cp $(BOOTMGR).efi $(BOOTMGR)
 	$(NOECHO)rm $(BOOTMGR).efi
 else
-$(BOOTMGR): $(SUBARCH_OBJECTS) $(OBJECTS) subarch/$(SUBARCH)/bootmgr.ld
+$(BOOTMGR): $(SUBARCH_OBJECTS) $(OBJECTS) subarch/$(SUBARCH)/link.ld
 	$(NOECHO)echo Linking $@
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(NOECHO)$(TARGET)-gcc -Tsubarch/$(SUBARCH)/bootmgr.ld -ffreestanding -nostdlib -o $@ $(SUBARCH_OBJECTS) $(OBJECTS) -lgcc
+	$(NOECHO)$(TARGET)-gcc -Tsubarch/$(SUBARCH)/link.ld -ffreestanding -nostdlib -o $@ $(SUBARCH_OBJECTS) $(OBJECTS) -lgcc
 endif
 
 build/$(SUBARCH)/%.s.o: %.s
 	$(NOECHO)echo Compiling $<
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
+ifeq ($(SUBARCH),efi)
+	$(NOECHO)$(TARGET)-as --defsym SUBARCH_EFI=1 $< -o $@
+else
 	$(NOECHO)$(TARGET)-as $< -o $@
+endif
 
 build/$(SUBARCH)/%.c.o: %.c
 	$(NOECHO)echo Compiling $<
