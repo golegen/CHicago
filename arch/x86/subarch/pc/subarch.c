@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 20 of 2018, at 18:19 BRT
-// Last edited on December 22 of 2018, at 00:47 BRT
+// Last edited on December 22 of 2018, at 12:33 BRT
 
 #include <chicago/subarch/ide.h>
 #include <chicago/subarch/idt.h>
@@ -129,10 +129,18 @@ IntPtr SubarchJump(UIntPtr dest, PChar bootdev) {
 	
 	UInt32 data[4];
 	
-	if (SubarchSetVesaMode(1366, 768, 32, data)) {												// Set the VESA mode to 1366x768x32
+	if (SubarchSetVesaMode(1440, 900, 32, data)) {												// Set the VESA mode to 1440x900x32
 		goto c;																					// Ok
-	} else if (SubarchSetVesaMode(1366, 768, 24, data)) {										// Set the VESA mode to 1366x768x24
+	} else if (SubarchSetVesaMode(1440, 900, 24, data)) {										// Set the VESA mode to 1440x900x24
 		goto c;																					// Ok
+	} else if (SubarchSetVesaMode(1360, 768, 32, data)) {										// Set the VESA mode to 1360x768x32
+		goto c;																					// Ok!
+	} else if (SubarchSetVesaMode(1360, 768, 24, data)) {										// Set the VESA mode to 1360x768x24
+		goto c;																					// Ok!
+	} else if (SubarchSetVesaMode(1280, 800, 32, data)) {										// Set the VESA mode to 1280x800x32
+		goto c;																					// Ok!
+	} else if (SubarchSetVesaMode(1280, 800, 24, data)) {										// Set the VESA mode to 1280x800x24
+		goto c;																					// Ok!
 	} else if (SubarchSetVesaMode(1280, 720, 32, data)) {										// Set the VESA mode to 1280x720x32
 		goto c;																					// Ok!
 	} else if (SubarchSetVesaMode(1280, 720, 24, data)) {										// Set the VESA mode to 1280x720x24

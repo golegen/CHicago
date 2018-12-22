@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on December 20 of 2018, at 11:11 BRT
+# Last edited on December 22 of 2018, at 13:39 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -29,6 +29,7 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH), subarch $(SUBARCH))
 endif
 	$(NOECHO)SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C arch/$(ARCH) all
+	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel all
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make finish
 
 clean: arch-clean
@@ -36,12 +37,14 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH), subarch $(SUBARCH))
 endif
 	$(NOECHO)SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C arch/$(ARCH) clean
+	$(NOECHO)SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel clean
 
 clean-all:
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH), subarch $(SUBARCH))
 endif
 	$(NOECHO)SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C arch/$(ARCH) clean-all
+	$(NOECHO)SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel clean-all
 	$(NOECHO)rm -rf build
 
 remake:
@@ -49,6 +52,7 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH), subarch $(SUBARCH))
 endif
 	$(NOECHO)SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C arch/$(ARCH) remake
+	$(NOECHO)SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel remake
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make finish
 
 toolchain/$(ARCH):

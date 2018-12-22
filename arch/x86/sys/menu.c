@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 25 of 2018, at 14:29 BRT
-// Last edited on December 22 of 2018, at 01:04 BRT
+// Last edited on December 22 of 2018, at 16:24 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/config.h>
@@ -292,7 +292,15 @@ l:	while (True) {
 			StrSetMemory((PVoid)(ph->vaddr - ELF_BASE + ph->fsize), 0, ph->msize - ph->fsize);
 		}
 		
-		IntPtr err = SubarchJump(hdr->entry - ELF_BASE, rootdev ? FsGetBootDevice() : root->name);			// Try to jump!
+		PChar bootdev = rootdev ? FsGetBootDevice() : root->name;											// Get the boot device
+		
+		if (((UIntPtr)bootdev) >= 0x800000) {																// Realloc it?
+			PChar new = (PChar)(0x10000 - (StrGetLength(bootdev) + 1));										// Yes :) Realloc it to "low" memory
+			StrCopy(new, bootdev);
+			bootdev = new;																					// And set
+		}
+		
+		IntPtr err = SubarchJump(hdr->entry - ELF_BASE, bootdev);											// Try to jump!
 		
 		MemFree((UIntPtr)buffer);																			// ... Failed
 		

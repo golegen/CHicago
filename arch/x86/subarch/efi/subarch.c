@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 20 of 2018, at 18:15 BRT
-// Last edited on December 22 of 2018, at 01:33 BRT
+// Last edited on December 22 of 2018, at 16:26 BRT
 
 #define StrDuplicate Dummy
 
@@ -179,8 +179,12 @@ IntPtr SubarchJump(UIntPtr dest, PChar bootdev) {
 	
 	PUInt32 data = (PUInt32)0x2FF0;
 	
-	if (SubarchSetVideoMode(1366, 768, data)) {																													// Set the video mode to 1366x768
+	if (SubarchSetVideoMode(1440, 900, data)) {																													// Set the video mode to 1440x900
 		goto c;																																					// Ok
+	} else if (SubarchSetVideoMode(1360, 768, data)) {																											// Set the video mode to 1360x768
+		goto c;																																					// Ok
+	} else if (SubarchSetVideoMode(1280, 800, data)) {																											// Set the video mode to 1280x800
+		goto c;																																					// Ok!
 	} else if (SubarchSetVideoMode(1280, 720, data)) {																											// Set the video mode to 1280x720
 		goto c;																																					// Ok!
 	} else if (SubarchSetVideoMode(800, 600, data)) {																											// Set the video mode to 800x600
