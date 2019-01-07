@@ -1,6 +1,10 @@
 [![Build Status](https://travis-ci.com/CHOSTeam/CHicago.svg?branch=master)](https://travis-ci.com/CHOSTeam/CHicago)
 # CHicago
 
+## WARNING
+
+The old x86_pc architecture is DEPRECATED, with the new in-house toolchain, CHicago (for x86) will only support the EFI variant!
+
 ## Building the ISO
 
 For building the ISO from scratch, you need:
