@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 20 of 2018, at 18:15 BRT
-// Last edited on December 22 of 2018, at 16:26 BRT
+// Last edited on January 18 of 2019, at 22:41 BRT
 
 #define StrDuplicate Dummy
 
@@ -19,10 +19,10 @@
 #include <chicago/string.h>
 #include <chicago/subarch.h>
 
-static PChar HardDiskString = "HardDiskX";
-static PChar CDROMString = "CdRomX";
+static EFI_DEVICE_PATH_PROTOCOL *BootDevicePath;
+static PVoid BootDevicePriv;
 
-static EFI_DEVICE_PATH_PROTOCOL *GetDP(EFI_HANDLE handle) {
+static EFI_DEVICE_PATH_PROTOCOL *GetDP(EFI_HANDLE handle, PUIntPtr count) {
 	EFI_DEVICE_PATH_PROTOCOL *dp;
 	Boolean status = BS->HandleProtocol(handle, &gEfiDevicePathProtocolGuid, (VOID*)&dp);																		// Let's try to open the device path (using BS->HandleProtocol)
 	
@@ -32,7 +32,22 @@ static EFI_DEVICE_PATH_PROTOCOL *GetDP(EFI_HANDLE handle) {
 		return NULL;																																			// ... i don't think this should happen... just return NULL
 	}
 	
-	for (EFI_DEVICE_PATH_PROTOCOL *next = NextDevicePathNode(dp); !IsDevicePathEnd(next); dp = next, next = NextDevicePathNode(next)) ;							// Get the last dp entry
+	for (EFI_DEVICE_PATH_PROTOCOL *next = NextDevicePathNode(dp); !IsDevicePathEnd(next); dp = next, next = NextDevicePathNode(next), (*count)++) ;				// Get the last dp entry
+	
+	return dp;																																					// And return
+}
+
+static EFI_DEVICE_PATH_PROTOCOL *GetDPn(EFI_HANDLE handle, IntPtr i) {
+	EFI_DEVICE_PATH_PROTOCOL *dp;
+	Boolean status = BS->HandleProtocol(handle, &gEfiDevicePathProtocolGuid, (VOID*)&dp);																		// Let's try to open the device path (using BS->HandleProtocol)
+	
+	if (EFI_ERROR(status)) {
+		return NULL;																																			// Failed...
+	} else if (IsDevicePathEnd(dp)) {
+		return NULL;																																			// ... i don't think this should happen... just return NULL
+	}
+	
+	for (EFI_DEVICE_PATH_PROTOCOL *next = NextDevicePathNode(dp); !IsDevicePathEnd(next) && i; dp = next, next = NextDevicePathNode(next), i--) ;				// Get the entry i
 	
 	return dp;																																					// And return
 }
@@ -205,12 +220,65 @@ c:	;
 	return -1;																																					// ... Returned?
 }
 
+static Void SubarchAddDevice(EFI_HANDLE *handles, UINTN i, UInt8 type, UInt8 subtype, Int cdrom) {
+	UIntPtr n = 0;
+	EFI_DEVICE_PATH_PROTOCOL *dp = GetDP(handles[i], &n);
+	
+	if (dp == NULL) {
+		return;																																					// ...
+	} else if ((DevicePathType(dp) != type) || (DevicePathSubType(dp) != subtype)) {																			// Valid?
+		for (IntPtr j = n - 1; j >= 0; j--) {																													// Nope, maybe this is a partition inside of the boot cdrom/boot hard disk!
+			EFI_DEVICE_PATH_PROTOCOL *dpn = GetDPn(handles[i], j);
+			
+			if ((DevicePathType(dpn) == type) && (DevicePathSubType(dpn) == subtype)) {																			// Same type and subtype that we are expecting?
+				EFI_BLOCK_IO_PROTOCOL *priv;
+
+				if (EFI_ERROR(BS->OpenProtocol(handles[i], &gEfiBlockIoProtocolGuid, (VOID**)&priv, LibImageHandle, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL))) {	// Yes, let's try to open the protocol using the handle
+					return;																																		// Failed :(
+				}
+				
+				if (priv == BootDevicePriv) {																													// Same boot device priv?
+					BootDevicePath = dpn;																														// Yes!
+					return;
+				}
+			}
+		}
+		
+		return;																																					// Nope
+	}
+	
+	EFI_BLOCK_IO_PROTOCOL *priv;
+	
+	if (EFI_ERROR(BS->OpenProtocol(handles[i], &gEfiBlockIoProtocolGuid, (VOID**)&priv, LibImageHandle, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL))) {				// Open the protocol using the handle
+		return;																																					// Failed :(
+	} else if (priv->Media->BlockSize != 512 && cdrom) {																										// CDROM?
+		FsAddCdRom((PVoid)priv, DeviceRead, Null);																												// Yes, add it
+	} else if (priv->Media->BlockSize == 512) {
+		FsAddHardDisk((PVoid)priv, DeviceRead, Null);																											// Hard disk
+	}
+	
+	if ((DevicePathNodeLength(BootDevicePath) == DevicePathNodeLength(dp)) && !StrCompareMemory(BootDevicePath, dp, DevicePathNodeLength(dp) + 4)) {			// Update the boot device priv?
+		BootDevicePriv = priv;																																	// Yes!
+	}
+}
+
 Void SubarchInit(Void) {
 	FsInitDeviceList();																																			// Init the device list
 	
-	UInt8 cdc = 0;																																				// Let's try to add "all" the devices!
-	UInt8 hdc = 0;
-	UINTN size = 0;
+	EFI_LOADED_IMAGE_PROTOCOL *img;
+	PVoid priv;
+	
+	if (EFI_ERROR(BS->OpenProtocol(LibImageHandle, &gEfiLoadedImageProtocolGuid, (VOID**)&img, LibImageHandle, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL))) {		// Open the loaded image protocol using the image handle
+		ConWriteFormated("PANIC! Couldn't determine the boot device\r\n");																						// Failed
+		ArchHalt();
+	} else if (EFI_ERROR(BS->OpenProtocol(img->DeviceHandle, &gEfiBlockIoProtocolGuid, &priv, LibImageHandle, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL))) {			// Open the block io protocol using the device handle
+		ConWriteFormated("PANIC! Couldn't determine the boot device\r\n");																						// Failed
+		ArchHalt();
+	} else {
+		BootDevicePriv = priv;
+	}
+	
+	UINTN size = 0;																																				// Let's try to add "all" the devices!
 	EFI_HANDLE *handles = NULL;
 	EFI_STATUS ret = BS->LocateHandle(ByProtocol, &gEfiBlockIoProtocolGuid, NULL, &size, handles);																// First, let's try to get the buffer size
 	
@@ -230,55 +298,24 @@ Void SubarchInit(Void) {
 		ArchHalt();
 	}
 	
-	for (UINTN i = 0; i < size / sizeof(EFI_HANDLE); i++) {																										// Let's GO!
-		EFI_DEVICE_PATH_PROTOCOL *dp = GetDP(handles[i]);																										// Get this device path
-		
-		if (dp == NULL) {
-			continue;																																			// ...
-		} else if (DevicePathType(dp) != MESSAGING_DEVICE_PATH) {																								// Valid type?
-			continue;																																			// Nope
-		}
-		
-		switch (DevicePathSubType(dp)) {																														// Ok, let's go!
-		case MSG_ATAPI_DP: {																																	// ATA/ATAPI
-			EFI_BLOCK_IO_PROTOCOL *priv;
-			
-			if (EFI_ERROR(BS->OpenProtocol(handles[i], &gEfiBlockIoProtocolGuid, (VOID**)&priv, LibImageHandle, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL))) {		// Open the protocol using the handle
-				continue;																																		// Failed :(
-			}
-			
-			PChar name = Null;
-			
-			if (priv->Media->BlockSize != 512) {																												// CDROM?
-				name = StrDuplicate(CDROMString);																												// Yes, so duplicate the CdRomX string
-				
-				if (name == Null) {																																// Failed?
-					continue;																																	// Yes...
-				}
-				
-				name[5] = (Char)(cdc++ + '0');																													// And set the num
-			} else {
-				name = StrDuplicate(HardDiskString);																											// No, so duplicate the HardDiskX string
-				
-				if (name == Null) {																																// Failed?
-					continue;																																	// Yes...
-				}
-				
-				name[8] = (Char)(hdc++ + '0');																													// And set the num
-			}
-			
-			if (!FsAddDevice(name, (PVoid)priv, DeviceRead, Null)) {																							// At the end try to add us to the device list!
-				MemFree((UIntPtr)name);
-			}
-			
-			break;
-		}
-		}
+	for (UINTN i = 0; i < size / sizeof(EFI_HANDLE); i++) {																										// First, let's get all the IDE devices
+		SubarchAddDevice(handles, i, MESSAGING_DEVICE_PATH, MSG_ATAPI_DP, 0);
+	}
+	
+	for (UINTN i = 0; i < size / sizeof(EFI_HANDLE); i++) {
+		SubarchAddDevice(handles, i, MESSAGING_DEVICE_PATH, MSG_ATAPI_DP, 1);
+	}
+	
+	for (UINTN i = 0; i < size / sizeof(EFI_HANDLE); i++) {																										// Now, let's get all the SATA devices
+		SubarchAddDevice(handles, i, MESSAGING_DEVICE_PATH, MSG_SATA_DP, 0);
+	}
+	
+	for (UINTN i = 0; i < size / sizeof(EFI_HANDLE); i++) {
+		SubarchAddDevice(handles, i, MESSAGING_DEVICE_PATH, MSG_SATA_DP, 1);
 	}
 	
 	MemFree((UIntPtr)handles);																																	// Free the device list!
-	
-	FsSetBootDevice("CdRom0");																																	// We only support CD-ROM (for now)...
+	FsSetBootDevice(FsGetDeviceByPriv(BootDevicePriv));																											// Set the boot device
 	
 	if (FsGetBootDevice() == Null) {																															// Unsupported boot device?
 		ConWriteFormated("PANIC! Unsupported boot device\r\n");																									// Yes :(
