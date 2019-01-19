@@ -1,9 +1,9 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on December 19 of 2018, at 16:12 BRT
-# Last edited on December 21 of 2018, at 23:59 BRT
+# Last edited on January 19 of 2019, at 14:49 BRT
 
-SUBARCH ?= pc
+SUBARCH ?= efi
 DEBUG ?= false
 VERBOSE ?= false
 TARGET ?= i686-elf
@@ -17,12 +17,6 @@ ifeq ($(SUBARCH),efi)
 	SUBARCH_OBJECTS := data.c.o start.c.o subarch.c.o
 	SUBARCH_OBJECTS += io/console.c.o
 	SUBARCH_OBJECTS += mm/alloc.c.o
-else
-	SUBARCH_OBJECTS := start.s.o int86.s.o
-	SUBARCH_OBJECTS += subarch.c.o
-	SUBARCH_OBJECTS += io/console.c.o io/ide.c.o
-	SUBARCH_OBJECTS += mm/alloc.c.o mm/heap.c.o
-	SUBARCH_OBJECTS += sys/idt.c.o
 endif
 
 OBJECTS := jump.s.o
@@ -67,39 +61,27 @@ $(BOOTMGR): $(SUBARCH_OBJECTS) $(OBJECTS)
 	$(NOECHO)$(TARGET)-gcc -nostdlib -shared -e _LoaderEntry -Wl,-dll -Wl,--subsystem,10 $(SUBARCH_OBJECTS) $(OBJECTS) -o $(BOOTMGR).efi
 	$(NOECHO)cp $(BOOTMGR).efi $(BOOTMGR)
 	$(NOECHO)rm $(BOOTMGR).efi
-else
-$(BOOTMGR): $(SUBARCH_OBJECTS) $(OBJECTS) subarch/$(SUBARCH)/link.ld
-	$(NOECHO)echo Linking $@
-	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-	$(NOECHO)$(TARGET)-gcc -Tsubarch/$(SUBARCH)/link.ld -ffreestanding -nostdlib -o $@ $(SUBARCH_OBJECTS) $(OBJECTS) -lgcc
-endif
 
 build/$(SUBARCH)/%.s.o: %.s
 	$(NOECHO)echo Compiling $<
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-ifeq ($(SUBARCH),efi)
 	$(NOECHO)$(TARGET)-as --defsym SUBARCH_EFI=1 $< -o $@
-else
-	$(NOECHO)$(TARGET)-as $< -o $@
-endif
 
 build/$(SUBARCH)/%.c.o: %.c
 	$(NOECHO)echo Compiling $<
 	$(NOECHO)if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
-ifeq ($(SUBARCH),efi)
 ifeq ($(DEBUG),true)
 	$(NOECHO)$(TARGET)-gcc -DDEBUG -g -std=c11 -Iinclude -Isubarch/$(SUBARCH)/include -I/usr/include/efi -I/usr/include/efi/ia32 -I/usr/include/efi/protocol -ffreestanding -O0 -Wall -Wextra -Wno-implicit-fallthrough -c $< -o $@
 else
 	$(NOECHO)$(TARGET)-gcc -std=c11 -Iinclude -Isubarch/$(SUBARCH)/include -I/usr/include/efi -I/usr/include/efi/ia32 -I/usr/include/efi/protocol -ffreestanding -O0 -Wall -Wextra -Wno-implicit-fallthrough -c $< -o $@
 endif
 else
-ifeq ($(DEBUG),true)
-	$(NOECHO)$(TARGET)-gcc -DDEBUG -g -std=c11 -Iinclude -Isubarch/$(SUBARCH)/include -ffreestanding -O0 -Wall -Wextra -Wno-implicit-fallthrough -c $< -o $@
-else
-	$(NOECHO)$(TARGET)-gcc -std=c11 -Iinclude -Isubarch/$(SUBARCH)/include -ffreestanding -O0 -Wall -Wextra -Wno-implicit-fallthrough -c $< -o $@
-endif
-endif
+$(BOOTMGR): $(SUBARCH_OBJECTS) $(OBJECTS) subarch/$(SUBARCH)/link.ld
+	$(error THE LEGACY (PC) SUBARCH ISN'T SUPPORTED ANYMORE, PLEASE USE THE EFI SUBARCH)
 
-ifneq ($(SUBARCH),efi)
-include subarch/$(SUBARCH)/subarch.mk
+build/$(SUBARCH)/%.s.o: %.s
+	$(error THE LEGACY (PC) SUBARCH ISN'T SUPPORTED ANYMORE, PLEASE USE THE EFI SUBARCH)
+
+build/$(SUBARCH)/%.c.o: %.c
+	$(error THE LEGACY (PC) SUBARCH ISN'T SUPPORTED ANYMORE, PLEASE USE THE EFI SUBARCH)
 endif

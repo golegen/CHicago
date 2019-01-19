@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on December 22 of 2018, at 13:39 BRT
+# Last edited on January 19 of 2019, at 14:50 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -9,12 +9,10 @@ DEBUG ?= false
 
 ifeq ($(ARCH),x86)
 	TARGET ?= i686-elf
-	SUBARCH ?= pc
+	SUBARCH ?= efi
 
-	ifneq ($(SUBARCH),pc)
 	ifneq ($(SUBARCH),efi)
 		UNSUPPORTED_ARCH := true
-	endif
 	endif
 else
 	UNSUPPORTED_ARCH := true
@@ -61,4 +59,4 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)BUILD_CORES=$(BUILD_CORES) ARCH=$(ARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) make -C toolchain all clean
 
-include arch/x86/arch.mk
+include arch/$(ARCH)/arch.mk
