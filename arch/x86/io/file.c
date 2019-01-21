@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:28 BRT
-// Last edited on December 20 of 2018, at 16:00 BRT
+// Last edited on January 21 of 2019, at 12:07 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/console.h>
@@ -150,18 +150,6 @@ Boolean FsReadFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
 		return False;																													// ... Why are you trying to read raw bytes from an directory?
 	} else if (file->read != Null) {																									// Implementation?
 		return file->read(file, off, len, buf);																							// Yes, so call it!
-	} else {
-		return False;
-	}
-}
-
-Boolean FsWriteFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
-	if (file == Null) {																													// File is Null pointer?
-		return False;																													// Yes, so we can't do anything...
-	} else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {																			// We're trying to read an file?
-		return False;																													// ... Why are you trying to read raw bytes from an directory?
-	} else if (file->write != Null) {																									// Implementation?
-		return file->write(file, off, len, buf);																						// Yes, so call it!
 	} else {
 		return False;
 	}

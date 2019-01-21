@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:18 BRT
-// Last edited on December 15 of 2018, at 09:10 BRT
+// Last edited on January 21 of 2018, at 11:54 BRT
 
 #ifndef __CHICAGO_FILE_H__
 #define __CHICAGO_FILE_H__
@@ -19,7 +19,6 @@ typedef struct FsNodeStruct {
 	UIntPtr inode;
 	UIntPtr length;
 	Boolean (*read)(struct FsNodeStruct *, UIntPtr, UIntPtr, PUInt8);
-	Boolean (*write)(struct FsNodeStruct *, UIntPtr, UIntPtr, PUInt8);
 	Boolean (*open)(struct FsNodeStruct *);
 	Void (*close)(struct FsNodeStruct *);
 	PChar (*readdir)(struct FsNodeStruct *, UIntPtr);
@@ -46,7 +45,6 @@ PList FsTokenizePath(PChar path);
 PChar FsCanonicalizePath(PChar path);
 PChar FsJoinPath(PChar src, PChar incr);
 Boolean FsReadFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf);
-Boolean FsWriteFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf);
 PFsNode FsOpenFile(PChar path);
 Void FsCloseFile(PFsNode node);
 Boolean FsMountFile(PChar path, PChar file, PChar type);

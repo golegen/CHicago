@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:29 BRT
-// Last edited on December 20 of 2018, at 16:01 BRT
+// Last edited on January 21 of 2019, at 12:07 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/console.h>
@@ -24,22 +24,6 @@ Boolean DevFsReadFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	}
 	
 	return FsReadDevice(dev, off, len, buf);													// Redirect to the FsReadDevice function
-}
-
-Boolean DevFsWriteFile(PFsNode file, UIntPtr off, UIntPtr len, PUInt8 buf) {
-	if (file == Null) {																			// Any null pointer?
-		return False;																			// Yes, so we can't continue
-	} else if ((file->flags & FS_FLAG_FILE) != FS_FLAG_FILE) {									// We're trying to write raw bytes in an... Directory?
-		return False;																			// Yes (Why?)
-	}
-	
-	PDevice dev = FsGetDevice(file->name);														// Get the device using the name
-	
-	if (dev == Null) {																			// Failed for some unknown reason?
-		return False;																			// Yes
-	}
-	
-	return FsWriteDevice(dev, off, len, buf);													// Redirect to the FsWriteDevice function
 }
 
 Boolean DevFsOpenFile(PFsNode node) {
@@ -115,7 +99,6 @@ PFsNode DevFsFindInDirectory(PFsNode dir, PChar name) {
 	
 	node->length = 0;
 	node->read = DevFsReadFile;
-	node->write = DevFsWriteFile;
 	node->open = DevFsOpenFile;
 	node->close = DevFsCloseFile;
 	node->readdir = Null;
@@ -158,7 +141,6 @@ Void DevFsInit(Void) {
 	root->inode = (UIntPtr)-1;
 	root->length = 0;
 	root->read = Null;
-	root->write = Null;
 	root->open = DevFsOpenFile;
 	root->close = DevFsCloseFile;
 	root->readdir = DevFsReadDirectoryEntry;

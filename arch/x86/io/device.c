@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:35 BRT
-// Last edited on January 18 of 2019, at 20:56 BRT
+// Last edited on January 21 of 2019, at 12:06 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/console.h>
@@ -21,15 +21,7 @@ Boolean FsReadDevice(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	}
 }
 
-Boolean FsWriteDevice(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf) {
-	if (dev->write != Null) {													// We can call the device's function?
-		return dev->write(dev, off, len, buf);									// Yes!
-	} else {
-		return False;															// Nope, so return False
-	}
-}
-
-Boolean FsAddDevice(PChar name, PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUInt8), Boolean (*write)(PDevice, UIntPtr, UIntPtr, PUInt8)) {
+Boolean FsAddDevice(PChar name, PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUInt8)) {
 	if (FsDeviceList == Null) {													// Device list was initialized?
 		return False;															// No...
 	}
@@ -43,7 +35,6 @@ Boolean FsAddDevice(PChar name, PVoid priv, Boolean (*read)(PDevice, UIntPtr, UI
 	dev->name = name;
 	dev->priv = priv;
 	dev->read = read;
-	dev->write = write;
 	
 	if (!ListAdd(FsDeviceList, dev)) {											// Try to add to the list
 		MemFree((UIntPtr)dev);													// Failed, so let's free the dev struct
@@ -53,7 +44,7 @@ Boolean FsAddDevice(PChar name, PVoid priv, Boolean (*read)(PDevice, UIntPtr, UI
 	return True;
 }
 
-Boolean FsAddHardDisk(PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUInt8), Boolean (*write)(PDevice, UIntPtr, UIntPtr, PUInt8)) {
+Boolean FsAddHardDisk(PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUInt8)) {
 	if (FsDeviceList == Null) {													// Device list was initialized?
 		return False;															// No...
 	}
@@ -68,7 +59,7 @@ Boolean FsAddHardDisk(PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUI
 	
 	StrFormat(name, "HardDisk%d", count - 1);									// Format the name string!
 	
-	if (!FsAddDevice(name, priv, read, write)) {								// Try to add it!
+	if (!FsAddDevice(name, priv, read)) {											// Try to add it!
 		MemFree((UIntPtr)name);													// Failed, free the name and return
 		return False;
 	}
@@ -76,13 +67,13 @@ Boolean FsAddHardDisk(PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUI
 	return True;
 }
 
-Boolean FsAddCdRom(PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUInt8), Boolean (*write)(PDevice, UIntPtr, UIntPtr, PUInt8)) {
+Boolean FsAddCdRom(PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUInt8)) {
 	if (FsDeviceList == Null) {													// Device list was initialized?
 		return False;															// No...
 	}
 	
 	static UIntPtr count = 0;
-	UIntPtr nlen = StrFormat(Null, "CdRom%d", count++);						// Get the length of the name
+	UIntPtr nlen = StrFormat(Null, "CdRom%d", count++);							// Get the length of the name
 	PChar name = (PChar)MemAllocate(nlen);										// Alloc space for the name
 	
 	if (name == Null) {
@@ -91,7 +82,7 @@ Boolean FsAddCdRom(PVoid priv, Boolean (*read)(PDevice, UIntPtr, UIntPtr, PUInt8
 	
 	StrFormat(name, "CdRom%d", count - 1);										// Format the name string!
 	
-	if (!FsAddDevice(name, priv, read, write)) {								// Try to add it!
+	if (!FsAddDevice(name, priv, read)) {										// Try to add it!
 		MemFree((UIntPtr)name);													// Failed, free the name and return
 		return False;
 	}

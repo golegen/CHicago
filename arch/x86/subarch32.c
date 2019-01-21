@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 20 of 2018, at 18:15 BRT
-// Last edited on January 18 of 2019, at 22:41 BRT
+// Last edited on January 21 of 2019, at 12:08 BRT
 
 #define StrDuplicate Dummy
 
@@ -214,7 +214,7 @@ c:	;
 	BS->GetMemoryMap(&msize, NULL, &mkey, &dsize, NULL);																										// Call GetMemoryMap, we need the mkey
 	
 	if (!EFI_ERROR(BS->ExitBootServices(LibImageHandle, mkey))) {																								// ExitBootServices!
-		SubarchJumpInt(dest, bootdev, 0x3000, mmapc, data);																										// And jump!
+		SubarchJumpInt(dest, bootdev, 0x3000, mmapc, (UIntPtr)data);																							// And jump!
 	}
 	
 	return -1;																																					// ... Returned?
@@ -252,9 +252,9 @@ static Void SubarchAddDevice(EFI_HANDLE *handles, UINTN i, UInt8 type, UInt8 sub
 	if (EFI_ERROR(BS->OpenProtocol(handles[i], &gEfiBlockIoProtocolGuid, (VOID**)&priv, LibImageHandle, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL))) {				// Open the protocol using the handle
 		return;																																					// Failed :(
 	} else if (priv->Media->BlockSize != 512 && cdrom) {																										// CDROM?
-		FsAddCdRom((PVoid)priv, DeviceRead, Null);																												// Yes, add it
+		FsAddCdRom((PVoid)priv, DeviceRead);																													// Yes, add it
 	} else if (priv->Media->BlockSize == 512) {
-		FsAddHardDisk((PVoid)priv, DeviceRead, Null);																											// Hard disk
+		FsAddHardDisk((PVoid)priv, DeviceRead);																													// Hard disk
 	}
 	
 	if ((DevicePathNodeLength(BootDevicePath) == DevicePathNodeLength(dp)) && !StrCompareMemory(BootDevicePath, dp, DevicePathNodeLength(dp) + 4)) {			// Update the boot device priv?

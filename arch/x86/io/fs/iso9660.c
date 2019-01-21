@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 17 of 2018, at 16:10 BRT
-// Last edited on October 29 of 2018, at 18:09 BRT
+// Last edited on January 21 of 2019, at 12:08 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/file.h>
@@ -264,7 +264,6 @@ PFsNode Iso9660FindInDirectory(PFsNode dir, PChar name) {
 					
 					node->inode = (UIntPtr)de;																		// Inode is the directory entry (because of this i copied it before)
 					node->length = dent->extent_length_lsb;
-					node->write = Null;
 					node->open = Iso9660OpenFile;
 					node->close = Iso9660CloseFile;
 					
@@ -414,7 +413,6 @@ PFsMountPoint Iso9660Mount(PFsNode file, PChar path) {
 	mp->root->inode = (UIntPtr)rootde;
 	mp->root->length = 0;
 	mp->root->read = Null;
-	mp->root->write = Null;
 	mp->root->open = Iso9660OpenFile;
 	mp->root->close = Iso9660CloseFile;
 	mp->root->readdir = Iso9660ReadDirectoryEntry;

@@ -1,17 +1,20 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on January 19 of 2019, at 14:50 BRT
+# Last edited on January 21 of 2019, at 16:31 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
 DEBUG ?= false
 
 ifeq ($(ARCH),x86)
-	TARGET ?= i686-elf
-	SUBARCH ?= efi
+	SUBARCH ?= 32
 
-	ifneq ($(SUBARCH),efi)
+	ifeq ($(SUBARCH),32)
+		TARGET ?= i686-elf
+	else ifeq ($(SUBARCH),64)
+		TARGET ?= x86_64-elf
+	else
 		UNSUPPORTED_ARCH := true
 	endif
 else

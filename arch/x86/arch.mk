@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on December 20 of 2018, at 10:49 BRT
-# Last edited on December 22 of 2018, at 13:38 BRT
+# Last edited on January 21 of 2019, at 12:12 BRT
 
 arch-clean:
 	$(NOECHO)rm -f build/chicago-$(ARCH)_$(SUBARCH).iso
@@ -13,17 +13,14 @@ finish: kernel/build/chkrnl-$(ARCH)_$(SUBARCH)
 	$(NOECHO)mkdir -p build/iso/Boot
 	$(NOECHO)cp kernel/build/chkrnl-$(ARCH)_$(SUBARCH) build/iso/Boot/chkrnl.elf
 	$(NOECHO)echo '"Boot from CHicago Install CD"=BootDevice,chicago' >> build/iso/Boot/bootmgr.conf
-ifeq ($(SUBARCH),efi)
 	$(NOECHO)dd if=/dev/zero of=build/iso/Boot/bootmgr.img bs=1k count=1440 2>/dev/null
 	$(NOECHO)mformat -i build/iso/Boot/bootmgr.img -f 1440 ::
 	$(NOECHO)mmd -i build/iso/Boot/bootmgr.img ::/EFI
 	$(NOECHO)mmd -i build/iso/Boot/bootmgr.img ::/EFI/BOOT
-	$(NOECHO)mcopy -i build/iso/Boot/bootmgr.img arch/$(ARCH)/build/$(SUBARCH)/bootmgr ::/EFI/BOOT/BOOTIA32.EFI
+ifeq ($(SUBARCH),64)
+	$(NOECHO)mcopy -i build/iso/Boot/bootmgr.img arch/$(ARCH)/build/bootmgr$(SUBARCH) ::/EFI/BOOT/BOOTX64.EFI
+else
+	$(NOECHO)mcopy -i build/iso/Boot/bootmgr.img arch/$(ARCH)/build/bootmgr$(SUBARCH) ::/EFI/BOOT/BOOTIA32.EFI
+endif
 	$(NOECHO)xorriso -as mkisofs -R -c Boot/boot.cat -e Boot/bootmgr.img -U -no-emul-boot -o build/chicago-$(ARCH)_$(SUBARCH).iso build/iso 2>/dev/null
 	$(NOECHO)rm -rf build/iso
-else
-	$(NOECHO)cp arch/$(ARCH)/build/$(SUBARCH)/cdboot build/iso/Boot/bootsect.bin
-	$(NOECHO)cp arch/$(ARCH)/build/$(SUBARCH)/bootmgr build/iso/Boot/bootmgr.bin
-	$(NOECHO)xorriso -as mkisofs -R -c Boot/boot.cat -b Boot/bootsect.bin -U -no-emul-boot -o build/chicago-$(ARCH)_$(SUBARCH).iso build/iso 2>/dev/null
-	$(NOECHO)rm -rf build/iso
-endif

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:08 BRT
-// Last edited on October 24 of 2018, at 14:25 BRT
+// Last edited on January 21 of 2018, at 11:51 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/list.h>
@@ -92,7 +92,7 @@ PVoid ListRemove(PList list, UIntPtr idx) {
 	PListNode cur = list->head;
 	PVoid data = Null;
 	
-	for (UInt32 i = 0; i < idx; i++) {												// Get the list node
+	for (UIntPtr i = 0; i < idx; i++) {												// Get the list node
 		cur = cur->next;
 	}
 	
@@ -118,14 +118,14 @@ PVoid ListRemove(PList list, UIntPtr idx) {
 	return data;																	// And return the data!
 }
 
-PVoid ListGet(PList list, UInt32 idx) {
+PVoid ListGet(PList list, UIntPtr idx) {
 	if (idx >= list->length) {														// Too high idx?
 		return Null;																// Yes, so we can't do anything
 	}
 	
 	PListNode node = list->head;
 	
-	for (UInt32 i = 0; i < idx; i++) {												// Get the list node
+	for (UIntPtr i = 0; i < idx; i++) {												// Get the list node
 		node = node->next;
 	}
 	

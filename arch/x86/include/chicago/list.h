@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 14 of 2018, at 22:10 BRT
-// Last edited on October 24 of 2018, at 14:26 BRT
+// Last edited on January 21 of 2019, at 11:55 BRT
 
 #ifndef __CHICAGO_LIST_H__
 #define __CHICAGO_LIST_H__
@@ -27,7 +27,7 @@ PList ListNew(Boolean free);
 Void ListFree(PList list);
 Boolean ListAdd(PList list, PVoid data);
 Boolean ListAddStart(PList list, PVoid data);
-PVoid ListRemove(PList list, UInt32 idx);
-PVoid ListGet(PList list, UInt32 idx);
+PVoid ListRemove(PList list, UIntPtr idx);
+PVoid ListGet(PList list, UIntPtr idx);
 
 #endif		// __CHICAGO_LIST_H__
