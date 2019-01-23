@@ -1,9 +1,10 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 25 of 2018, at 14:29 BRT
-// Last edited on December 22 of 2018, at 16:24 BRT
+// Last edited on January 23 of 2019, at 14:58 BRT
 
 #include <chicago/alloc.h>
+#include <chicago/arch.h>
 #include <chicago/config.h>
 #include <chicago/console.h>
 #include <chicago/elf.h>
@@ -12,7 +13,6 @@
 #include <chicago/list.h>
 #include <chicago/menu.h>
 #include <chicago/string.h>
-#include <chicago/subarch.h>
 #include <chicago/version.h>
 
 PList MenuOptions = Null;
@@ -288,8 +288,8 @@ l:	while (True) {
 		for (UIntPtr i = 0; i < hdr->ph_num; i++) {															// Load the file!
 			PELFProgramHeader ph = (PELFProgramHeader)(buffer + hdr->ph_off + i * hdr->ph_ent_size);
 			
-			StrCopyMemory((PVoid)(ph->vaddr - ELF_BASE), buffer + ph->offset, ph->fsize);
-			StrSetMemory((PVoid)(ph->vaddr - ELF_BASE + ph->fsize), 0, ph->msize - ph->fsize);
+			StrCopyMemory((PVoid)((UIntPtr)(ph->vaddr - ELF_BASE)), buffer + ph->offset, ph->fsize);
+			StrSetMemory((PVoid)((UIntPtr)(ph->vaddr - ELF_BASE + ph->fsize)), 0, ph->msize - ph->fsize);
 		}
 		
 		PChar bootdev = rootdev ? FsGetBootDevice() : root->name;											// Get the boot device
@@ -300,7 +300,7 @@ l:	while (True) {
 			bootdev = new;																					// And set
 		}
 		
-		IntPtr err = SubarchJump(hdr->entry - ELF_BASE, bootdev);											// Try to jump!
+		IntPtr err = ArchJump(hdr->entry - ELF_BASE, bootdev);												// Try to jump!
 		
 		MemFree((UIntPtr)buffer);																			// ... Failed
 		

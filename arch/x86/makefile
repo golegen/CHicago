@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on December 19 of 2018, at 16:12 BRT
-# Last edited on January 21 of 2019, at 12:12 BRT
+# Last edited on January 23 of 2019, at 14:57 BRT
 
 SUBARCH ?= 32
 DEBUG ?= false
@@ -10,17 +10,14 @@ VERBOSE ?= false
 PATH := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))/../../toolchain/x86/bin:$(PATH)
 SHELL := env PATH=$(PATH) /bin/bash
 
-OBJECTS := jump.s.o
-OBJECTS += data.c.o main.c.o start.c.o
-
 ifeq ($(SUBARCH),64)
 	TARGET := x86_64-w64-mingw32
-	OBJECTS += subarch64.c.o
 else
 	TARGET := i686-w64-mingw32
-	OBJECTS += subarch32.c.o
 endif
 
+OBJECTS := jump.s.o
+OBJECTS += arch.c.o data.c.o main.c.o start.c.o
 OBJECTS += ds/list.c.o
 OBJECTS += io/console.c.o io/device.c.o io/file.c.o io/keyboard.c.o
 OBJECTS += io/fs/devfs.c.o

@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on September 01 of 2018, at 12:02 BRT
-# Last edited on January 23 of 2019, at 13:49 BRT
+# Last edited on January 23 of 2019, at 16:42 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -9,14 +9,7 @@ DEBUG ?= false
 
 ifeq ($(ARCH),x86)
 	SUBARCH ?= 32
-
-	ifeq ($(SUBARCH),32)
-		TARGET ?= i686-elf
-	else ifeq ($(SUBARCH),64)
-		TARGET ?= x86_64-elf
-	else
-		UNSUPPORTED_ARCH := true
-	endif
+	TARGET ?= i686-elf
 else
 	UNSUPPORTED_ARCH := true
 endif
@@ -25,10 +18,11 @@ ifneq ($(VERBOSE),true)
 NOECHO := @
 endif
 
-all: toolchain/$(ARCH)
+all: toolchain
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH), subarch $(SUBARCH))
 endif
+	$(NOECHO)BUILD_CORES=$(BUILD_CORES) ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) make -C toolchain all
 	$(NOECHO)SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C arch/$(ARCH) all
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel all
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make finish
@@ -55,11 +49,5 @@ endif
 	$(NOECHO)SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C arch/$(ARCH) remake
 	$(NOECHO)SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make -C kernel remake
 	$(NOECHO)ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) DEBUG=$(DEBUG) make finish
-
-toolchain/$(ARCH):
-ifeq ($(UNSUPPORTED_ARCH),true)
-	$(error Unsupported architecture $(ARCH), subarch $(SUBARCH))
-endif
-	$(NOECHO)BUILD_CORES=$(BUILD_CORES) ARCH=$(ARCH) SUBARCH=$(SUBARCH) TARGET=$(TARGET) VERBOSE=$(VERBOSE) make -C toolchain all clean
 
 include arch/$(ARCH)/arch.mk

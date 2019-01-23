@@ -11,16 +11,12 @@ PATH := $(ROOT_DIR)/$(ARCH)/bin:$(PATH)
 SHELL := env PATH=$(PATH) /bin/bash
 
 ifeq ($(ARCH),x86)
-	SUBARCH ?= 32
-ifeq ($(SUBARCH),32)
 	MAIN_TARGET := i686-elf
 	SECOND_TARGET := i686-w64-mingw32
 	SECOND_TARGET_NO_LIBGCC := true
-else
-	MAIN_TARGET := x86_64-elf
-	MAIN_TARGET_MCMODEL_LARGE := true
-	SECOND_TARGET := x86_64-w64-mingw32
-	SECOND_TARGET_NO_LIBGCC := true
+ifeq ($(SUBARCH),64)
+	THIRD_TARGET := x86_64-w64-mingw32
+	THIRD_TARGET_NO_LIBGCC := true
 endif
 else
 	UNSUPPORTED_ARCH := true

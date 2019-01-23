@@ -1,13 +1,13 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:28 BRT
-// Last edited on January 21 of 2019, at 12:07 BRT
+// Last edited on January 23 of 2019, at 14:51 BRT
 
 #include <chicago/alloc.h>
+#include <chicago/arch.h>
 #include <chicago/console.h>
 #include <chicago/file.h>
 #include <chicago/string.h>
-#include <chicago/subarch.h>
 
 PList FsMountPointList = Null;
 PList FsTypeList = Null;

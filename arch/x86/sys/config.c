@@ -1,14 +1,14 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 25 of 2018, at 14:23 BRT
-// Last edited on December 21 of 2018, at 23:05 BRT
+// Last edited on January 23 of 2019, at 14:52 BRT
 
 #include <chicago/alloc.h>
+#include <chicago/arch.h>
 #include <chicago/config.h>
 #include <chicago/console.h>
 #include <chicago/file.h>
 #include <chicago/string.h>
-#include <chicago/subarch.h>
 
 PList ConfFields = Null;
 Char ConfStringEnd = 0;

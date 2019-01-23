@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 20 of 2018, at 18:15 BRT
-// Last edited on January 21 of 2019, at 12:08 BRT
+// Last edited on January 23 of 2019, at 15:42 BRT
 
 #define StrDuplicate Dummy
 
@@ -12,12 +12,12 @@
 #undef StrDuplicate
 
 #include <chicago/alloc.h>
+#include <chicago/arch.h>
 #include <chicago/console.h>
 #include <chicago/device.h>
 #include <chicago/list.h>
 #include <chicago/port.h>
 #include <chicago/string.h>
-#include <chicago/subarch.h>
 
 static EFI_DEVICE_PATH_PROTOCOL *BootDevicePath;
 static PVoid BootDevicePriv;
@@ -101,9 +101,10 @@ static Boolean DeviceRead(PDevice dev, UIntPtr off, UIntPtr len, PUInt8 buf) {
 	return True;
 }
 
-static Int32 SubarchGetMemoryMap(Void) {
+static Int32 ArchGetMemoryMap(Void) {
 	EFI_MEMORY_DESCRIPTOR *descs = Null;
-	UINTN dsize = 0, dver = 0, size = 0, key = 0;
+	UINTN dsize = 0, size = 0, key = 0;
+	UInt32 dver = 0;
 	EFI_STATUS ret = BS->GetMemoryMap(&size, descs, &key, &dsize, &dver);																						// First, let's try to get the buffer size
 	
 	if (ret == EFI_BUFFER_TOO_SMALL) {
@@ -147,7 +148,7 @@ static Int32 SubarchGetMemoryMap(Void) {
 	return size / dsize;
 }
 
-static Boolean SubarchSetVideoMode(UInt16 width, UInt16 height, PUInt32 data) {
+static Boolean ArchSetVideoMode(UInt16 width, UInt16 height, PUInt32 data) {
 	EFI_HANDLE *hbuf;
 	UINTN hcount, msize, mnum;
 	EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
@@ -181,12 +182,12 @@ static Boolean SubarchSetVideoMode(UInt16 width, UInt16 height, PUInt32 data) {
 	return True;
 }
 
-IntPtr SubarchJump(UIntPtr dest, PChar bootdev) {
+IntPtr ArchJump(UIntPtr dest, PChar bootdev) {
 	if (dest == 0 || bootdev == Null) {																															// Valid dest and boot device?
 		return -1;																																				// Nope
 	}
 	
-	Int32 mmapc = SubarchGetMemoryMap();																														// Get the memory map
+	Int32 mmapc = ArchGetMemoryMap();																															// Get the memory map
 	
 	if (mmapc == -1) {
 		return -1;																																				// Failed
@@ -194,15 +195,15 @@ IntPtr SubarchJump(UIntPtr dest, PChar bootdev) {
 	
 	PUInt32 data = (PUInt32)0x2FF0;
 	
-	if (SubarchSetVideoMode(1440, 900, data)) {																													// Set the video mode to 1440x900
+	if (ArchSetVideoMode(1440, 900, data)) {																													// Set the video mode to 1440x900
 		goto c;																																					// Ok
-	} else if (SubarchSetVideoMode(1360, 768, data)) {																											// Set the video mode to 1360x768
+	} else if (ArchSetVideoMode(1360, 768, data)) {																												// Set the video mode to 1360x768
 		goto c;																																					// Ok
-	} else if (SubarchSetVideoMode(1280, 800, data)) {																											// Set the video mode to 1280x800
+	} else if (ArchSetVideoMode(1280, 800, data)) {																												// Set the video mode to 1280x800
 		goto c;																																					// Ok!
-	} else if (SubarchSetVideoMode(1280, 720, data)) {																											// Set the video mode to 1280x720
+	} else if (ArchSetVideoMode(1280, 720, data)) {																												// Set the video mode to 1280x720
 		goto c;																																					// Ok!
-	} else if (SubarchSetVideoMode(800, 600, data)) {																											// Set the video mode to 800x600
+	} else if (ArchSetVideoMode(800, 600, data)) {																												// Set the video mode to 800x600
 		goto c;																																					// Ok!
 	} else {																																					// Couldn't set any supported video mode...
 		return -2;
@@ -214,13 +215,13 @@ c:	;
 	BS->GetMemoryMap(&msize, NULL, &mkey, &dsize, NULL);																										// Call GetMemoryMap, we need the mkey
 	
 	if (!EFI_ERROR(BS->ExitBootServices(LibImageHandle, mkey))) {																								// ExitBootServices!
-		SubarchJumpInt(dest, bootdev, 0x3000, mmapc, (UIntPtr)data);																							// And jump!
+		ArchJumpInt(dest, bootdev, 0x3000, mmapc, (UIntPtr)data);																								// And jump!
 	}
 	
 	return -1;																																					// ... Returned?
 }
 
-static Void SubarchAddDevice(EFI_HANDLE *handles, UINTN i, UInt8 type, UInt8 subtype, Int cdrom) {
+static Void ArchAddDevice(EFI_HANDLE *handles, UINTN i, UInt8 type, UInt8 subtype, Int cdrom) {
 	UIntPtr n = 0;
 	EFI_DEVICE_PATH_PROTOCOL *dp = GetDP(handles[i], &n);
 	
@@ -262,7 +263,7 @@ static Void SubarchAddDevice(EFI_HANDLE *handles, UINTN i, UInt8 type, UInt8 sub
 	}
 }
 
-Void SubarchInit(Void) {
+Void ArchInit(Void) {
 	FsInitDeviceList();																																			// Init the device list
 	
 	EFI_LOADED_IMAGE_PROTOCOL *img;
@@ -299,19 +300,19 @@ Void SubarchInit(Void) {
 	}
 	
 	for (UINTN i = 0; i < size / sizeof(EFI_HANDLE); i++) {																										// First, let's get all the IDE devices
-		SubarchAddDevice(handles, i, MESSAGING_DEVICE_PATH, MSG_ATAPI_DP, 0);
+		ArchAddDevice(handles, i, MESSAGING_DEVICE_PATH, MSG_ATAPI_DP, 0);
 	}
 	
 	for (UINTN i = 0; i < size / sizeof(EFI_HANDLE); i++) {
-		SubarchAddDevice(handles, i, MESSAGING_DEVICE_PATH, MSG_ATAPI_DP, 1);
+		ArchAddDevice(handles, i, MESSAGING_DEVICE_PATH, MSG_ATAPI_DP, 1);
 	}
 	
 	for (UINTN i = 0; i < size / sizeof(EFI_HANDLE); i++) {																										// Now, let's get all the SATA devices
-		SubarchAddDevice(handles, i, MESSAGING_DEVICE_PATH, MSG_SATA_DP, 0);
+		ArchAddDevice(handles, i, MESSAGING_DEVICE_PATH, MSG_SATA_DP, 0);
 	}
 	
 	for (UINTN i = 0; i < size / sizeof(EFI_HANDLE); i++) {
-		SubarchAddDevice(handles, i, MESSAGING_DEVICE_PATH, MSG_SATA_DP, 1);
+		ArchAddDevice(handles, i, MESSAGING_DEVICE_PATH, MSG_SATA_DP, 1);
 	}
 	
 	MemFree((UIntPtr)handles);																																	// Free the device list!
