@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on November 11 of 2018, at 20:35 BRT
-# Last edited on December 20 of 2018, at 21:12 BRT
+# Last edited on January 23 of 2018, at 13:50 BRT
 
 ARCH ?= x86
 VERBOSE ?= false
@@ -11,13 +11,17 @@ PATH := $(ROOT_DIR)/$(ARCH)/bin:$(PATH)
 SHELL := env PATH=$(PATH) /bin/bash
 
 ifeq ($(ARCH),x86)
+	SUBARCH ?= 32
+ifeq ($(SUBARCH),32)
 	MAIN_TARGET := i686-elf
 	SECOND_TARGET := i686-w64-mingw32
 	SECOND_TARGET_NO_LIBGCC := true
-	THIRD_TARGET := x86_64-elf
-	THIRD_TARGET_MCMODEL_LARGE := true
-	FOURTH_TARGET := x86_64-w64-mingw32
-	FOURTH_TARGET_NO_LIBGCC := true
+else
+	MAIN_TARGET := x86_64-elf
+	MAIN_TARGET_MCMODEL_LARGE := true
+	SECOND_TARGET := x86_64-w64-mingw32
+	SECOND_TARGET_NO_LIBGCC := true
+endif
 else
 	UNSUPPORTED_ARCH := true
 endif
