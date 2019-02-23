@@ -66,7 +66,7 @@ $(ARCH)/bin/chasm:
 ifeq ($(UNSUPPORTED_ARCH),true)
         $(error Unsupported architecture $(ARCH))
 endif
-	$(NOECHO)if [ -d $(ARCH)/bin ]; then exit 1; fi
+	$(NOECHO)if [ -f $(ARCH)/bin/chasm ]; then exit 1; fi
 	$(NOECHO)mkdir -p $(ARCH)/bin
 	$(NOECHO)echo Compiling CHicago Assembler
 	$(NOECHO)make -C chicago/chasm
