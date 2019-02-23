@@ -69,13 +69,13 @@ endif
 	$(NOECHO)if [ -d $(ARCH)/bin ]; then exit 1; fi
 	$(NOECHO)mkdir -p $(ARCH)/bin
 	$(NOECHO)echo Compiling CHicago Assembler
-	$(NOECHO)make -C chicago/chasm 1>/dev/null
+	$(NOECHO)make -C chicago/chasm
 	$(NOECHO)cp chicago/chasm/build/chasm $(ARCH)/bin/chasm
 	$(NOECHO)echo Compiling CHicago Dumper
-	$(NOECHO)make -C chicago/chdump 1>/dev/null
+	$(NOECHO)make -C chicago/chdump
 	$(NOECHO)cp chicago/chdump/build/chdump $(ARCH)/bin/chdump
 	$(NOECHO)echo Compiling CHicago Linker
-	$(NOECHO)make -C chicago/chlink 1>/dev/null
+	$(NOECHO)make -C chicago/chlink
 	$(NOECHO)cp chicago/chlink/build/chlink $(ARCH)/bin/chlink
 
 $(ARCH)/$(MAIN_TARGET):
