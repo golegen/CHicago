@@ -1,10 +1,6 @@
 [![Build Status](https://travis-ci.com/CHOSTeam/CHicago.svg?branch=master)](https://travis-ci.com/CHOSTeam/CHicago)
 # CHicago
 
-## WARNING
-
-The old x86_pc architecture is DEPRECATED, with the new in-house toolchain, CHicago (for x86) will only support the EFI variant!
-
 ## Building the ISO
 
 For building the ISO from scratch, you need:
@@ -19,8 +15,8 @@ For building the ISO from scratch, you need:
 	MPC
 	Texinfo
 	Xorriso
-	GNU-EFI (for the EFI version)
-	MTools (for the EFI version)
+	GNU-EFI (for EFI variants, like x86_32 or x86_64)
+	MTools (for EFI variants, like x86_32 or x86_64)
 
 To build it, go to the root directory and type:
 
