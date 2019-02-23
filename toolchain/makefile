@@ -40,7 +40,7 @@ ifneq ($(FOURTH_TARGET),)
 TARGETS += $(ARCH)/$(FOURTH_TARGET)
 endif
 
-all: $(TARGETS)
+all: $(ARCH)/bin/chasm $(TARGETS)
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
@@ -61,6 +61,22 @@ remake: clean-all all
 ifeq ($(UNSUPPORTED_ARCH),true)
 	$(error Unsupported architecture $(ARCH))
 endif
+
+$(ARCH)/bin/chasm:
+ifeq ($(UNSUPPORTED_ARCH),true)
+        $(error Unsupported architecture $(ARCH))
+endif
+	$(NOECHO)if [ -d $(ARCH)/bin ]; then exit 1; fi
+	$(NOECHO)mkdir -p $(ARCH)/bin
+	$(NOECHO)echo Compiling CHicago Assembler
+	$(NOECHO)make -C chicago/chasm 1>/dev/null
+	$(NOECHO)cp chicago/chasm/build/chasm $(ARCH)/bin/chasm
+	$(NOECHO)echo Compiling CHicago Dumper
+	$(NOECHO)make -C chicago/chdump 1>/dev/null
+	$(NOECHO)cp chicago/chdump/build/chdump $(ARCH)/bin/chdump
+	$(NOECHO)echo Compiling CHicago Linker
+	$(NOECHO)make -C chicago/chlink 1>/dev/null
+	$(NOECHO)cp chicago/chlink/build/chlink $(ARCH)/bin/chlink
 
 $(ARCH)/$(MAIN_TARGET):
 ifeq ($(UNSUPPORTED_ARCH),true)
