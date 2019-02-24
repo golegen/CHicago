@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 16 of 2018, at 18:28 BRT
-// Last edited on January 23 of 2019, at 14:51 BRT
+// Last edited on February 24 of 2019, at 16:44 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/arch.h>
@@ -339,20 +339,8 @@ PFsNode FsFindInDirectory(PFsNode dir, PChar name) {
 }
 
 PFsMountPoint FsGetMountPoint(PChar path, PChar *outp) {
-	if (FsMountPointList == Null) {																										// The mount point list is initialized?
+	if ((FsMountPointList == Null) || (path == Null)) {																				// The mount point list is initialized? Path is Null?
 		if (outp != Null) {																												// Nope, so let's set the outp (out pointer) to Null and return Null
-			*outp = Null;
-		}
-		
-		return Null;
-	} else if (FsMountPointList == Null) {																								// The mount point list have any entry?
-		if (outp != Null) {																												// Nope, so let's set the outp (out pointer) to Null and return Null
-			*outp = Null;
-		}
-		
-		return Null;
-	} else if (path == Null) {																											// Path is Null?
-		if (outp != Null) {																												// Yes, so do the same as the two above cases
 			*outp = Null;
 		}
 		
