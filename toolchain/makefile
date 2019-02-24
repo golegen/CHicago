@@ -68,14 +68,11 @@ ifeq ($(UNSUPPORTED_ARCH),true)
 endif
 	$(NOECHO)if [ -f $(ARCH)/bin/chasm ]; then exit 1; fi
 	$(NOECHO)mkdir -p $(ARCH)/bin
-	$(NOECHO)echo Compiling CHicago Assembler
-	$(NOECHO)make -C chicago/chasm
+	$(NOECHO)echo Compiling the CHicago Toolchain
+	$(NOECHO)make -C chicago 1>/dev/null
 	$(NOECHO)cp chicago/chasm/build/chasm $(ARCH)/bin/chasm
-	$(NOECHO)echo Compiling CHicago Dumper
-	$(NOECHO)make -C chicago/chdump
 	$(NOECHO)cp chicago/chdump/build/chdump $(ARCH)/bin/chdump
-	$(NOECHO)echo Compiling CHicago Linker
-	$(NOECHO)make -C chicago/chlink
+	$(NOECHO)cp chicago/chir/build/chir $(ARCH)/bin/chir
 	$(NOECHO)cp chicago/chlink/build/chlink $(ARCH)/bin/chlink
 
 $(ARCH)/$(MAIN_TARGET):
