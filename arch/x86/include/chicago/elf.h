@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 25 of 2018, at 20:11 BRT
-// Last edited on January 23 of 2019, at 14:57 BRT
+// Last edited on March 29 of 2019, at 19:16 BRT
 
 #ifndef __CHICAGO_ELF_H__
 #define __CHICAGO_ELF_H__
@@ -9,7 +9,6 @@
 #include <chicago/types.h>
 
 #define ELF_MACHINE 0x03
-#define ELF_BASE 0xC0000000
 
 typedef struct {
 	UInt8 ident[16];

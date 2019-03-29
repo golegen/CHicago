@@ -1,10 +1,11 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 25 of 2018, at 14:29 BRT
-// Last edited on January 23 of 2019, at 14:58 BRT
+// Last edited on March 29 of 2019, at 19:24 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/arch.h>
+#include <chicago/chexec.h>
 #include <chicago/config.h>
 #include <chicago/console.h>
 #include <chicago/elf.h>
@@ -205,7 +206,53 @@ l:	while (True) {
 		}
 	}
 	
-	if (MenuCompareStrings(opt->boot_type, "chicago")) {
+	if (MenuCompareStrings(opt->boot_type, "chicago")) {													// CHicago (in CHExec format)
+		UIntPtr entry = False;																				// Let's load the kernel
+		
+		if (rootdev) {
+			entry = CHExecLoadKernel("\\Boot\\chkrnl.che", 0xC0000000);
+		} else {
+			entry = CHExecLoadKernel("\\RootDevice\\Boot\\chkrnl.che", 0xC0000000);
+		}
+		
+		if (!entry) {
+			if (!rootdev) {																					// Failed...
+				FsUmountFile("\\RootDevice");
+				FsCloseFile(root);
+			}
+			
+			MenuShowMessage("Couldn't load the CHicago kernel (Boot\\chkrnl.che)", Null);
+			goto l;
+		}
+		
+		PChar bootdev = rootdev ? FsGetBootDevice() : root->name;											// Get the boot device
+		
+		if (((UIntPtr)bootdev) >= 0x800000) {																// Realloc it?
+			PChar new = (PChar)(0x10000 - (StrGetLength(bootdev) + 1));										// Yes :) Realloc it to "low" memory
+			StrCopy(new, bootdev);
+			bootdev = new;																					// And set
+		}
+		
+		IntPtr err = ArchJump(entry - 0xC0000000, bootdev);													// Try to jump!
+		
+		if (err == -1) {
+			if (!rootdev) {																					// Failed (-1)
+				FsUmountFile("\\RootDevice");
+				FsCloseFile(root);
+			}
+			
+			MenuShowMessage("Couldn't jump to the kernel, please try again", Null);							// Show the error message
+			goto l;
+		} else if (err == -2) {
+			if (!rootdev) {																					// Failed (-2)
+				FsUmountFile("\\RootDevice");
+				FsCloseFile(root);
+			}
+			
+			MenuShowMessage("Your graphic card doesn't support any supported mode", Null);
+			goto l;
+		}
+	} else if (MenuCompareStrings(opt->boot_type, "chicago-old")) {											// CHicago (in ELF format)
 		PFsNode file = Null;																				// Open the kernel file
 		
 		if (rootdev) {
@@ -288,8 +335,8 @@ l:	while (True) {
 		for (UIntPtr i = 0; i < hdr->ph_num; i++) {															// Load the file!
 			PELFProgramHeader ph = (PELFProgramHeader)(buffer + hdr->ph_off + i * hdr->ph_ent_size);
 			
-			StrCopyMemory((PVoid)((UIntPtr)(ph->vaddr - ELF_BASE)), buffer + ph->offset, ph->fsize);
-			StrSetMemory((PVoid)((UIntPtr)(ph->vaddr - ELF_BASE + ph->fsize)), 0, ph->msize - ph->fsize);
+			StrCopyMemory((PVoid)((UIntPtr)(ph->vaddr - 0xC0000000)), buffer + ph->offset, ph->fsize);
+			StrSetMemory((PVoid)((UIntPtr)(ph->vaddr - 0xC0000000 + ph->fsize)), 0, ph->msize - ph->fsize);
 		}
 		
 		PChar bootdev = rootdev ? FsGetBootDevice() : root->name;											// Get the boot device
@@ -300,7 +347,7 @@ l:	while (True) {
 			bootdev = new;																					// And set
 		}
 		
-		IntPtr err = ArchJump(hdr->entry - ELF_BASE, bootdev);												// Try to jump!
+		IntPtr err = ArchJump(hdr->entry - 0xC0000000, bootdev);											// Try to jump!
 		
 		MemFree((UIntPtr)buffer);																			// ... Failed
 		

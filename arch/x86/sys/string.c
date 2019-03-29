@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on July 15 of 2018, at 19:05 BRT
-// Last edited on January 18 of 2019, at 20:30 BRT
+// Last edited on March 29 of 2019, at 19:11 BRT
 
 #include <chicago/alloc.h>
 
@@ -82,8 +82,24 @@ UIntPtr StrGetLength(PChar str) {
 	return n;
 }
 
+UIntPtr StrGetLengthW(PWChar str) {
+	if (str == Null) {																// Str is an Null pointer?
+		return 0;																	// Yes
+	}
+	
+	UIntPtr n = 0;
+	
+	for (; str[n] != 0; n++) ;														// Again, GCC should optimize this for us (if possible)
+	
+	return n;
+}
+
 Boolean StrCompare(PChar dest, PChar src) {
 	return StrCompareMemory(dest, src, StrGetLength(dest));							// Just redirect to the StrCompareMemory function
+}
+
+Boolean StrCompareW(PWChar dest, PWChar src) {
+	return StrCompareMemory(dest, src, StrGetLengthW(dest) * 4);					// Just redirect to the StrCompareMemory function
 }
 
 PChar StrCopy(PChar dest, PChar src) {

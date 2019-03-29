@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on December 19 of 2018, at 16:12 BRT
-# Last edited on January 23 of 2019, at 14:57 BRT
+# Last edited on March 29 of 2019, at 18:48 BRT
 
 SUBARCH ?= 32
 DEBUG ?= false
@@ -23,7 +23,7 @@ OBJECTS += io/console.c.o io/device.c.o io/file.c.o io/keyboard.c.o
 OBJECTS += io/fs/devfs.c.o
 OBJECTS += io/fs/iso9660.c.o
 OBJECTS += mm/alloc.c.o
-OBJECTS += sys/config.c.o sys/string.c.o sys/menu.c.o
+OBJECTS += sys/chexec.c.o sys/config.c.o sys/string.c.o sys/menu.c.o
 
 OBJECTS := $(addprefix build/$(SUBARCH)/,$(OBJECTS))
 BOOTMGR := build/bootmgr$(SUBARCH)

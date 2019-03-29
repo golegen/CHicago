@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on December 20 of 2018, at 10:49 BRT
-# Last edited on February 23 of 2019, at 14:37 BRT
+# Last edited on March 29 of 2019, at 19:25 BRT
 
 arch-clean:
 	$(NOECHO)rm -f build/chicago-$(ARCH)_$(SUBARCH).iso
@@ -12,7 +12,7 @@ finish: kernel/build/chkrnl-$(ARCH)_$(SUBARCH)
 	$(NOECHO)if [ -d build/iso ]; then rm -rf build/iso; fi
 	$(NOECHO)mkdir -p build/iso/Boot
 	$(NOECHO)cp kernel/build/chkrnl-$(ARCH)_$(SUBARCH) build/iso/Boot/chkrnl.elf
-	$(NOECHO)echo '"Boot from CHicago Install CD"=BootDevice,chicago' >> build/iso/Boot/bootmgr.conf
+	$(NOECHO)echo '"Boot from CHicago Install CD"=BootDevice,chicago-old' >> build/iso/Boot/bootmgr.conf
 	$(NOECHO)dd if=/dev/zero of=build/iso/Boot/bootmgr.img bs=1k count=1440 2>/dev/null
 	$(NOECHO)mformat -i build/iso/Boot/bootmgr.img -f 1440 ::
 	$(NOECHO)mmd -i build/iso/Boot/bootmgr.img ::/EFI
