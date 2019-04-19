@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 25 of 2018, at 14:29 BRT
-// Last edited on March 29 of 2019, at 19:24 BRT
+// Last edited on April 19 of 2019, at 17:48 BRT
 
 #include <chicago/alloc.h>
 #include <chicago/arch.h>
@@ -90,13 +90,20 @@ static Void MenuIterator(PConfField field) {
 	
 	opt->name = field->name;																				// Set the name
 	opt->device = field->value;																				// Set the device
+	opt->verbose = False;																					// Disable the verbose boot by default
 	
 	if (field->attrs == Null) {
 		ConWriteFormated("PANIC! Couldn't init the menu\r\n");												// No attributes...
 		ArchHalt();																							// Halt
 	}
 	
-	opt->boot_type = (PChar)ListGet(field->attrs, field->attrs->length - 1);								// Set the boot type!
+	ListForeach(field->attrs, i) {
+		if (MenuCompareStrings((PChar)i->data, "verbose")) {												// Verbose boot?
+			opt->verbose = True;																			// Yes :)
+		} else {
+			opt->boot_type = (PChar)i->data;																// Set the boot type
+		}
+	}
 	
 	if (add) {
 		if (!ListAdd(MenuOptions, opt)) {																	// Add to the menu option list!
@@ -181,6 +188,7 @@ l:	while (True) {
 	}
 	
 	PMenuOption opt = (PMenuOption)ListGet(MenuOptions, MenuSelectedOption);								// Get the selected option
+	UIntPtr options = opt->verbose;
 	Boolean rootdev = False;
 	PFsNode root = Null;
 	
@@ -233,7 +241,7 @@ l:	while (True) {
 			bootdev = new;																					// And set
 		}
 		
-		IntPtr err = ArchJump(entry - 0xC0000000, bootdev);													// Try to jump!
+		IntPtr err = ArchJump(entry - 0xC0000000, bootdev, options);											// Try to jump!
 		
 		if (err == -1) {
 			if (!rootdev) {																					// Failed (-1)
@@ -347,7 +355,7 @@ l:	while (True) {
 			bootdev = new;																					// And set
 		}
 		
-		IntPtr err = ArchJump(hdr->entry - 0xC0000000, bootdev);											// Try to jump!
+		IntPtr err = ArchJump(hdr->entry - 0xC0000000, bootdev, options);									// Try to jump!
 		
 		MemFree((UIntPtr)buffer);																			// ... Failed
 		

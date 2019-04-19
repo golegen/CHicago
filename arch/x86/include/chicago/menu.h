@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 25 of 2018, at 14:30 BRT
-// Last edited on October 25 of 2018, at 14:39 BRT
+// Last edited on April 19 of 2019, at 17:43 BRT
 
 #ifndef __CHICAGO_MENU_H__
 #define __CHICAGO_MENU_H__
@@ -12,6 +12,7 @@ typedef struct {
 	PChar name;
 	PChar device;
 	PChar boot_type;
+	Boolean verbose;
 } MenuOption, *PMenuOption;
 
 Void MenuLoop(Void);

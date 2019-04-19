@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 20 of 2018, at 18:15 BRT
-// Last edited on January 23 of 2019, at 15:42 BRT
+// Last edited on April 19 of 2019, at 17:45 BRT
 
 #define StrDuplicate Dummy
 
@@ -182,7 +182,7 @@ static Boolean ArchSetVideoMode(UInt16 width, UInt16 height, PUInt32 data) {
 	return True;
 }
 
-IntPtr ArchJump(UIntPtr dest, PChar bootdev) {
+IntPtr ArchJump(UIntPtr dest, PChar bootdev, UIntPtr options) {
 	if (dest == 0 || bootdev == Null) {																															// Valid dest and boot device?
 		return -1;																																				// Nope
 	}
@@ -215,7 +215,7 @@ c:	;
 	BS->GetMemoryMap(&msize, NULL, &mkey, &dsize, NULL);																										// Call GetMemoryMap, we need the mkey
 	
 	if (!EFI_ERROR(BS->ExitBootServices(LibImageHandle, mkey))) {																								// ExitBootServices!
-		ArchJumpInt(dest, bootdev, 0x3000, mmapc, (UIntPtr)data);																								// And jump!
+		ArchJumpInt(dest, bootdev, 0x3000, mmapc, (UIntPtr)data, options);																						// And jump!
 	}
 	
 	return -1;																																					// ... Returned?

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 21 of 2018, at 23:21 BRT
-// Last edited on January 23 of 2019, at 16:14 BRT
+// Last edited on April 19 of 2019, at 17:47 BRT
 
 .ifdef ARCH_64
 .code64
@@ -23,6 +23,7 @@ JumpEBX: .int 0
 JumpECX: .int 0
 JumpEDX: .int 0
 JumpESI: .int 0
+JumpEDI: .int 0
 .global ArchJumpInt
 ArchJumpInt:
 	mov %ecx, (JumpEAX)
@@ -33,6 +34,8 @@ ArchJumpInt:
 	mov %eax, (JumpEDX)
 	mov 0x28(%rsp), %rax
 	mov %rax, (JumpESI)
+	mov 0x30(%rsp), %rax
+	mov %eax, (JumpEDI)
 	
 	cli
 	push $0x10
@@ -56,6 +59,7 @@ ArchJumpInt:
 	mov (JumpECX), %ecx
 	mov (JumpEDX), %edx
 	mov (JumpESI), %esi
+	mov (JumpEDI), %edi
 	
 	jmp *%eax
 .else
@@ -63,6 +67,7 @@ ArchJumpInt:
 
 .global _ArchJumpInt
 _ArchJumpInt:
+	mov 24(%esp), %edi
 	mov 20(%esp), %esi
 	mov 16(%esp), %edx
 	mov 12(%esp), %ecx
