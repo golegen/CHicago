@@ -1,7 +1,7 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on December 20 of 2018, at 10:49 BRT
-# Last edited on April 19 of 2019, at 17:48 BRT
+# Last edited on April 26 of 2019, at 22:08 BRT
 
 arch-clean:
 	$(NOECHO)rm -f build/chicago-$(ARCH)_$(SUBARCH).iso
