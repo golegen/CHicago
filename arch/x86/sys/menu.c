@@ -1,7 +1,14 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on October 25 of 2018, at 14:29 BRT
-// Last edited on April 19 of 2019, at 17:48 BRT
+// Last edited on May 01 of 2019, at 12:19 BRT
+
+#define StrDuplicate dummy
+
+#include <efi.h>
+#include <efilib.h>
+
+#undef StrDuplicate
 
 #include <chicago/alloc.h>
 #include <chicago/arch.h>
@@ -90,7 +97,6 @@ static Void MenuIterator(PConfField field) {
 	
 	opt->name = field->name;																				// Set the name
 	opt->device = field->value;																				// Set the device
-	opt->verbose = False;																					// Disable the verbose boot by default
 	
 	if (field->attrs == Null) {
 		ConWriteFormated("PANIC! Couldn't init the menu\r\n");												// No attributes...
@@ -98,11 +104,7 @@ static Void MenuIterator(PConfField field) {
 	}
 	
 	ListForeach(field->attrs, i) {
-		if (MenuCompareStrings((PChar)i->data, "verbose")) {												// Verbose boot?
-			opt->verbose = True;																			// Yes :)
-		} else {
-			opt->boot_type = (PChar)i->data;																// Set the boot type
-		}
+		opt->boot_type = (PChar)i->data;																	// Set the boot type
 	}
 	
 	if (add) {
@@ -113,7 +115,7 @@ static Void MenuIterator(PConfField field) {
 	}
 }
 
-static Void MenuShowMessage(PChar msg, PChar msg2) {
+static Void MenuShowOkMessage(PChar msg, PChar msg2) {
 	if (msg == Null) {																						// Valid message?
 		return;																								// Nope...
 	}
@@ -139,14 +141,116 @@ static Void MenuShowMessage(PChar msg, PChar msg2) {
 	}
 }
 
+static Void MenuPrintOption(UIntPtr idx, UIntPtr sel, Boolean last, PChar text) {
+	if (idx == sel) {																						// Selected one?
+		ConSetColor(CON_COLOR_INVERSE);																		// Yes, print with other color
+	}
+	
+	ConWriteFormated("    %s\r\n", text);
+	
+	if (idx == sel) {
+		ConSetColor(CON_COLOR_NORMAL);																		// Revert back to the normal color
+	}
+	
+	if (last) {
+		ConWriteFormated("\r\n");
+	}
+}
+
+static Boolean MenuAdvancedOptions(PUIntPtr ret, Boolean agb) {
+	PMenuOption opt = (PMenuOption)ListGet(MenuOptions, MenuSelectedOption);								// Get the selected option
+	PChar opttype = opt->boot_type;
+	
+	if (MenuCompareStrings(opttype, "chicago") || MenuCompareStrings(opttype, "chicago-old")) {				// CHicago
+		UIntPtr cur = 0;
+		UIntPtr max = agb ? 2 : 1;
+		
+		while (True) {																						// Let's go!
+			if (cur > max) {																				// Fix the current selected option
+				cur = 0;
+			}
+			
+			ConClearScreen();																				// Clear the screen
+			ConWriteFormated("CHicago Boot Manager\r\n");													// Print the banner
+			ConWriteFormated("Version %d.%d.%d\r\n", CHICAGO_MAJOR, CHICAGO_MINOR, CHICAGO_BUILD);
+			ConWriteFormated("Advanced boot options for CHicago\r\n\r\n");
+			MenuPrintOption(0, cur, False, "Verbose Boot");													// Print the options
+			MenuPrintOption(1, cur, !agb, "Normal Boot");
+			
+			if (agb) {
+				MenuPrintOption(2, cur, True, "Go Back");
+			}
+			
+			ConWriteFormated("Select an option with the arrow keys\r\n");									// Print the footer
+			ConWriteFormated("Press Enter to select the highlighted option\r\n");
+			
+			UInt8 key = KbdReadKey();																		// Wait for keypress
+			
+			if (key == 0x1C) {																				// Enter
+				break;
+			} else if (key == 0x48) {																		// Key down
+				cur--;
+			} else if (key == 0x50) {																		// Key up
+				cur++;
+			}
+		}
+		
+		if (cur == 0 || cur == 1) {																			// Verbose/normal boot?
+			*ret = cur == 0;																				// Yes :)
+			return True;
+		} else {
+			return False;																					// Nope, just return to the boot menu
+		}
+	} else {
+		MenuShowOkMessage("Invalid boot type", opttype);													// Invalid boot type, show error message
+		return False;
+	}
+}
+
 Void MenuLoop(Void) {
 	ConHideCursor();																						// Hide the cursor
 	
 	MenuSelectedOption = MenuGetOptionIdx(MenuDefault);														// Select the default option
 	
+	UIntPtr options = 0;
+	
+	if (MenuOptions->length == 1) {																			// Only one option?
+		UIntPtr idx;
+		EFI_EVENT tevnt;
+		EFI_INPUT_KEY key;
+		EFI_EVENT evnts[2];
+		EFI_STATUS status = BS->CreateEvent(EFI_EVENT_TIMER, 0, Null, Null, &tevnt);						// Yes, create a timer event
+		
+		if (EFI_ERROR(status)) {
+			goto e;																							// ...
+		}
+		
+		status = BS->SetTimer(tevnt, TimerRelative, 1000000);												// Set the timer to 100ms of expiration
+		
+		if (EFI_ERROR(status)) {
+			goto e;																							// ...
+		}
+		
+		evnts[0] = ST->ConIn->WaitForKey;																	// Setup the event list
+		evnts[1] = tevnt;
+		
+		status = BS->WaitForEvent(2, evnts, &idx);															// Wait for the first event that we get
+		
+		BS->CloseEvent(tevnt);																				// Close the timer event
+		ST->ConIn->ReadKeyStroke(ST->ConIn, &key);															// Read the keystroke
+		
+		if (!EFI_ERROR(status) && idx != 1 && key.ScanCode == SCAN_F8) {									// F8 detected?
+			if (!MenuAdvancedOptions(&options, False)) {													// Yes, show the advanced boot options menu
+				goto l;
+			}
+		}
+		
+		goto e;
+	}
+	
 l:	while (True) {
 		if (MenuSelectedOption >= MenuOptions->length) {													// Fix the current selected option
-			MenuSelectedOption = MenuOptions->length - 1;
+			MenuSelectedOption = 0;
 		}
 		
 		ConClearScreen();																					// Clear the screen
@@ -157,28 +261,20 @@ l:	while (True) {
 		
 		ListForeach(MenuOptions, i) {																		// Print all the options
 			PMenuOption opt = (PMenuOption)i->data;
-			
-			if (idx == MenuSelectedOption) {																// Selected one?
-				ConSetColor(CON_COLOR_INVERSE);																// Yes, print with other color
-			}
-			
-			ConWriteFormated("    %s\r\n", opt->name);
-			
-			if (idx++ == MenuSelectedOption) {
-				ConSetColor(CON_COLOR_NORMAL);																// Revert back to the normal color
-			}
-			
-			if (i->next == Null) {
-				ConWriteFormated("\r\n");
-			}
+			MenuPrintOption(idx++, MenuSelectedOption, i->next == Null, opt->name);
 		}
 		
 		ConWriteFormated("Select an option with the arrow keys\r\n");										// Print the footer
 		ConWriteFormated("Press Enter to select the highlighted option\r\n");
+		ConWriteFormated("Press Tab for advanced startup options for the highlighted option\r\n");
 		
 		UInt8 key = KbdReadKey();																			// Wait for keypress
 		
-		if (key == 0x1C) {																					// Enter
+		if (key == 0x0F) {																					// Tab
+			if (MenuAdvancedOptions(&options, True)) {
+				break;
+			}
+		} else if (key == 0x1C) {																			// Enter
 			break;
 		} else if (key == 0x48) {																			// Key down
 			MenuSelectedOption--;
@@ -187,8 +283,7 @@ l:	while (True) {
 		}
 	}
 	
-	PMenuOption opt = (PMenuOption)ListGet(MenuOptions, MenuSelectedOption);								// Get the selected option
-	UIntPtr options = opt->verbose;
+e:	;PMenuOption opt = (PMenuOption)ListGet(MenuOptions, MenuSelectedOption);								// Get the selected option
 	Boolean rootdev = False;
 	PFsNode root = Null;
 	
@@ -200,7 +295,7 @@ l:	while (True) {
 	
 	if (!rootdev) {
 		if (root == Null) {																					// Failed?
-			MenuShowMessage("Invalid boot device", opt->device);											// Yes, show error message
+			MenuShowOkMessage("Invalid boot device", opt->device);											// Yes, show error message
 			goto l;																							// And go back to the menu loop
 		}
 		
@@ -209,7 +304,7 @@ l:	while (True) {
 			rootdev = True;
 		} else if (!FsMountFile("\\RootDevice", opt->device, Null)) {										// Mount the root device!
 			FsCloseFile(root);																				// Failed...
-			MenuShowMessage("Couldn't mount the root device, please try again", Null);
+			MenuShowOkMessage("Couldn't mount the root device, please try again", Null);
 			goto l;
 		}
 	}
@@ -229,7 +324,7 @@ l:	while (True) {
 				FsCloseFile(root);
 			}
 			
-			MenuShowMessage("Couldn't load the CHicago kernel (Boot\\chkrnl.che)", Null);
+			MenuShowOkMessage("Couldn't load the CHicago kernel (Boot\\chkrnl.che)", Null);
 			goto l;
 		}
 		
@@ -241,7 +336,7 @@ l:	while (True) {
 			bootdev = new;																					// And set
 		}
 		
-		IntPtr err = ArchJump(entry - 0xC0000000, bootdev, options);											// Try to jump!
+		IntPtr err = ArchJump(entry - 0xC0000000, bootdev, options);										// Try to jump!
 		
 		if (err == -1) {
 			if (!rootdev) {																					// Failed (-1)
@@ -249,7 +344,7 @@ l:	while (True) {
 				FsCloseFile(root);
 			}
 			
-			MenuShowMessage("Couldn't jump to the kernel, please try again", Null);							// Show the error message
+			MenuShowOkMessage("Couldn't jump to the kernel, please try again", Null);						// Show the error message
 			goto l;
 		} else if (err == -2) {
 			if (!rootdev) {																					// Failed (-2)
@@ -257,7 +352,7 @@ l:	while (True) {
 				FsCloseFile(root);
 			}
 			
-			MenuShowMessage("Your graphic card doesn't support any supported mode", Null);
+			MenuShowOkMessage("Your graphic card doesn't support any supported mode", Null);
 			goto l;
 		}
 	} else if (MenuCompareStrings(opt->boot_type, "chicago-old")) {											// CHicago (in ELF format)
@@ -275,7 +370,7 @@ l:	while (True) {
 				FsCloseFile(root);
 			}
 			
-			MenuShowMessage("Couldn't find the CHicago kernel (Boot\\chkrnl.elf)", Null);
+			MenuShowOkMessage("Couldn't find the CHicago kernel (Boot\\chkrnl.elf)", Null);
 			goto l;
 		}
 		
@@ -294,7 +389,7 @@ l:	while (True) {
 			}
 			
 			MemFree((UIntPtr)buffer);
-			MenuShowMessage("Couldn't read the CHicago kernel (Boot\\chkrnl.elf)", Null);
+			MenuShowOkMessage("Couldn't read the CHicago kernel (Boot\\chkrnl.elf)", Null);
 			goto l;
 		}
 		
@@ -309,7 +404,7 @@ l:	while (True) {
 			}
 			
 			MemFree((UIntPtr)buffer);
-			MenuShowMessage("Invalid CHicago kernel (Boot\\chkrnl.elf)", Null);
+			MenuShowOkMessage("Invalid CHicago kernel (Boot\\chkrnl.elf)", Null);
 			goto l;
 		} else if (hdr->type != 2) {																		// Executable?
 			if (!rootdev) {																					// Failed...
@@ -318,7 +413,7 @@ l:	while (True) {
 			}
 			
 			MemFree((UIntPtr)buffer);
-			MenuShowMessage("Invalid CHicago kernel (Boot\\chkrnl.elf)", Null);
+			MenuShowOkMessage("Invalid CHicago kernel (Boot\\chkrnl.elf)", Null);
 			goto l;
 		} else if (hdr->machine != ELF_MACHINE) {															// Valid machine?
 			if (!rootdev) {																					// Failed...
@@ -327,7 +422,7 @@ l:	while (True) {
 			}
 			
 			MemFree((UIntPtr)buffer);
-			MenuShowMessage("Invalid CHicago kernel (Boot\\chkrnl.elf)", Null);
+			MenuShowOkMessage("Invalid CHicago kernel (Boot\\chkrnl.elf)", Null);
 			goto l;
 		} else if (hdr->version == 0) {																		// Valid version?
 			if (!rootdev) {																					// Failed...
@@ -336,7 +431,7 @@ l:	while (True) {
 			}
 			
 			MemFree((UIntPtr)buffer);
-			MenuShowMessage("Invalid CHicago kernel (Boot\\chkrnl.elf)", Null);
+			MenuShowOkMessage("Invalid CHicago kernel (Boot\\chkrnl.elf)", Null);
 			goto l;
 		}
 		
@@ -365,7 +460,7 @@ l:	while (True) {
 				FsCloseFile(root);
 			}
 			
-			MenuShowMessage("Couldn't jump to the kernel, please try again", Null);							// Show the error message
+			MenuShowOkMessage("Couldn't jump to the kernel, please try again", Null);						// Show the error message
 			goto l;
 		} else if (err == -2) {
 			if (!rootdev) {																					// Failed (-2)
@@ -373,11 +468,11 @@ l:	while (True) {
 				FsCloseFile(root);
 			}
 			
-			MenuShowMessage("Your graphic card doesn't support any supported mode", Null);
+			MenuShowOkMessage("Your graphic card doesn't support any supported mode", Null);
 			goto l;
 		}
 	} else {
-		MenuShowMessage("Invalid boot type", opt->boot_type);												// Invalid boot type, show error message
+		MenuShowOkMessage("Invalid boot type", opt->boot_type);												// Invalid boot type, show error message
 		FsCloseFile(root);																					// Close the "root file"
 		goto l;																								// And go back to the menu loop
 	}
